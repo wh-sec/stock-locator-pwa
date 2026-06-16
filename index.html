@@ -59,7 +59,6 @@ header strong {
   text-overflow: ellipsis; 
 }
 
-/* FIX: Absolute positioning ensures true dead-center alignment regardless of side-text lengths */
 .company-logo-container {
   position: absolute;
   left: 50%;
@@ -95,8 +94,11 @@ button.fixed{ background:#2e8b57; }
 button.secondary{ background:#666; }
 button.danger{ background:#b22222; }
 
+/* Styles for highlighting */
 mark.match { background: #ffeb3b; color: #000; padding: 0 2px; border-radius: 3px; font-weight: bold; }
+mark.location-match { background: #ffeb3b; color: #000; padding: 2px 6px; border-radius: 4px; font-weight: bold; display: inline-block; }
 [data-theme="dark"] mark.match { background: #ffca28; color: #000; }
+[data-theme="dark"] mark.location-match { background: #ffca28; color: #000; }
 
 .centerActions { width:100%; display:flex; flex-direction:column; gap:8px; align-items:center; padding:6px 0; }
 .scanGrid { display: flex; width: 100%; max-width: 340px; gap: 8px; justify-content: center; }
@@ -487,11 +489,12 @@ function renderTable(){
     var r = rows[j];
     var tr = document.createElement('tr');
     
+    // Highlight 1: Highlight text matching what is typed in the Part Number cell
     var highlightedPart = highlightText(r.part, partQuery);
     var highlightedSupplier = highlightText(r.supplierRef, supplierQuery);
     
-    // CHANGE: Highlighting applies to SubLocation instead of Item Number
-    var highlightedSub = highlightText(r.sub, partQuery);
+    // Highlight 2: Entire SubLocation highlights yellow upon match so it stands out immediately
+    var highlightedSub = partQuery ? '<mark class="location-match">' + escapeHtml(r.sub) + '</mark>' : escapeHtml(r.sub);
     
     tr.innerHTML = 
       '<td>' + escapeHtml(r.dept) + '</td>' +
