@@ -698,10 +698,13 @@ function startUniversalScanner(targetFormats) {
         var cleanCode = decodedText.toString().trim();
         if (activeScanTarget === 'part') {
           searchBox.value = cleanCode;
+          // FORCE THE APP TO RECOGNIZE THE SCAN FOR HIGHLIGHTING
+          searchBox.dispatchEvent(new Event('input')); 
         } else {
           supplierBox.value = cleanCode;
+          // FORCE THE APP TO RECOGNIZE THE SCAN FOR HIGHLIGHTING
+          supplierBox.dispatchEvent(new Event('input')); 
         }
-        renderTable();
         stopUniversalScanner();
       }
     },
