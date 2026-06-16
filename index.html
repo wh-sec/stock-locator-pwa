@@ -95,8 +95,8 @@ button.secondary{ background:#666; }
 button.danger{ background:#b22222; }
 
 /* --- TWO-COLOR HIGHLIGHT SYSTEM --- */
-/* 1. Yellow for text character matches (Part Number / Supplier Ref) */
-mark.match { background: #ffeb3b; color: #000; padding: 0 2px; border-radius: 3px; font-weight: bold; }
+/* 1. Yellow highlight for matches */
+mark.match { background: #ffeb3b; color: #000; padding: 0 4px; border-radius: 3px; font-weight: bold; display: inline-block; }
 [data-theme="dark"] mark.match { background: #ffca28; color: #000; }
 
 /* 2. Distinct Green Box for the SubLocation so it stands out as the target destination */
@@ -228,7 +228,6 @@ table.resultsTable thead th { background: #f0f0f0; font-weight: 600; }
   table.resultsTable td:nth-of-type(7):before { content: "Item Number:"; }
   
   table.resultsTable td:nth-of-type(4) {
-    font-weight: bold;
     font-size: 15px;
     border-bottom: 1px dashed #eee;
     margin-bottom: 4px;
@@ -442,26 +441,10 @@ function matchesSupplierQuery(value, query){
   return (value || '').toString().toLowerCase().indexOf(q) !== -1;
 }
 
-function escapeRegExp(string) {
-  return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-}
-
-function highlightText(text, query) {
-  var cleanText = escapeHtml(text);
-  var cleanQuery = (query || '').toString().trim();
-  if (!cleanQuery) return cleanText;
-  
-  try {
-    var regex = new RegExp('(' + escapeRegExp(cleanQuery) + ')', 'gi');
-    return cleanText.replace(regex, '<mark class="match">$1</mark>');
-  } catch(e) {
-    return cleanText;
-  }
-}
-
 function renderTable(){
   var partQuery = (searchBox.value || '').toString().trim();
   var supplierQuery = (supplierBox.value || '').toString().trim();
+  var hasActiveQuery = partQuery || supplierQuery;
 
   var rows = [];
   for (var i = 0; i < allData.length; i++){
@@ -492,12 +475,9 @@ function renderTable(){
     var r = rows[j];
     var tr = document.createElement('tr');
     
-    // Highlight 1: Character text match turns yellow (Part Number & Supplier fields)
-    var highlightedPart = highlightText(r.part, partQuery);
-    var highlightedSupplier = highlightText(r.supplierRef, supplierQuery);
-    
-    // Highlight 2: Entire SubLocation cell lights up green if a query exists
-    var hasActiveQuery = partQuery || supplierQuery;
+    // SMART FORCED HIGHLIGHT FIX: If an active search matches this row, we wrap it in yellow <mark> directly
+    var highlightedPart = hasActiveQuery ? '<mark class="match">' + escapeHtml(r.part) + '</mark>' : escapeHtml(r.part);
+    var highlightedSupplier = hasActiveQuery ? '<mark class="match">' + escapeHtml(r.supplierRef) + '</mark>' : escapeHtml(r.supplierRef);
     var highlightedSub = hasActiveQuery ? '<mark class="location-match">' + escapeHtml(r.sub) + '</mark>' : escapeHtml(r.sub);
     
     tr.innerHTML = 
@@ -698,11 +678,9 @@ function startUniversalScanner(targetFormats) {
         var cleanCode = decodedText.toString().trim();
         if (activeScanTarget === 'part') {
           searchBox.value = cleanCode;
-          // FORCE THE APP TO RECOGNIZE THE SCAN FOR HIGHLIGHTING
           searchBox.dispatchEvent(new Event('input')); 
         } else {
           supplierBox.value = cleanCode;
-          // FORCE THE APP TO RECOGNIZE THE SCAN FOR HIGHLIGHTING
           supplierBox.dispatchEvent(new Event('input')); 
         }
         stopUniversalScanner();
