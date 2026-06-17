@@ -69,7 +69,7 @@
     .app-screen { display: none; }
     .app-screen.active { display: block; }
 
-    /* Outer Panel Container styling mimicking original desktop look */
+    /* Outer Panel Container styling */
     .panel-box { 
       background: var(--panel); 
       padding: 20px; 
@@ -77,6 +77,10 @@
       border: 1px solid var(--border); 
       box-shadow: 0 4px 10px rgba(0,0,0,0.04); 
       margin-bottom: 16px; 
+    }
+
+    .input-group {
+      margin-bottom: 14px;
     }
 
     label { 
@@ -186,6 +190,9 @@
       text-align: center;
       max-width: 100%;
     }
+    .location-badge.fittings-badge {
+      background: #8b5cf6; /* Distinct purple color badge for fittings locator */
+    }
 
     .alertBox { 
       display: none; background: #fff3cd; color: #856404; padding: 16px; border-radius: 8px; 
@@ -225,14 +232,21 @@
   </div>
 
   <div style="display: flex; justify-content: space-between; font-size: 12px; color: var(--muted); margin-bottom: 8px; padding: 0 4px;">
-    <div id="metaDisplay">Loading database...</div>
+    <div id="metaDisplay">Loading database files...</div>
     <div id="countSession" style="display:none;">Counts logged: 0</div>
   </div>
 
   <div id="finderScreen" class="app-screen active">
     <div class="panel-box">
-      <label for="searchBox">Search Part Number / Item No. / Supplier Reference</label>
-      <input id="searchBox" type="text" placeholder="DGN 3102C..." autofocus autocomplete="off"/>
+      <div class="input-group">
+        <label for="searchBox">Search Part Number / Item No. / Supplier Reference</label>
+        <input id="searchBox" type="text" placeholder="DGN 3102C..." autofocus autocomplete="off"/>
+      </div>
+
+      <div class="input-group">
+        <label for="fittingsSearchBox" style="color: #8b5cf6;">Search Part Number (For Fittings Stock)</label>
+        <input id="fittingsSearchBox" type="text" placeholder="15612-16-16N..." autocomplete="off"/>
+      </div>
       
       <div class="shortcut-row">
         <button class="action-sub-btn" onclick="triggerDirectScan('part')">Scan QR Code</button>
@@ -312,14 +326,18 @@
 </div>
 
 <script>
+// Main Inventory source and New Fittings source URLs
 const CSV_URL = 'https://raw.githubusercontent.com/wh-sec/stock-locator-pwa/main/stocks.csv';
+const FITTINGS_CSV_URL = 'https://raw.githubusercontent.com/wh-sec/stock-locator-pwa/main/fittings.csv';
 
 var stockRegistry = [];
+var fittingsRegistry = [];
 var countLogSession = [];
 var activeScanMatch = null;
 var html5QrcodeScanner = null;
 
 var searchBox = document.getElementById('searchBox');
+var fittingsSearchBox = document.getElementById('fittingsSearchBox');
 var tableBody = document.getElementById('tableBody');
 var tableWrap = document.getElementById('tableWrap');
 var noResults = document.getElementById('noResults');
@@ -342,6 +360,7 @@ accentColorPicker.addEventListener('input', function() {
 
 function resetSearchFields() {
   searchBox.value = '';
+  fittingsSearchBox.value = '';
   renderResults();
   searchBox.focus();
 }
@@ -359,7 +378,7 @@ function switchMode(mode) {
     document.getElementById('finderScreen').classList.add('active');
     document.getElementById('footerBar').style.display = 'none';
     document.getElementById('countSession').style.display = 'none';
-    metaDisplay.textContent = 'Total items in registry: ' + stockRegistry.length;
+    updateMetaDisplay();
     stopScanner();
     setTimeout(() => { searchBox.focus(); }, 100);
   } else {
@@ -372,29 +391,57 @@ function switchMode(mode) {
   }
 }
 
+function updateMetaDisplay() {
+  metaDisplay.textContent = `Main items: ${stockRegistry.length} | Fittings: ${fittingsRegistry.length}`;
+}
+
+// Parses standard inventory stocks.csv
 function parseCSV(text) {
   var lines = text.split(/\r?\n/);
   var rows = [];
   if (lines.length < 2) return [];
-  
   for (var i = 1; i < lines.length; i++) {
     var line = lines[i].trim();
     if (!line) continue;
-    
     var cols = line.split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/);
     if (cols.length < 6) continue;
-    
     var qtyRaw = cols[4] || '0';
     var qty = parseInt(qtyRaw.replace(/[^0-9.\-]/g, ''), 10);
     if (isNaN(qty)) qty = 0;
-    
-    // FIXED MATCHING: Aligned Supplier Reference index precisely to cols[1] from your source file layout
     rows.push({
       part: (cols[3] || '').replace(/"/g, '').trim(),
       qty: qty,
       sub: (cols[5] || '').replace(/"/g, '').trim(),
       itemNo: (cols[6] || '').replace(/"/g, '').trim(),
-      supplierRef: (cols[1] || '').replace(/"/g, '').trim()
+      supplierRef: (cols[1] || '').replace(/"/g, '').trim(),
+      type: 'standard'
+    });
+  }
+  return rows;
+}
+
+// Parses new fittings format based on structure: Col 2 (Part), Col 6 (Total), Col 7 (Locator)
+function parseFittingsCSV(text) {
+  var lines = text.split(/\r?\n/);
+  var rows = [];
+  if (lines.length < 2) return [];
+  for (var i = 1; i < lines.length; i++) {
+    var line = lines[i].trim();
+    if (!line) continue;
+    var cols = line.split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/);
+    if (cols.length < 8) continue; // Ensure we have enough columns to fetch locator
+    
+    var qtyRaw = cols[6] || '0'; // TOTAL column field index 6
+    var qty = parseInt(qtyRaw.replace(/[^0-9.\-]/g, ''), 10);
+    if (isNaN(qty)) qty = 0;
+    
+    rows.push({
+      part: (cols[2] || '').replace(/"/g, '').trim(), // PART NUMBER column field index 2
+      qty: qty,
+      sub: (cols[7] || '').replace(/"/g, '').trim(), // LOCATOR column field index 7
+      itemNo: '',
+      supplierRef: '',
+      type: 'fittings'
     });
   }
   return rows;
@@ -411,63 +458,103 @@ function highlightText(sourceText, query) {
 
 function renderResults() {
   var query = searchBox.value.trim();
+  var fitQuery = fittingsSearchBox.value.trim();
   
-  if (!query) {
+  // Clear the opposite box to make filtering straightforward and elegant
+  if (!query && !fitQuery) {
     tableBody.innerHTML = '';
     tableWrap.style.display = 'block';
     noResults.style.display = 'none';
-    metaDisplay.textContent = 'Total items in registry: ' + stockRegistry.length;
+    updateMetaDisplay();
     return;
   }
-
-  var lowerQuery = query.toLowerCase();
-  var activeStock = stockRegistry.filter(r => r.qty > 0);
-  var matches = activeStock.filter(function(row) {
-    return row.part.toLowerCase().indexOf(lowerQuery) !== -1 || 
-           row.itemNo.toLowerCase().indexOf(lowerQuery) !== -1 ||
-           row.supplierRef.toLowerCase().indexOf(lowerQuery) !== -1;
-  });
-
-  if (matches.length === 0) {
-    tableBody.innerHTML = '';
-    tableWrap.style.display = 'none';
-    noResults.style.display = 'block';
-    return;
-  }
-
-  tableWrap.style.display = 'block';
-  noResults.style.display = 'none';
 
   var html = '';
-  var displayCount = Math.min(matches.length, 60);
-  
-  for (var i = 0; i < displayCount; i++) {
-    var r = matches[i];
-    
-    var displayPart = highlightText(r.part, query);
-    var displayItem = r.itemNo ? highlightText(r.itemNo, query) : '';
-    var displayRef = r.supplierRef ? highlightText(r.supplierRef, query) : '';
+  var displayCount = 0;
 
-    var descriptionHTML = '<div><strong style="font-size:15px; color:var(--text);">' + displayPart + '</strong></div>';
-    if (r.itemNo) {
-      descriptionHTML += '<div style="font-size: 11px; color: var(--muted); margin-top: 3px;">Item Number: ' + displayItem + '</div>';
+  if (query) {
+    var lowerQuery = query.toLowerCase();
+    var activeStock = stockRegistry.filter(r => r.qty > 0);
+    var matches = activeStock.filter(function(row) {
+      return row.part.toLowerCase().indexOf(lowerQuery) !== -1 || 
+             row.itemNo.toLowerCase().indexOf(lowerQuery) !== -1 ||
+             row.supplierRef.toLowerCase().indexOf(lowerQuery) !== -1;
+    });
+
+    if (matches.length === 0) {
+      tableBody.innerHTML = '';
+      tableWrap.style.display = 'none';
+      noResults.style.display = 'block';
+      return;
     }
-    if (r.supplierRef) {
-      descriptionHTML += '<div style="font-size: 11px; color: var(--muted);">Supplier Ref: ' + displayRef + '</div>';
-    }
+
+    tableWrap.style.display = 'block';
+    noResults.style.display = 'none';
+    displayCount = Math.min(matches.length, 60);
     
-    html += '<tr>' +
-              '<td class="col-main">' + descriptionHTML + '</td>' +
-              '<td class="col-qty"><strong style="font-size: 16px; color:var(--text);">' + r.qty + '</strong></td>' +
-              '<td class="col-sub"><span class="location-badge">' + r.sub + '</span></td>' +
-            '</tr>';
+    for (var i = 0; i < displayCount; i++) {
+      var r = matches[i];
+      var displayPart = highlightText(r.part, query);
+      var displayItem = r.itemNo ? highlightText(r.itemNo, query) : '';
+      var displayRef = r.supplierRef ? highlightText(r.supplierRef, query) : '';
+
+      var descriptionHTML = '<div><strong style="font-size:15px; color:var(--text);">' + displayPart + '</strong></div>';
+      if (r.itemNo) descriptionHTML += '<div style="font-size: 11px; color: var(--muted); margin-top: 3px;">Item Number: ' + displayItem + '</div>';
+      if (r.supplierRef) descriptionHTML += '<div style="font-size: 11px; color: var(--muted);">Supplier Ref: ' + displayRef + '</div>';
+      
+      html += '<tr>' +
+                '<td class="col-main">' + descriptionHTML + '</td>' +
+                '<td class="col-qty"><strong style="font-size: 16px; color:var(--text);">' + r.qty + '</strong></td>' +
+                '<td class="col-sub"><span class="location-badge">' + r.sub + '</span></td>' +
+              '</tr>';
+    }
+    metaDisplay.textContent = 'Showing ' + displayCount + ' of ' + matches.length + ' main matches';
+  } 
+  else if (fitQuery) {
+    var lowerFitQuery = fitQuery.toLowerCase();
+    var activeFittings = fittingsRegistry.filter(r => r.qty > 0);
+    var fitMatches = activeFittings.filter(function(row) {
+      return row.part.toLowerCase().indexOf(lowerFitQuery) !== -1;
+    });
+
+    if (fitMatches.length === 0) {
+      tableBody.innerHTML = '';
+      tableWrap.style.display = 'none';
+      noResults.style.display = 'block';
+      return;
+    }
+
+    tableWrap.style.display = 'block';
+    noResults.style.display = 'none';
+    displayCount = Math.min(fitMatches.length, 60);
+    
+    for (var j = 0; j < displayCount; j++) {
+      var fr = fitMatches[j];
+      var displayFitPart = highlightText(fr.part, fitQuery);
+      
+      var fitDescriptionHTML = '<div><strong style="font-size:15px; color:var(--text);">' + displayFitPart + '</strong></div>';
+      fitDescriptionHTML += '<div style="font-size: 11px; color: #8b5cf6; font-weight: 600; margin-top: 3px;">Category: Fittings Stock</div>';
+
+      html += '<tr>' +
+                '<td class="col-main">' + fitDescriptionHTML + '</td>' +
+                '<td class="col-qty"><strong style="font-size: 16px; color:var(--text);">' + fr.qty + '</strong></td>' +
+                '<td class="col-sub"><span class="location-badge fittings-badge">' + fr.sub + '</span></td>' +
+              '</tr>';
+    }
+    metaDisplay.textContent = 'Showing ' + displayCount + ' of ' + fitMatches.length + ' fittings matches';
   }
 
   tableBody.innerHTML = html;
-  metaDisplay.textContent = 'Showing ' + displayCount + ' of ' + matches.length + ' matches';
 }
 
 searchBox.addEventListener('input', function() {
+  fittingsSearchBox.value = ''; // Auto-clear second box to prevent processing overlaps
+  clearTimeout(searchTimeout);
+  searchTimeout = setTimeout(renderResults, 120);
+});
+
+fittingsSearchBox.addEventListener('input', function() {
+  searchBox.value = ''; // Auto-clear first box to prevent processing overlaps
   clearTimeout(searchTimeout);
   searchTimeout = setTimeout(renderResults, 120);
 });
@@ -511,12 +598,21 @@ function onScanSuccess(decodedText) {
   let scannedQueryLower = scannedQuery.toLowerCase();
   
   let matchedVia = '';
+  // Check main registry first
   let match = stockRegistry.find(row => {
     if (row.part.toLowerCase() === scannedQueryLower) { matchedVia = 'Part Number'; return true; }
     if (row.itemNo.toLowerCase() === scannedQueryLower) { matchedVia = 'Item Number'; return true; }
     if (row.supplierRef.toLowerCase() === scannedQueryLower) { matchedVia = 'Supplier Reference'; return true; }
     return false;
   });
+
+  // If not found in main database, cross-reference the new fittings database
+  if (!match) {
+    match = fittingsRegistry.find(row => {
+      if (row.part.toLowerCase() === scannedQueryLower) { matchedVia = 'Fittings Part Number'; return true; }
+      return false;
+    });
+  }
 
   let qtyInput = document.getElementById('qtyInputField');
   qtyInput.value = '';
@@ -525,14 +621,14 @@ function onScanSuccess(decodedText) {
   if (match) {
     playBeep('success');
     activeScanMatch = match;
-    document.getElementById('targetTitleHeader').textContent = "Matched Database Reference";
+    document.getElementById('targetTitleHeader').textContent = match.type === 'fittings' ? "Matched Fittings Database" : "Matched Database Reference";
     document.getElementById('targetItemName').innerHTML = highlightText(match.part, scannedQuery);
     document.getElementById('targetMappingInfo').textContent = `Cross-Referenced via: ${matchedVia}`;
     document.getElementById('targetSubLoc').textContent = match.sub || 'No SubLocation';
   } else {
     playBeep('error');
-    activeScanMatch = { part: `Unregistered Entry [${scannedQuery}]`, itemNo: scannedQuery, sub: 'MANUAL RACK' };
-    document.getElementById('targetTitleHeader').textContent = "⚠️ NOT FOUND IN STOCKS.CSV";
+    activeScanMatch = { part: `Unregistered Entry [${scannedQuery}]`, itemNo: scannedQuery, sub: 'MANUAL RACK', type: 'unknown' };
+    document.getElementById('targetTitleHeader').textContent = "⚠️ NOT FOUND IN DATABASES";
     document.getElementById('targetItemName').textContent = activeScanMatch.part;
     document.getElementById('targetMappingInfo').textContent = "No baseline data match found.";
     document.getElementById('targetSubLoc').textContent = "Unknown SubLocation";
@@ -626,34 +722,48 @@ function updateSyncTimestamp() {
   localStorage.setItem('ms_last_sync', `Live Sync: ${dateStr}, ${timeStr}`);
 }
 
-function fetchDatabase(forceBust = false) {
-  let targetUrl = CSV_URL + '?v=' + new Date().getTime();
-  
-  fetch(targetUrl, { cache: forceBust ? 'no-store' : 'default' })
+function fetchDatabases(forceBust = false) {
+  let cacheSetting = forceBust ? 'no-store' : 'default';
+  let cacheBustToken = '?v=' + new Date().getTime();
+
+  // Fetch file 1: Main Inventory Stocks
+  let fetchMain = fetch(CSV_URL + cacheBustToken, { cache: cacheSetting })
     .then(r => r.text())
     .then(text => {
       var freshlyParsed = parseCSV(text);
       if (freshlyParsed.length > 0) {
         stockRegistry = freshlyParsed;
         localStorage.setItem('ms_cache', JSON.stringify(stockRegistry));
-        metaDisplay.textContent = 'Total items in registry: ' + stockRegistry.length;
-        updateSyncTimestamp();
-        if (searchBox.value) renderResults();
-        if (forceBust) alert("Database cache flushed successfully. System up-to-date.");
       }
+    });
+
+  // Fetch file 2: New Fittings Inventory Stocks
+  let fetchFittings = fetch(FITTINGS_CSV_URL + cacheBustToken, { cache: cacheSetting })
+    .then(r => r.text())
+    .then(text => {
+      var freshlyParsedFittings = parseFittingsCSV(text);
+      if (freshlyParsedFittings.length > 0) {
+        fittingsRegistry = freshlyParsedFittings;
+        localStorage.setItem('ms_fittings_cache', JSON.stringify(fittingsRegistry));
+      }
+    });
+
+  Promise.all([fetchMain, fetchFittings])
+    .then(() => {
+      updateMetaDisplay();
+      updateSyncTimestamp();
+      if (searchBox.value || fittingsSearchBox.value) renderResults();
+      if (forceBust) alert("All database caches flushed successfully. System fully up-to-date.");
     })
     .catch(() => {
       let cachedTime = localStorage.getItem('ms_last_sync') || 'Offline mode';
       liveSyncDisplay.textContent = `${cachedTime} (Cached)`;
-      if (!localStorage.getItem('ms_cache')) {
-        metaDisplay.textContent = 'Offline. No network database available.';
-      }
     });
 }
 
 function clearAppCache() {
-  if (confirm("Force refresh and sync a fresh copy of stocks.csv from GitHub?")) {
-    fetchDatabase(true);
+  if (confirm("Force refresh and sync a fresh copy of all stock files from GitHub?")) {
+    fetchDatabases(true);
   }
 }
 
@@ -687,11 +797,19 @@ themeToggle.addEventListener('change', function() {
   var cachedData = localStorage.getItem('ms_cache');
   if (cachedData) {
     stockRegistry = JSON.parse(cachedData);
-    metaDisplay.textContent = 'Total items in registry: ' + stockRegistry.length;
-    liveSyncDisplay.textContent = localStorage.getItem('ms_last_sync') || 'Live Sync: Pending...';
+  }
+  
+  var cachedFittings = localStorage.getItem('ms_fittings_cache');
+  if (cachedFittings) {
+    fittingsRegistry = JSON.parse(cachedFittings);
+  }
+  
+  updateMetaDisplay();
+  if (localStorage.getItem('ms_last_sync')) {
+    liveSyncDisplay.textContent = localStorage.getItem('ms_last_sync');
   }
 
-  fetchDatabase(false);
+  fetchDatabases(false);
 })();
 </script>
 </body>
