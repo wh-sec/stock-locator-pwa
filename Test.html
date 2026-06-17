@@ -306,8 +306,8 @@
 <div class="app-container">
   
   <div class="tabs-bar">
-    <button id="finderTab" class="tab-btn active" onclick="switchMode('finder')">🔍 Find Stock</button>
-    <button id="counterTab" class="tab-btn" onclick="switchMode('counter')">📋 Pre-Count Scanner</button>
+    <button id="finderTab" class="tab-btn active" onclick="switchMode('finder')">🔍 Stock Lookup</button>
+    <button id="counterTab" class="tab-btn" onclick="switchMode('counter')">📋 Audit Scanner</button>
   </div>
 
   <div style="display: flex; justify-content: space-between; font-size: 12px; color: var(--muted); margin-bottom: 8px; padding: 0 4px;">
@@ -706,7 +706,7 @@ function startScanner() {
   html5QrcodeScanner = new Html5Qrcode("reader");
   html5QrcodeScanner.start(
     { facingMode: "environment" },
-    { fps: 24, qrbox: { width: 260, height: 160 } }, // Raised FPS to 24 for ultra-fast response
+    { fps: 24, qrbox: { width: 260, height: 160 } }, 
     onScanSuccess
   ).catch(() => { metaDisplay.textContent = "Camera initialization failed."; });
 }
@@ -718,16 +718,13 @@ function stopScanner() {
 }
 
 function onScanSuccess(decodedText) {
-  // HIGH-SPEED PERFORMANCE PATCH: If engine is locked processing an existing item, completely discard incoming stream frames
   if (isProcessingScan) return;
   isProcessingScan = true;
 
-  // Immediate engine pause before UI parsing triggers to prevent camera lag or duplicate fires
   try { html5QrcodeScanner.pause(true); } catch(e){}
 
   let scannedQuery = decodedText.trim();
   
-  // Strip leading zero bugs immediately
   if (scannedQuery.startsWith('0') && scannedQuery.length > 1) {
     scannedQuery = scannedQuery.replace(/^0+/, '');
   }
@@ -735,7 +732,6 @@ function onScanSuccess(decodedText) {
   let scannedQueryLower = scannedQuery.toLowerCase();
   let matchedVia = '';
   
-  // Highly indexed/direct array searching block
   let match = stockRegistry.find(row => {
     if (row.part.toLowerCase() === scannedQueryLower) { matchedVia = 'Part Number'; return true; }
     if (row.itemNo.toLowerCase() === scannedQueryLower) { matchedVia = 'Item Number'; return true; }
@@ -769,10 +765,8 @@ function onScanSuccess(decodedText) {
     document.getElementById('targetSubLoc').textContent = "Unknown SubLocation";
   }
 
-  // Smooth slide setup to ensure UI doesn't stutter under high-frequency barcode hits
   document.getElementById('countOverlay').style.display = 'block';
   
-  // Prevent keyboard focus fight layout breaking on rapid scans
   setTimeout(() => { 
     if (window.innerWidth > 600) { qtyInput.focus(); } 
   }, 50);
@@ -787,7 +781,7 @@ function adjustQty(amount) {
 function dismissOverlay() {
   document.getElementById('countOverlay').style.display = 'none';
   activeScanMatch = null;
-  isProcessingScan = false; // Reset lock flag
+  isProcessingScan = false; 
   if (html5QrcodeScanner) {
     try { html5QrcodeScanner.resume(); } catch(e){}
   }
