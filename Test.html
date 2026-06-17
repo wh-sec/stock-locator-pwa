@@ -9,8 +9,8 @@
 
   <style>
     :root {
-      --primary-accent: #0056b3; /* Kept standard blue/original for active tabs and text headers */
-      --bg: #f4f6f9; /* Dynamic background variable controlled by color picker */
+      --primary-accent: #0056b3; 
+      --bg: #f4f6f9; 
       --panel: #ffffff;
       --text: #333333;
       --muted: #666666;
@@ -63,16 +63,8 @@
       transition: all 0.2s ease; 
     }
     
-    /* Strict assignment: Active Find Stock tab always uses a strong corporate blue */
-    #finderTab.active {
-      background: #0056b3;
-      color: white;
-    }
-    /* Strict assignment: Counter tab always uses green when active */
-    #counterTab.active {
-      background: var(--accent-green);
-      color: white;
-    }
+    #finderTab.active { background: #0056b3; color: white; }
+    #counterTab.active { background: var(--accent-green); color: white; }
 
     .app-screen { display: none; }
     .app-screen.active { display: block; }
@@ -90,7 +82,7 @@
     label { 
       font-weight: 700; 
       font-size: 12px; 
-      color: #4a5568; /* Protected text color from changing with picker */
+      color: #4a5568; 
       display: block; 
       margin-bottom: 6px; 
       text-transform: uppercase; 
@@ -109,7 +101,7 @@
     }
     input:focus { outline: none; border-color: var(--primary-accent); }
 
-    /* Restored Action Row Buttons from Original Desktop Build */
+    /* Action Row Buttons */
     .shortcut-row { 
       display: grid; 
       grid-template-columns: 1fr 1fr; 
@@ -130,7 +122,7 @@
     .action-sub-btn.reset { background: #4a5568; }
     .shortcut-row .reset { grid-column: span 2; }
 
-    /* UI Theme / Accent Color Controllers */
+    /* Preferences Configuration panel */
     .preferences-bar { 
       display: flex; 
       justify-content: space-between; 
@@ -143,7 +135,26 @@
     .accent-picker-wrap { display: flex; align-items: center; gap: 8px; font-weight: 600; }
     .color-box-input { width: 34px; height: 26px; border: 1px solid var(--border); border-radius: 4px; cursor: pointer; background: none; }
 
-    /* Restored Clean Column Alignments and Grid Borders */
+    /* Sync and Cache Utility Metadata Strip */
+    .sync-status-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-top: 10px;
+      font-size: 11px;
+      color: var(--muted);
+    }
+    .clear-cache-link {
+      color: #dc3545;
+      text-decoration: none;
+      font-weight: 700;
+      cursor: pointer;
+      border: none;
+      background: transparent;
+    }
+    .clear-cache-link:hover { text-decoration: underline; }
+
+    /* Clean Column Alignments and Grid Borders */
     .table-wrap { 
       overflow-x: auto; 
       background: var(--panel); 
@@ -157,12 +168,10 @@
     
     th { background: var(--th-bg); font-weight: 700; color: var(--muted); font-size: 13px; }
     
-    /* Strict Width Allocations to Prevent Misalignments */
     th.col-main, td.col-main { width: 55%; }
     th.col-qty, td.col-qty { width: 18%; text-align: center; }
     th.col-sub, td.col-sub { width: 27%; text-align: center; }
 
-    /* Restored Visual Highlight Classes */
     mark.match { background: #ffeb3b; color: #000; padding: 1px 3px; border-radius: 3px; font-weight: bold; }
     [data-theme="dark"] mark.match { background: #f59e0b; }
     
@@ -241,6 +250,11 @@
           <label for="themeToggle" style="display:inline; margin-left:4px; font-weight:600; color:var(--text); text-transform:none;">Dark Mode</label>
         </div>
       </div>
+
+      <div class="sync-status-row">
+        <span id="liveSyncDisplay">Live Sync: Connecting...</span>
+        <button class="clear-cache-link" onclick="clearAppCache()">Clear App Cache</button>
+      </div>
     </div>
 
     <div class="results-container">
@@ -298,7 +312,7 @@
 </div>
 
 <script>
-const CSV_URL = 'https://raw.githubusercontent.com/wh-sec/stock-locator-pwa/main/stocks.csv?v=' + new Date().getTime();
+const CSV_URL = 'https://raw.githubusercontent.com/wh-sec/stock-locator-pwa/main/stocks.csv';
 
 var stockRegistry = [];
 var countLogSession = [];
@@ -310,14 +324,13 @@ var tableBody = document.getElementById('tableBody');
 var tableWrap = document.getElementById('tableWrap');
 var noResults = document.getElementById('noResults');
 var metaDisplay = document.getElementById('metaDisplay');
+var liveSyncDisplay = document.getElementById('liveSyncDisplay');
 var themeToggle = document.getElementById('themeToggle');
 var accentColorPicker = document.getElementById('accentColorPicker');
 var searchTimeout = null;
 
 function applyBackgroundTone(hexColor) {
   localStorage.setItem('ms_bg_hex', hexColor);
-  
-  // Only change the background color if dark mode is inactive
   if (!themeToggle.checked) {
     document.documentElement.style.setProperty('--bg', hexColor);
   }
@@ -604,6 +617,45 @@ function exportCountsToCSV() {
   document.body.removeChild(link);
 }
 
+function updateSyncTimestamp() {
+  let now = new Date();
+  let timeStr = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  let dateStr = now.toLocaleDateString([], { month: 'short', day: 'numeric' });
+  liveSyncDisplay.textContent = `Live Sync: ${dateStr}, ${timeStr}`;
+  localStorage.setItem('ms_last_sync', `Live Sync: ${dateStr}, ${timeStr}`);
+}
+
+function fetchDatabase(forceBust = false) {
+  let targetUrl = CSV_URL + '?v=' + new Date().getTime();
+  
+  fetch(targetUrl, { cache: forceBust ? 'no-store' : 'default' })
+    .then(r => r.text())
+    .then(text => {
+      var freshlyParsed = parseCSV(text);
+      if (freshlyParsed.length > 0) {
+        stockRegistry = freshlyParsed;
+        localStorage.setItem('ms_cache', JSON.stringify(stockRegistry));
+        metaDisplay.textContent = 'Total items in registry: ' + stockRegistry.length;
+        updateSyncTimestamp();
+        if (searchBox.value) renderResults();
+        if (forceBust) alert("Database cache flushed successfully. System up-to-date.");
+      }
+    })
+    .catch(() => {
+      let cachedTime = localStorage.getItem('ms_last_sync') || 'Offline mode';
+      liveSyncDisplay.textContent = `${cachedTime} (Cached)`;
+      if (!localStorage.getItem('ms_cache')) {
+        metaDisplay.textContent = 'Offline. No network database available.';
+      }
+    });
+}
+
+function clearAppCache() {
+  if (confirm("Force refresh and sync a fresh copy of stocks.csv from GitHub?")) {
+    fetchDatabase(true);
+  }
+}
+
 themeToggle.addEventListener('change', function() {
   let isDark = themeToggle.checked;
   document.documentElement.setAttribute('data-theme', isDark ? 'dark' : 'light');
@@ -635,22 +687,10 @@ themeToggle.addEventListener('change', function() {
   if (cachedData) {
     stockRegistry = JSON.parse(cachedData);
     metaDisplay.textContent = 'Total items in registry: ' + stockRegistry.length;
+    liveSyncDisplay.textContent = localStorage.getItem('ms_last_sync') || 'Live Sync: Pending...';
   }
 
-  fetch(CSV_URL, { cache: 'no-store' })
-    .then(r => r.text())
-    .then(text => {
-      var freshlyParsed = parseCSV(text);
-      if (freshlyParsed.length > 0) {
-        stockRegistry = freshlyParsed;
-        localStorage.setItem('ms_cache', JSON.stringify(stockRegistry));
-        metaDisplay.textContent = 'Total items in registry: ' + stockRegistry.length;
-        if (searchBox.value) renderResults();
-      }
-    })
-    .catch(() => {
-      if (!cachedData) metaDisplay.textContent = 'Offline. No network database available.';
-    });
+  fetchDatabase(false);
 })();
 </script>
 </body>
