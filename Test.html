@@ -3,8 +3,9 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>StockHub</title>
+  <title>STOCK LOCATOR+</title>
 
+  <!-- Load the HTML5 Barcode Scanner Library -->
   <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
 
   <style>
@@ -232,6 +233,10 @@
     }
     .reset-bg-link:hover { background: rgba(220, 53, 69, 0.18); }
 
+    .pref-row input[type="checkbox"] {
+      accent-color: var(--primary-accent);
+    }
+
     .sync-status-row {
       display: flex;
       justify-content: space-between;
@@ -402,9 +407,10 @@
 
 <div class="app-container">
   
+  <!-- Updated App Branding Header with STOCK LOCATOR+ -->
   <div class="app-header">
     <img src="https://raw.githubusercontent.com/wh-sec/stock-locator-pwa/main/logo.png" alt="Logo" class="app-logo" onerror="this.style.display='none'"/>
-    <h1 class="app-title">StockHub</h1>
+    <h1 class="app-title">STOCK LOCATOR+</h1>
   </div>
   
   <div class="tabs-bar">
@@ -417,6 +423,7 @@
     <div id="countSession" style="display:none;">Counts logged: 0</div>
   </div>
 
+  <!-- VIEW 1: SEARCH & LOOKUP -->
   <div id="finderScreen" class="app-screen active">
     <div class="panel-box">
       
@@ -441,6 +448,7 @@
         <button class="action-sub-btn reset" onclick="resetSearchFields()">Reset Search Fields</button>
       </div>
 
+      <!-- Preferences Block -->
       <div class="preferences-container">
         <div class="pref-row">
           <label class="custom-file-upload">
@@ -479,6 +487,7 @@
     </div>
   </div>
 
+  <!-- VIEW 2: SMART INVENTORY PRE-COUNT SYSTEM -->
   <div id="counterScreen" class="app-screen">
     <div class="panel-box" style="padding:8px; margin-bottom:12px;">
       <div id="reader"></div>
@@ -539,7 +548,7 @@ var liveSyncDisplay = document.getElementById('liveSyncDisplay');
 var themeToggle = document.getElementById('themeToggle');
 var searchTimeout = null;
 
-// Persistent User Custom Image Engine Handler (Fully Fixed)
+// Persistent User Custom Image Engine Handler
 function handleWallpaperUpload(event) {
   const file = event.target.files[0];
   if (!file) return;
@@ -597,6 +606,34 @@ function resetSearchFields() {
   searchBox.focus();
 }
 
+// Optimized HD & Aspect-Correct Scanning Implementations
+function startScanner() {
+  if (html5QrcodeScanner) return;
+  isProcessingScan = false;
+  html5QrcodeScanner = new Html5Qrcode("reader");
+  
+  html5QrcodeScanner.start(
+    { facingMode: "environment" },
+    { 
+      fps: 30, 
+      videoConstraints: {
+        width: { ideal: 1920 },
+        height: { ideal: 1080 },
+        aspectRatio: { ideal: 1.7777777778 }
+      },
+      qrbox: function(viewfinderWidth, viewfinderHeight) {
+        let minEdge = Math.min(viewfinderWidth, viewfinderHeight);
+        let boxSize = Math.floor(minEdge * 0.7);
+        return { width: boxSize, height: Math.floor(boxSize * 0.65) };
+      },
+      experimentalFeatures: {
+        useBarCodeDetectorIfSupported: true 
+      }
+    }, 
+    onScanSuccess
+  ).catch(() => { metaDisplay.textContent = "Camera initialization failed."; });
+}
+
 function startInlineScanner(targetType) {
   stopScanner(); 
   stopInlineScanner(); 
@@ -607,7 +644,19 @@ function startInlineScanner(targetType) {
   inlineFinderScanner = new Html5Qrcode("finderReader");
   inlineFinderScanner.start(
     { facingMode: "environment" },
-    { fps: 20, qrbox: { width: 260, height: 160 } },
+    { 
+      fps: 25, 
+      videoConstraints: {
+        width: { ideal: 1920 },
+        height: { ideal: 1080 },
+        aspectRatio: { ideal: 1.7777777778 }
+      },
+      qrbox: function(viewfinderWidth, viewfinderHeight) {
+        let minEdge = Math.min(viewfinderWidth, viewfinderHeight);
+        let boxSize = Math.floor(minEdge * 0.75);
+        return { width: boxSize, height: Math.floor(boxSize * 0.6) };
+      }
+    },
     onInlineScanSuccess
   ).catch(() => { alert("Could not access mobile camera for lookup."); });
 }
@@ -844,17 +893,6 @@ function playBeep(type) {
   } catch(e){}
 }
 
-function startScanner() {
-  if (html5QrcodeScanner) return;
-  isProcessingScan = false;
-  html5QrcodeScanner = new Html5Qrcode("reader");
-  html5QrcodeScanner.start(
-    { facingMode: "environment" },
-    { fps: 24, qrbox: { width: 260, height: 160 } }, 
-    onScanSuccess
-  ).catch(() => { metaDisplay.textContent = "Camera initialization failed."; });
-}
-
 function stopScanner() {
   if (html5QrcodeScanner) {
     html5QrcodeScanner.stop().then(() => { html5QrcodeScanner = null; }).catch(()=>{});
@@ -1009,6 +1047,10 @@ function exportCountsToExcel() {
     <html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40">
     <head>
       <meta charset="UTF-8">
+      <!--[if gte mso 9]><xml><x:ExcelWorkbook><x:ExcelWorksheets><x:ExcelWorksheet>
+      <x:Name>PreCount Report</x:Name>
+      <x:WorksheetOptions><x:DisplayGridlines/></x:WorksheetOptions>
+      </x:ExcelWorksheet></x:ExcelWorksheets></x:ExcelWorkbook></xml><![endif]-->
       <style>
         th { background-color: #0284c7; color: #ffffff; font-weight: bold; padding: 8px; border: 0.5pt solid #cbd5e1; }
         td { padding: 6px; border: 0.5pt solid #cbd5e1; }
