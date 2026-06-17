@@ -5,12 +5,13 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Stock Locator Pro</title>
 
+  <!-- Load the HTML5 Barcode Scanner Library -->
   <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
 
   <style>
     :root {
       --primary-accent: #0056b3; 
-      --bg: #f4f6f9;
+      --bg: #f4f6f9; /* Fallback base light gray */
       --panel: #ffffff;
       --text: #333333;
       --muted: #666666;
@@ -33,6 +34,7 @@
       color: var(--text); 
       padding: 12px; 
       padding-bottom: 90px; 
+      transition: background-color 0.2s ease;
     }
 
     .app-container { max-width: 750px; margin: 0 auto; }
@@ -75,7 +77,7 @@
       border-radius: 12px; 
       border: 1px solid var(--border); 
       box-shadow: 0 4px 10px rgba(0,0,0,0.04); 
-      margin-bottom: 16px; 
+      margin-bottom: 166px; 
     }
 
     label { 
@@ -201,27 +203,32 @@
 
 <div class="app-container">
   
+  <!-- Main Mode Switching Control Header -->
   <div class="tabs-bar">
     <button id="finderTab" class="tab-btn active" onclick="switchMode('finder')">🔍 Find Stock</button>
     <button id="counterTab" class="tab-btn" onclick="switchMode('counter')">📋 Pre-Count Scanner</button>
   </div>
 
+  <!-- Status Readout Header strip -->
   <div style="display: flex; justify-content: space-between; font-size: 12px; color: var(--muted); margin-bottom: 8px; padding: 0 4px;">
     <div id="metaDisplay">Loading database...</div>
     <div id="countSession" style="display:none;">Counts logged: 0</div>
   </div>
 
+  <!-- VIEW 1: SEARCH & DESKTOP STYLE LOOKUP -->
   <div id="finderScreen" class="app-screen active">
     <div class="panel-box">
       <label for="searchBox">Search Part Number / Item No. / Supplier Reference</label>
       <input id="searchBox" type="text" placeholder="DGN 3102C..." autofocus autocomplete="off"/>
       
+      <!-- Restored Direct Scanner Jump & Reset Actions -->
       <div class="shortcut-row">
         <button class="action-sub-btn" onclick="triggerDirectScan('part')">Scan QR Code</button>
         <button class="action-sub-btn" onclick="triggerDirectScan('ref')">Scan Supplier Ref</button>
         <button class="action-sub-btn reset" onclick="resetSearchFields()">Reset Search Fields</button>
       </div>
 
+      <!-- Restored Functional Color Preferences & Themes Configuration panel -->
       <div class="preferences-bar">
         <div class="accent-picker-wrap">
           <span>Accent color</span>
@@ -234,6 +241,7 @@
       </div>
     </div>
 
+    <!-- Corrected Fixed Grid Output Table Alignment System -->
     <div class="results-container">
       <div class="table-wrap" id="tableWrap">
         <table>
@@ -251,6 +259,7 @@
     </div>
   </div>
 
+  <!-- VIEW 2: SMART INVENTORY PRE-COUNT SYSTEM -->
   <div id="counterScreen" class="app-screen">
     <div class="panel-box" style="padding:8px; margin-bottom:12px;">
       <div id="reader"></div>
@@ -305,9 +314,26 @@ var themeToggle = document.getElementById('themeToggle');
 var accentColorPicker = document.getElementById('accentColorPicker');
 var searchTimeout = null;
 
+// Helper function to dynamically calculate light background shifts based on Hex accent selection
+function getLightBackgroundShift(hex) {
+  let c = hex.replace('#', '');
+  if (c.length === 3) c = c[0]+c[0]+c[1]+c[1]+c[2]+c[2];
+  let r = parseInt(c.substr(0,2), 16);
+  let g = parseInt(c.substr(2,2), 16);
+  let b = parseInt(c.substr(4,2), 16);
+  // Returns a very soft, highly transparent version of the accent color for background blending
+  return `rgba(${r}, ${g}, ${b}, 0.08)`;
+}
+
 function applyAccentColor(hexColor) {
   document.documentElement.style.setProperty('--primary-accent', hexColor);
   localStorage.setItem('ms_accent_hex', hexColor);
+  
+  // Only shift the app background to match the accent color if Dark Mode is turned OFF
+  if (!themeToggle.checked) {
+    let backgroundShift = getLightBackgroundShift(hexColor);
+    document.documentElement.style.setProperty('--bg', backgroundShift);
+  }
 }
 
 accentColorPicker.addEventListener('input', function() {
@@ -592,8 +618,16 @@ function exportCountsToCSV() {
 }
 
 themeToggle.addEventListener('change', function() {
-  document.documentElement.setAttribute('data-theme', themeToggle.checked ? 'dark' : 'light');
-  localStorage.setItem('ms_theme', themeToggle.checked ? 'dark' : 'light');
+  let isDark = themeToggle.checked;
+  document.documentElement.setAttribute('data-theme', isDark ? 'dark' : 'light');
+  localStorage.setItem('ms_theme', isDark ? 'dark' : 'light');
+  
+  // Re-apply correct background formatting depending on theme state
+  if (isDark) {
+    document.documentElement.style.setProperty('--bg', '#0f1115');
+  } else {
+    applyAccentColor(accentColorPicker.value);
+  }
 });
 
 (function init() {
