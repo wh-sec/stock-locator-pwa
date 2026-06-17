@@ -60,7 +60,6 @@
 
     .app-container { max-width: 750px; margin: 0 auto; position: relative; z-index: 1; }
 
-    /* Premium Branding Header Component */
     .app-header {
       display: flex;
       align-items: center;
@@ -82,7 +81,6 @@
       text-transform: uppercase;
     }
 
-    /* Premium Navigation Tabs */
     .tabs-bar { 
       display: flex; 
       background: var(--panel); 
@@ -193,7 +191,6 @@
       font-weight: bold;
     }
 
-    /* Polished, Wrap-Proof Mobile Settings Block */
     .preferences-container {
       margin-top: 16px;
       padding-top: 14px;
@@ -363,7 +360,6 @@
     .btn-choice.continue { background: var(--primary-accent); color: white; }
     .btn-choice.purge { background: #dc3545; color: white; }
 
-    /* Footer adjustments */
     .footer-bar {
       position: fixed;
       bottom: 0; left: 0; right: 0;
@@ -543,7 +539,6 @@ var liveSyncDisplay = document.getElementById('liveSyncDisplay');
 var themeToggle = document.getElementById('themeToggle');
 var searchTimeout = null;
 
-// Persistent User Custom Image Engine Handler
 function handleWallpaperUpload(event) {
   const file = event.target.files[0];
   if (!file) return;
@@ -601,18 +596,18 @@ function resetSearchFields() {
   searchBox.focus();
 }
 
-// Fixed HD & Absolute Rear Camera Scanning Implementations
+// Fixed Camera Instantiation Matrix (forces back camera directly within video constraints)
 function startScanner() {
   if (html5QrcodeScanner) return;
   isProcessingScan = false;
   html5QrcodeScanner = new Html5Qrcode("reader");
   
   html5QrcodeScanner.start(
-    // Strict enforcement of rear environment camera
-    { facingMode: { exact: "environment" } },
+    { facingMode: "environment" },
     { 
       fps: 30, 
       videoConstraints: {
+        facingMode: "environment", // Forced nested value to protect against selfie-camera fallback
         width: { ideal: 1920 },
         height: { ideal: 1080 },
         aspectRatio: { ideal: 1.7777777778 }
@@ -627,14 +622,7 @@ function startScanner() {
       }
     }, 
     onScanSuccess
-  ).catch(() => { 
-    // Fallback if browser objects to exact constraints block
-    html5QrcodeScanner.start(
-      { facingMode: "environment" },
-      { fps: 30, qrbox: { width: 250, height: 200 } },
-      onScanSuccess
-    ).catch(() => { metaDisplay.textContent = "Camera initialization failed."; });
-  });
+  ).catch(() => { metaDisplay.textContent = "Camera initialization failed."; });
 }
 
 function startInlineScanner(targetType) {
@@ -646,11 +634,11 @@ function startInlineScanner(targetType) {
   
   inlineFinderScanner = new Html5Qrcode("finderReader");
   inlineFinderScanner.start(
-    // Strict enforcement of rear environment camera
-    { facingMode: { exact: "environment" } },
+    { facingMode: "environment" },
     { 
       fps: 25, 
       videoConstraints: {
+        facingMode: "environment", // Forced nested value to protect against selfie-camera fallback
         width: { ideal: 1920 },
         height: { ideal: 1080 },
         aspectRatio: { ideal: 1.7777777778 }
@@ -662,14 +650,7 @@ function startInlineScanner(targetType) {
       }
     },
     onInlineScanSuccess
-  ).catch(() => {
-    // Fallback if browser objects to exact constraints block
-    inlineFinderScanner.start(
-      { facingMode: "environment" },
-      { fps: 25, qrbox: { width: 250, height: 180 } },
-      onInlineScanSuccess
-    ).catch(() => { alert("Could not access mobile camera for lookup."); });
-  });
+  ).catch(() => { alert("Could not access mobile camera for lookup."); });
 }
 
 function stopInlineScanner() {
