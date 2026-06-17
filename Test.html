@@ -5,7 +5,6 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>STOCK LOCATOR+</title>
 
-  <!-- Load the HTML5 Barcode Scanner Library -->
   <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
 
   <style>
@@ -407,7 +406,6 @@
 
 <div class="app-container">
   
-  <!-- Updated App Branding Header with STOCK LOCATOR+ -->
   <div class="app-header">
     <img src="https://raw.githubusercontent.com/wh-sec/stock-locator-pwa/main/logo.png" alt="Logo" class="app-logo" onerror="this.style.display='none'"/>
     <h1 class="app-title">STOCK LOCATOR+</h1>
@@ -423,7 +421,6 @@
     <div id="countSession" style="display:none;">Counts logged: 0</div>
   </div>
 
-  <!-- VIEW 1: SEARCH & LOOKUP -->
   <div id="finderScreen" class="app-screen active">
     <div class="panel-box">
       
@@ -448,7 +445,6 @@
         <button class="action-sub-btn reset" onclick="resetSearchFields()">Reset Search Fields</button>
       </div>
 
-      <!-- Preferences Block -->
       <div class="preferences-container">
         <div class="pref-row">
           <label class="custom-file-upload">
@@ -487,7 +483,6 @@
     </div>
   </div>
 
-  <!-- VIEW 2: SMART INVENTORY PRE-COUNT SYSTEM -->
   <div id="counterScreen" class="app-screen">
     <div class="panel-box" style="padding:8px; margin-bottom:12px;">
       <div id="reader"></div>
@@ -606,14 +601,15 @@ function resetSearchFields() {
   searchBox.focus();
 }
 
-// Optimized HD & Aspect-Correct Scanning Implementations
+// Fixed HD & Absolute Rear Camera Scanning Implementations
 function startScanner() {
   if (html5QrcodeScanner) return;
   isProcessingScan = false;
   html5QrcodeScanner = new Html5Qrcode("reader");
   
   html5QrcodeScanner.start(
-    { facingMode: "environment" },
+    // Strict enforcement of rear environment camera
+    { facingMode: { exact: "environment" } },
     { 
       fps: 30, 
       videoConstraints: {
@@ -631,7 +627,14 @@ function startScanner() {
       }
     }, 
     onScanSuccess
-  ).catch(() => { metaDisplay.textContent = "Camera initialization failed."; });
+  ).catch(() => { 
+    // Fallback if browser objects to exact constraints block
+    html5QrcodeScanner.start(
+      { facingMode: "environment" },
+      { fps: 30, qrbox: { width: 250, height: 200 } },
+      onScanSuccess
+    ).catch(() => { metaDisplay.textContent = "Camera initialization failed."; });
+  });
 }
 
 function startInlineScanner(targetType) {
@@ -643,7 +646,8 @@ function startInlineScanner(targetType) {
   
   inlineFinderScanner = new Html5Qrcode("finderReader");
   inlineFinderScanner.start(
-    { facingMode: "environment" },
+    // Strict enforcement of rear environment camera
+    { facingMode: { exact: "environment" } },
     { 
       fps: 25, 
       videoConstraints: {
@@ -658,7 +662,14 @@ function startInlineScanner(targetType) {
       }
     },
     onInlineScanSuccess
-  ).catch(() => { alert("Could not access mobile camera for lookup."); });
+  ).catch(() => {
+    // Fallback if browser objects to exact constraints block
+    inlineFinderScanner.start(
+      { facingMode: "environment" },
+      { fps: 25, qrbox: { width: 250, height: 180 } },
+      onInlineScanSuccess
+    ).catch(() => { alert("Could not access mobile camera for lookup."); });
+  });
 }
 
 function stopInlineScanner() {
@@ -1047,10 +1058,6 @@ function exportCountsToExcel() {
     <html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40">
     <head>
       <meta charset="UTF-8">
-      <!--[if gte mso 9]><xml><x:ExcelWorkbook><x:ExcelWorksheets><x:ExcelWorksheet>
-      <x:Name>PreCount Report</x:Name>
-      <x:WorksheetOptions><x:DisplayGridlines/></x:WorksheetOptions>
-      </x:ExcelWorksheet></x:ExcelWorksheets></x:ExcelWorkbook></xml><![endif]-->
       <style>
         th { background-color: #0284c7; color: #ffffff; font-weight: bold; padding: 8px; border: 0.5pt solid #cbd5e1; }
         td { padding: 6px; border: 0.5pt solid #cbd5e1; }
