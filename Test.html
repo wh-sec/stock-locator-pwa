@@ -5,13 +5,12 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Stock Locator Pro</title>
 
-  <!-- Load the HTML5 Barcode Scanner Library -->
   <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
 
   <style>
     :root {
-      --primary-accent: #0056b3; 
-      --bg: #f4f6f9; /* Fallback base light gray */
+      --primary-accent: #0056b3; /* Kept standard blue/original for active tabs and text headers */
+      --bg: #f4f6f9; /* Dynamic background variable controlled by color picker */
       --panel: #ffffff;
       --text: #333333;
       --muted: #666666;
@@ -20,6 +19,7 @@
       --accent-green: #10b981;
     }
     [data-theme="dark"] {
+      --primary-accent: #3b82f6;
       --bg: #0f1115;
       --panel: #161a22;
       --text: #f8fafc;
@@ -62,9 +62,16 @@
       border-radius: 8px; 
       transition: all 0.2s ease; 
     }
-    .tab-btn.active { 
-      background: var(--primary-accent); 
-      color: white; 
+    
+    /* Strict assignment: Active Find Stock tab always uses a strong corporate blue */
+    #finderTab.active {
+      background: #0056b3;
+      color: white;
+    }
+    /* Strict assignment: Counter tab always uses green when active */
+    #counterTab.active {
+      background: var(--accent-green);
+      color: white;
     }
 
     .app-screen { display: none; }
@@ -77,13 +84,13 @@
       border-radius: 12px; 
       border: 1px solid var(--border); 
       box-shadow: 0 4px 10px rgba(0,0,0,0.04); 
-      margin-bottom: 166px; 
+      margin-bottom: 16px; 
     }
 
     label { 
       font-weight: 700; 
       font-size: 12px; 
-      color: var(--primary-accent); 
+      color: #4a5568; /* Protected text color from changing with picker */
       display: block; 
       margin-bottom: 6px; 
       text-transform: uppercase; 
@@ -203,45 +210,39 @@
 
 <div class="app-container">
   
-  <!-- Main Mode Switching Control Header -->
   <div class="tabs-bar">
     <button id="finderTab" class="tab-btn active" onclick="switchMode('finder')">🔍 Find Stock</button>
     <button id="counterTab" class="tab-btn" onclick="switchMode('counter')">📋 Pre-Count Scanner</button>
   </div>
 
-  <!-- Status Readout Header strip -->
   <div style="display: flex; justify-content: space-between; font-size: 12px; color: var(--muted); margin-bottom: 8px; padding: 0 4px;">
     <div id="metaDisplay">Loading database...</div>
     <div id="countSession" style="display:none;">Counts logged: 0</div>
   </div>
 
-  <!-- VIEW 1: SEARCH & DESKTOP STYLE LOOKUP -->
   <div id="finderScreen" class="app-screen active">
     <div class="panel-box">
       <label for="searchBox">Search Part Number / Item No. / Supplier Reference</label>
       <input id="searchBox" type="text" placeholder="DGN 3102C..." autofocus autocomplete="off"/>
       
-      <!-- Restored Direct Scanner Jump & Reset Actions -->
       <div class="shortcut-row">
         <button class="action-sub-btn" onclick="triggerDirectScan('part')">Scan QR Code</button>
         <button class="action-sub-btn" onclick="triggerDirectScan('ref')">Scan Supplier Ref</button>
         <button class="action-sub-btn reset" onclick="resetSearchFields()">Reset Search Fields</button>
       </div>
 
-      <!-- Restored Functional Color Preferences & Themes Configuration panel -->
       <div class="preferences-bar">
         <div class="accent-picker-wrap">
-          <span>Accent color</span>
-          <input id="accentColorPicker" type="color" class="color-box-input" value="#0056b3" />
+          <span>Background tone color</span>
+          <input id="accentColorPicker" type="color" class="color-box-input" value="#f4f6f9" />
         </div>
         <div>
           <input id="themeToggle" type="checkbox" />
-          <label for="themeToggle" style="display:inline; margin-left:4px; font-weight:600; color:var(--text);">Dark Mode</label>
+          <label for="themeToggle" style="display:inline; margin-left:4px; font-weight:600; color:var(--text); text-transform:none;">Dark Mode</label>
         </div>
       </div>
     </div>
 
-    <!-- Corrected Fixed Grid Output Table Alignment System -->
     <div class="results-container">
       <div class="table-wrap" id="tableWrap">
         <table>
@@ -259,7 +260,6 @@
     </div>
   </div>
 
-  <!-- VIEW 2: SMART INVENTORY PRE-COUNT SYSTEM -->
   <div id="counterScreen" class="app-screen">
     <div class="panel-box" style="padding:8px; margin-bottom:12px;">
       <div id="reader"></div>
@@ -314,30 +314,17 @@ var themeToggle = document.getElementById('themeToggle');
 var accentColorPicker = document.getElementById('accentColorPicker');
 var searchTimeout = null;
 
-// Helper function to dynamically calculate light background shifts based on Hex accent selection
-function getLightBackgroundShift(hex) {
-  let c = hex.replace('#', '');
-  if (c.length === 3) c = c[0]+c[0]+c[1]+c[1]+c[2]+c[2];
-  let r = parseInt(c.substr(0,2), 16);
-  let g = parseInt(c.substr(2,2), 16);
-  let b = parseInt(c.substr(4,2), 16);
-  // Returns a very soft, highly transparent version of the accent color for background blending
-  return `rgba(${r}, ${g}, ${b}, 0.08)`;
-}
-
-function applyAccentColor(hexColor) {
-  document.documentElement.style.setProperty('--primary-accent', hexColor);
-  localStorage.setItem('ms_accent_hex', hexColor);
+function applyBackgroundTone(hexColor) {
+  localStorage.setItem('ms_bg_hex', hexColor);
   
-  // Only shift the app background to match the accent color if Dark Mode is turned OFF
+  // Only change the background color if dark mode is inactive
   if (!themeToggle.checked) {
-    let backgroundShift = getLightBackgroundShift(hexColor);
-    document.documentElement.style.setProperty('--bg', backgroundShift);
+    document.documentElement.style.setProperty('--bg', hexColor);
   }
 }
 
 accentColorPicker.addEventListener('input', function() {
-  applyAccentColor(accentColorPicker.value);
+  applyBackgroundTone(accentColorPicker.value);
 });
 
 function resetSearchFields() {
@@ -622,11 +609,10 @@ themeToggle.addEventListener('change', function() {
   document.documentElement.setAttribute('data-theme', isDark ? 'dark' : 'light');
   localStorage.setItem('ms_theme', isDark ? 'dark' : 'light');
   
-  // Re-apply correct background formatting depending on theme state
   if (isDark) {
     document.documentElement.style.setProperty('--bg', '#0f1115');
   } else {
-    applyAccentColor(accentColorPicker.value);
+    applyBackgroundTone(accentColorPicker.value);
   }
 });
 
@@ -635,9 +621,9 @@ themeToggle.addEventListener('change', function() {
   themeToggle.checked = (savedTheme === 'dark');
   document.documentElement.setAttribute('data-theme', savedTheme);
 
-  var savedAccent = localStorage.getItem('ms_accent_hex') || '#0056b3';
-  accentColorPicker.value = savedAccent;
-  applyAccentColor(savedAccent);
+  var savedBgTone = localStorage.getItem('ms_bg_hex') || '#f4f6f9';
+  accentColorPicker.value = savedBgTone;
+  applyBackgroundTone(savedBgTone);
 
   var savedSession = localStorage.getItem('inv_counts');
   if (savedSession) {
