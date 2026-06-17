@@ -509,7 +509,7 @@ var liveSyncDisplay = document.getElementById('liveSyncDisplay');
 var themeToggle = document.getElementById('themeToggle');
 var searchTimeout = null;
 
-// Persistent User Custom Image Engine Handler
+// Persistent User Custom Image Engine Handler (CORRECTED)
 function handleWallpaperUpload(event) {
   const file = event.target.files[0];
   if (!file) return;
@@ -529,7 +529,7 @@ function handleWallpaperUpload(event) {
       
       canvas.width = w;
       canvas.height = h;
-      const ctx = canvas.getContext('2document.getContext' ? null : '2d');
+      const ctx = canvas.getContext('2d'); // <-- FIXED THIS LINE
       ctx.drawImage(rawImg, 0, 0, w, h);
       
       const compressedBase64 = canvas.toDataURL('image/jpeg', 0.75);
@@ -543,7 +543,7 @@ function handleWallpaperUpload(event) {
   };
   reader.readAsDataURL(file);
 }
-
+  
 function applyActiveWallpaper(base64Data) {
   if (base64Data) {
     document.body.style.backgroundImage = `url('${base64Data}')`;
