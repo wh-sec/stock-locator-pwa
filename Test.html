@@ -201,9 +201,11 @@
     }
     .pref-row {
       display: flex;
-      justify-content: space-between;
       align-items: center;
+      justify-content: flex-start;
+      gap: 10px;
       width: 100%;
+      flex-wrap: wrap;
     }
     .custom-file-upload {
       display: inline-block;
@@ -223,9 +225,12 @@
       cursor: pointer;
       font-weight: bold;
       background: rgba(220, 53, 69, 0.1);
-      padding: 6px 10px;
+      padding: 8px 12px;
       border-radius: 6px;
       border: 1px solid rgba(220, 53, 69, 0.2);
+      display: inline-block;
+      height: auto;
+      line-height: normal;
     }
     .reset-bg-link:hover { background: rgba(220, 53, 69, 0.18); }
 
@@ -970,15 +975,32 @@ function commitCount() {
   }
 
   let currentDateString = new Date().toISOString().split('T')[0];
+  let timestampString = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 
-  countLogSession.unshift({
-    part: activeScanMatch.part,
-    itemNo: activeScanMatch.itemNo || '',
-    systemSub: activeScanMatch.sub,
-    countedQty: countedQty,
-    dateMarker: currentDateString,
-    timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-  });
+  // CHECK FOR EXISTING ENTRY (Same part number AND same sublocation) to prevent duplicate line generation
+  let existingIndex = countLogSession.findIndex(row => 
+    row.part === activeScanMatch.part && 
+    row.systemSub === activeScanMatch.sub
+  );
+
+  if (existingIndex !== -1) {
+    // Accumulate the quantity instead of making a duplicate line
+    countLogSession[existingIndex].countedQty += countedQty;
+    // Move it to the top of the logging array so it visually looks updated
+    let updatedItem = countLogSession.splice(existingIndex, 1)[0];
+    updatedItem.timestamp = timestampString; // update timestamp to latest scan
+    countLogSession.unshift(updatedItem);
+  } else {
+    // Fresh item scan, inject standard record
+    countLogSession.unshift({
+      part: activeScanMatch.part,
+      itemNo: activeScanMatch.itemNo || '',
+      systemSub: activeScanMatch.sub || 'MANUAL RACK',
+      countedQty: countedQty,
+      dateMarker: currentDateString,
+      timestamp: timestampString
+    });
+  }
 
   localStorage.setItem('inv_counts', JSON.stringify(countLogSession));
   localStorage.setItem('inv_last_count_date', currentDateString); 
@@ -1026,7 +1048,7 @@ function clearCounts() {
   }
 }
 
-// Fixed Mobile Export Protocol: Generates native CSV stream compliant with mobile security guidelines
+// Fixed Mobile Export Protocol: Generates native CSV stream compliant with cell text rules
 function exportCountsToCSV() {
   if (countLogSession.length === 0) {
     alert("No counts logged yet.");
@@ -1037,16 +1059,19 @@ function exportCountsToCSV() {
   
   // Standard structural CSV initialization with BOM wrapper for Excel character recognition
   let csvContent = "\uFEFF"; 
-  csvContent += "Part Number,Item Number,System Sublocation,Counted Quantity,Time Logged\r\n";
+  
+  // Updated headers matching exact workflow column positions
+  csvContent += "Item Number,Part Number,Quantity,SubLocation,Time Scanned\r\n";
 
   countLogSession.forEach(row => {
-    // Escaping strings in quotes to protect spreadsheet columns against random structural characters or commas
+    // LOCK AS EXCEL STRING FORMULA: Avoids converting numbers to scientific notation (like 2.01003E+12)
+    let formatItemNo = row.itemNo ? `="${row.itemNo.replace(/"/g, '""')}"` : `""`;
+    
     let cleanPart = `"${row.part.replace(/"/g, '""')}"`;
-    let cleanItemNo = `"${row.itemNo.replace(/"/g, '""')}"`;
     let cleanSub = `"${row.systemSub.replace(/"/g, '""')}"`;
     let cleanTime = `"${row.timestamp.replace(/"/g, '""')}"`;
     
-    csvContent += `${cleanPart},${cleanItemNo},${cleanSub},${row.countedQty},${cleanTime}\r\n`;
+    csvContent += `${formatItemNo},${cleanPart},${row.countedQty},${cleanSub},${cleanTime}\r\n`;
   });
 
   let blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
