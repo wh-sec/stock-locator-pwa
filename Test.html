@@ -225,7 +225,7 @@
 
     /* Precount Scan Overlay Components */
     #reader { width: 100%; background: #000; border-radius: 8px; overflow: hidden; }
-    .count-overlay { display: none; background: var(--panel); border: 2px solid var(--accent-green); border-radius: 12px; padding: 16px; margin-bottom: 12px; }
+    .count-overlay { display: none; background: var(--panel); border: 2px solid var(--accent-green); border-radius: 12px; padding: 16px; margin-bottom: 12px; position: relative; }
     .count-title { font-size: 12px; font-weight: bold; color: var(--muted); text-transform: uppercase; }
     .count-item-name { font-size: 19px; font-weight: 800; margin: 4px 0; }
     .count-sub { display: inline-block; background: #e0f2fe; color: #0369a1; font-weight: bold; padding: 4px 8px; border-radius: 4px; font-size: 12px; margin-bottom: 12px; }
@@ -240,13 +240,68 @@
     .btn-cancel { background: #dc3545; color: white; }
 
     .log-item { background: var(--panel); padding: 12px; border-radius: 8px; border: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; }
-    .clear-btn { background: none; border: none; color: #dc3545; cursor: pointer; font-weight: 600; padding: 4px; }
+    
+    .session-actions-strip {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin: 14px 0 8px 0;
+    }
+    .new-session-btn {
+      background: #4a5568;
+      color: white;
+      border: none;
+      padding: 6px 12px;
+      font-size: 12px;
+      font-weight: 700;
+      border-radius: 6px;
+      cursor: pointer;
+    }
+    .new-session-btn:hover { background: #2d3748; }
+    .clear-btn { background: none; border: none; color: #dc3545; cursor: pointer; font-weight: 600; padding: 4px; font-size: 12px; }
 
-    .footer-bar { position: fixed; bottom: 0; left: 0; right: 0; background: var(--panel); border-top: 1px solid var(--border); padding: 12px; display: flex; justify-content: center; z-index: 999; }
-    .export-btn { width: 100%; max-width: 726px; background: #0284c7; color: white; padding: 14px; border-radius: 8px; text-align: center; font-weight: bold; border: none; font-size: 16px; cursor: pointer; }
+    /* Intercept Startup Dialog Modal Overlay */
+    .intercept-modal-overlay {
+      display: none;
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(0, 0, 0, 0.7);
+      backdrop-filter: blur(4px);
+      z-index: 99999;
+      justify-content: center;
+      align-items: center;
+      padding: 20px;
+    }
+    .intercept-box {
+      background: var(--panel);
+      border: 2px solid var(--primary-accent);
+      padding: 24px;
+      border-radius: 16px;
+      max-width: 460px;
+      width: 100%;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.3);
+      text-align: center;
+    }
+    .intercept-box h3 { margin-bottom: 10px; font-size: 18px; font-weight: 800; }
+    .intercept-box p { font-size: 14px; color: var(--muted); margin-bottom: 20px; line-height: 1.5; }
+    .intercept-btns { display: flex; flex-direction: column; gap: 10px; }
+    .btn-choice { width: 100%; padding: 14px; font-size: 15px; font-weight: bold; border: none; border-radius: 8px; cursor: pointer; }
+    .btn-choice.continue { background: var(--primary-accent); color: white; }
+    .btn-choice.purge { background: #dc3545; color: white; }
   </style>
 </head>
 <body>
+
+<div id="startupInterceptModal" class="intercept-modal-overlay">
+  <div class="intercept-box">
+    <h3 style="color: var(--text);">Unexported Counts Detected! ⏳</h3>
+    <p id="interceptMessage">You have remaining logs saved in this terminal from an earlier date. Would you like to resume your previous work or wipe it to start a completely fresh session?</p>
+    <div class="intercept-btns">
+      <button class="btn-choice continue" onclick="resolveIntercept('continue')">🔄 Continue Previous Session</button>
+      <button class="btn-choice purge" onclick="resolveIntercept('purge')">🧹 Wipe & Start New Session</button>
+    </div>
+  </div>
+</div>
 
 <div class="app-container">
   
@@ -342,9 +397,9 @@
       </div>
     </div>
 
-    <div style="display:flex; justify-content:space-between; align-items:center; margin:14px 0 8px 0;">
-      <span style="font-size: 14px; font-weight: 700; color: var(--muted);">Logged in this Session</span>
-      <button class="clear-btn" onclick="clearCounts()">Clear Logs</button>
+    <div class="session-actions-strip">
+      <button class="new-session-btn" onclick="triggerNewSessionManually()">🧹 Start New Session</button>
+      <button class="clear-btn" onclick="clearCounts()">Clear Current Logs</button>
     </div>
     <div id="logRegistryList"></div>
   </div>
@@ -365,7 +420,7 @@ var countLogSession = [];
 var activeScanMatch = null;
 var html5QrcodeScanner = null;
 var inlineFinderScanner = null;
-var currentScanTargetField = 'main'; // Tracks destination for lookups ('main' or 'fittings')
+var currentScanTargetField = 'main'; 
 
 var searchBox = document.getElementById('searchBox');
 var fittingsSearchBox = document.getElementById('fittingsSearchBox');
@@ -397,10 +452,9 @@ function resetSearchFields() {
   searchBox.focus();
 }
 
-/* SMART SCANNING ENGINE FOR FINDER LOOKUPS */
 function startInlineScanner(targetType) {
-  stopScanner(); // Make sure the pre-count scanner is off
-  stopInlineScanner(); // Clear any existing inline instance
+  stopScanner(); 
+  stopInlineScanner(); 
   
   currentScanTargetField = targetType;
   document.getElementById('inlineScannerBox').style.display = 'block';
@@ -721,15 +775,19 @@ function commitCount() {
     return;
   }
 
+  let currentDateString = new Date().toISOString().split('T')[0];
+
   countLogSession.unshift({
     part: activeScanMatch.part,
     itemNo: activeScanMatch.itemNo || '',
     systemSub: activeScanMatch.sub,
     countedQty: countedQty,
+    dateMarker: currentDateString,
     timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
   });
 
   localStorage.setItem('inv_counts', JSON.stringify(countLogSession));
+  localStorage.setItem('inv_last_count_date', currentDateString); 
   renderLogs();
   dismissOverlay();
 }
@@ -754,15 +812,25 @@ function renderLogs() {
   listContainer.innerHTML = html;
 }
 
-function clearCounts() {
-  if (confirm("Clear local count logs from this terminal?")) {
-    countLogSession = [];
-    localStorage.removeItem('inv_counts');
-    renderLogs();
+function triggerNewSessionManually() {
+  if (confirm("Are you ready to start a brand new counting session? This clears the active screen list so you won't pile up previous work.")) {
+    executePureSessionReset();
   }
 }
 
-/* HIGH-UPGRADE: EXPORTS LOGS DIRECTLY TO A VALID EXCEL (.XLS) FORMAT */
+function executePureSessionReset() {
+  countLogSession = [];
+  localStorage.removeItem('inv_counts');
+  localStorage.removeItem('inv_last_count_date');
+  renderLogs();
+}
+
+function clearCounts() {
+  if (confirm("Delete current logging entries?")) {
+    executePureSessionReset();
+  }
+}
+
 function exportCountsToExcel() {
   if (countLogSession.length === 0) {
     alert("No counts logged yet.");
@@ -771,7 +839,6 @@ function exportCountsToExcel() {
 
   let dateStamp = new Date().toISOString().split('T')[0];
   
-  // Construct an HTML Table structured precisely for Excel's XML interpreter
   let excelTemplate = `
     <html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40">
     <head>
@@ -815,7 +882,6 @@ function exportCountsToExcel() {
     </html>
   `;
 
-  // Wrap inside a continuous data blob and trigger phone file system initializer
   let blob = new Blob([excelTemplate], { type: "application/vnd.ms-excel;charset=utf-8" });
   let link = document.createElement("a");
   link.href = URL.createObjectURL(blob);
@@ -888,6 +954,20 @@ themeToggle.addEventListener('change', function() {
   }
 });
 
+/* INTERCEPT RESPONSE HANDLER */
+function resolveIntercept(choice) {
+  let todayStr = new Date().toISOString().split('T')[0];
+  document.getElementById('startupInterceptModal').style.display = 'none';
+
+  if (choice === 'continue') {
+    // Keep everything on screen, update the date marker to today to show it's extended
+    localStorage.setItem('inv_last_count_date', todayStr);
+  } else if (choice === 'purge') {
+    // Clear old records so they can run a distinct sheet
+    executePureSessionReset();
+  }
+}
+
 (function init() {
   var savedTheme = localStorage.getItem('ms_theme') || 'light';
   themeToggle.checked = (savedTheme === 'dark');
@@ -898,9 +978,18 @@ themeToggle.addEventListener('change', function() {
   applyBackgroundTone(savedBgTone);
 
   var savedSession = localStorage.getItem('inv_counts');
+  var todayStr = new Date().toISOString().split('T')[0];
+  var lastActiveCountDate = localStorage.getItem('inv_last_count_date');
+
   if (savedSession) {
     countLogSession = JSON.parse(savedSession);
     renderLogs();
+    
+    // Check if the saved count data belongs to an older calendar date
+    if (lastActiveCountDate && lastActiveCountDate !== todayStr && countLogSession.length > 0) {
+      // Fire up the Intercept Modal Prompt
+      document.getElementById('startupInterceptModal').style.display = 'flex';
+    }
   }
 
   var cachedData = localStorage.getItem('ms_cache');
