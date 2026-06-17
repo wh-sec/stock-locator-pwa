@@ -388,12 +388,13 @@ function parseCSV(text) {
     var qty = parseInt(qtyRaw.replace(/[^0-9.\-]/g, ''), 10);
     if (isNaN(qty)) qty = 0;
     
+    // FIXED MATCHING: Aligned Supplier Reference index precisely to cols[1] from your source file layout
     rows.push({
       part: (cols[3] || '').replace(/"/g, '').trim(),
       qty: qty,
       sub: (cols[5] || '').replace(/"/g, '').trim(),
       itemNo: (cols[6] || '').replace(/"/g, '').trim(),
-      supplierRef: (cols[7] || '').replace(/"/g, '').trim()
+      supplierRef: (cols[1] || '').replace(/"/g, '').trim()
     });
   }
   return rows;
