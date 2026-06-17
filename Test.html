@@ -334,8 +334,8 @@
       </div>
       
       <div class="shortcut-row">
-        <button class="action-sub-btn" onclick="startInlineScanner('main')">Scan Main Stock Code</button>
-        <button class="action-sub-btn" style="background:#8b5cf6;" onclick="startInlineScanner('fittings')">Scan Fittings Code</button>
+        <button class="action-sub-btn" onclick="startInlineScanner('qr')">Scan QR Code</button>
+        <button class="action-sub-btn" onclick="startInlineScanner('supplier')">Scan Supplier Ref</button>
         <button class="action-sub-btn reset" onclick="resetSearchFields()">Reset Search Fields</button>
       </div>
 
@@ -420,7 +420,7 @@ var countLogSession = [];
 var activeScanMatch = null;
 var html5QrcodeScanner = null;
 var inlineFinderScanner = null;
-var currentScanTargetField = 'main'; 
+var currentScanTargetField = 'qr'; 
 
 var searchBox = document.getElementById('searchBox');
 var fittingsSearchBox = document.getElementById('fittingsSearchBox');
@@ -479,12 +479,14 @@ function onInlineScanSuccess(decodedText) {
   playBeep('success');
   stopInlineScanner();
 
-  if (currentScanTargetField === 'main') {
-    fittingsSearchBox.value = '';
+  fittingsSearchBox.value = '';
+  
+  if (currentScanTargetField === 'qr') {
+    // QR Codes represent direct specific values like Item Number mappings
     searchBox.value = scannedText;
   } else {
-    searchBox.value = '';
-    fittingsSearchBox.value = scannedText;
+    // Supplier reference scans route here for EAN barcoding
+    searchBox.value = scannedText;
   }
   renderResults();
 }
@@ -960,10 +962,8 @@ function resolveIntercept(choice) {
   document.getElementById('startupInterceptModal').style.display = 'none';
 
   if (choice === 'continue') {
-    // Keep everything on screen, update the date marker to today to show it's extended
     localStorage.setItem('inv_last_count_date', todayStr);
   } else if (choice === 'purge') {
-    // Clear old records so they can run a distinct sheet
     executePureSessionReset();
   }
 }
@@ -985,9 +985,7 @@ function resolveIntercept(choice) {
     countLogSession = JSON.parse(savedSession);
     renderLogs();
     
-    // Check if the saved count data belongs to an older calendar date
     if (lastActiveCountDate && lastActiveCountDate !== todayStr && countLogSession.length > 0) {
-      // Fire up the Intercept Modal Prompt
       document.getElementById('startupInterceptModal').style.display = 'flex';
     }
   }
