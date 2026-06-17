@@ -513,7 +513,7 @@
 </div>
 
 <div id="footerBar" class="footer-bar" style="display: none;">
-  <button class="export-btn" onclick="exportCountsToExcel()">📊 Download Counts Spreadsheet (.XLS)</button>
+  <button class="export-btn" onclick="exportCountsToCSV()">📊 Download Counts Spreadsheet (.CSV)</button>
 </div>
 
 <script>
@@ -596,7 +596,6 @@ function resetSearchFields() {
   searchBox.focus();
 }
 
-// Fixed Camera Instantiation Matrix (forces back camera directly within video constraints)
 function startScanner() {
   if (html5QrcodeScanner) return;
   isProcessingScan = false;
@@ -607,7 +606,7 @@ function startScanner() {
     { 
       fps: 30, 
       videoConstraints: {
-        facingMode: "environment", // Forced nested value to protect against selfie-camera fallback
+        facingMode: "environment", 
         width: { ideal: 1920 },
         height: { ideal: 1080 },
         aspectRatio: { ideal: 1.7777777778 }
@@ -638,7 +637,7 @@ function startInlineScanner(targetType) {
     { 
       fps: 25, 
       videoConstraints: {
-        facingMode: "environment", // Forced nested value to protect against selfie-camera fallback
+        facingMode: "environment", 
         width: { ideal: 1920 },
         height: { ideal: 1080 },
         aspectRatio: { ideal: 1.7777777778 }
@@ -1027,7 +1026,8 @@ function clearCounts() {
   }
 }
 
-function exportCountsToExcel() {
+// Fixed Mobile Export Protocol: Generates native CSV stream compliant with mobile security guidelines
+function exportCountsToCSV() {
   if (countLogSession.length === 0) {
     alert("No counts logged yet.");
     return;
@@ -1035,53 +1035,24 @@ function exportCountsToExcel() {
 
   let dateStamp = new Date().toISOString().split('T')[0];
   
-  let excelTemplate = `
-    <html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40">
-    <head>
-      <meta charset="UTF-8">
-      <style>
-        th { background-color: #0284c7; color: #ffffff; font-weight: bold; padding: 8px; border: 0.5pt solid #cbd5e1; }
-        td { padding: 6px; border: 0.5pt solid #cbd5e1; }
-      </style>
-    </head>
-    <body>
-      <h2>Pre-Count Inventory Export - ${dateStamp}</h2>
-      <table>
-        <thead>
-          <tr>
-            <th>Part Number</th>
-            <th>Item Number</th>
-            <th>System Sublocation</th>
-            <th>Counted Quantity</th>
-            <th>Time Logged</th>
-          </tr>
-        </thead>
-        <tbody>
-  `;
+  // Standard structural CSV initialization with BOM wrapper for Excel character recognition
+  let csvContent = "\uFEFF"; 
+  csvContent += "Part Number,Item Number,System Sublocation,Counted Quantity,Time Logged\r\n";
 
   countLogSession.forEach(row => {
-    excelTemplate += `
-      <tr>
-        <td>${row.part}</td>
-        <td>${row.itemNo}</td>
-        <td>${row.systemSub}</td>
-        <td style="text-align:right;">${row.countedQty}</td>
-        <td>${row.timestamp}</td>
-      </tr>
-    `;
+    // Escaping strings in quotes to protect spreadsheet columns against random structural characters or commas
+    let cleanPart = `"${row.part.replace(/"/g, '""')}"`;
+    let cleanItemNo = `"${row.itemNo.replace(/"/g, '""')}"`;
+    let cleanSub = `"${row.systemSub.replace(/"/g, '""')}"`;
+    let cleanTime = `"${row.timestamp.replace(/"/g, '""')}"`;
+    
+    csvContent += `${cleanPart},${cleanItemNo},${cleanSub},${row.countedQty},${cleanTime}\r\n`;
   });
 
-  excelTemplate += `
-        </tbody>
-      </table>
-    </body>
-    </html>
-  `;
-
-  let blob = new Blob([excelTemplate], { type: "application/vnd.ms-excel;charset=utf-8" });
+  let blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
   let link = document.createElement("a");
   link.href = URL.createObjectURL(blob);
-  link.setAttribute("download", `PreCount_${dateStamp}.xls`);
+  link.setAttribute("download", `PreCount_${dateStamp}.csv`);
   document.body.appendChild(link);
   link.click();
   document.body.removeChild(link);
