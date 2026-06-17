@@ -126,6 +126,30 @@
     .action-sub-btn.reset { background: #4a5568; }
     .shortcut-row .reset { grid-column: span 2; }
 
+    /* Inline Scanner Panel for Finder screen */
+    .inline-scanner-box {
+      display: none;
+      background: #000;
+      border-radius: 8px;
+      overflow: hidden;
+      margin-bottom: 14px;
+      position: relative;
+    }
+    .close-scan-btn {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      background: rgba(0,0,0,0.7);
+      color: white;
+      border: 1px solid #fff;
+      padding: 6px 12px;
+      border-radius: 4px;
+      cursor: pointer;
+      z-index: 10;
+      font-size: 12px;
+      font-weight: bold;
+    }
+
     /* Preferences Configuration panel */
     .preferences-bar { 
       display: flex; 
@@ -191,7 +215,7 @@
       max-width: 100%;
     }
     .location-badge.fittings-badge {
-      background: #8b5cf6; /* Distinct purple color badge for fittings locator */
+      background: #8b5cf6; 
     }
 
     .alertBox { 
@@ -219,7 +243,7 @@
     .clear-btn { background: none; border: none; color: #dc3545; cursor: pointer; font-weight: 600; padding: 4px; }
 
     .footer-bar { position: fixed; bottom: 0; left: 0; right: 0; background: var(--panel); border-top: 1px solid var(--border); padding: 12px; display: flex; justify-content: center; z-index: 999; }
-    .export-btn { width: 100%; max-width: 726px; background: #0d6efd; color: white; padding: 14px; border-radius: 8px; text-align: center; font-weight: bold; border: none; font-size: 16px; cursor: pointer; }
+    .export-btn { width: 100%; max-width: 726px; background: #0284c7; color: white; padding: 14px; border-radius: 8px; text-align: center; font-weight: bold; border: none; font-size: 16px; cursor: pointer; }
   </style>
 </head>
 <body>
@@ -238,6 +262,12 @@
 
   <div id="finderScreen" class="app-screen active">
     <div class="panel-box">
+      
+      <div id="inlineScannerBox" class="inline-scanner-box">
+        <button class="close-scan-btn" onclick="stopInlineScanner()">✕ Close Camera</button>
+        <div id="finderReader" style="width:100%;"></div>
+      </div>
+
       <div class="input-group">
         <label for="searchBox">Search Part Number / Item No. / Supplier Reference</label>
         <input id="searchBox" type="text" placeholder="DGN 3102C..." autofocus autocomplete="off"/>
@@ -249,8 +279,8 @@
       </div>
       
       <div class="shortcut-row">
-        <button class="action-sub-btn" onclick="triggerDirectScan('part')">Scan QR Code</button>
-        <button class="action-sub-btn" onclick="triggerDirectScan('ref')">Scan Supplier Ref</button>
+        <button class="action-sub-btn" onclick="startInlineScanner('main')">Scan Main Stock Code</button>
+        <button class="action-sub-btn" style="background:#8b5cf6;" onclick="startInlineScanner('fittings')">Scan Fittings Code</button>
         <button class="action-sub-btn reset" onclick="resetSearchFields()">Reset Search Fields</button>
       </div>
 
@@ -322,11 +352,10 @@
 </div>
 
 <div id="footerBar" class="footer-bar" style="display: none;">
-  <button class="export-btn" onclick="exportCountsToCSV()">Download Counts (.CSV)</button>
+  <button class="export-btn" onclick="exportCountsToExcel()">📊 Download Counts Spreadsheet (.XLS)</button>
 </div>
 
 <script>
-// Main Inventory source and New Fittings source URLs
 const CSV_URL = 'https://raw.githubusercontent.com/wh-sec/stock-locator-pwa/main/stocks.csv';
 const FITTINGS_CSV_URL = 'https://raw.githubusercontent.com/wh-sec/stock-locator-pwa/main/fittings.csv';
 
@@ -335,6 +364,8 @@ var fittingsRegistry = [];
 var countLogSession = [];
 var activeScanMatch = null;
 var html5QrcodeScanner = null;
+var inlineFinderScanner = null;
+var currentScanTargetField = 'main'; // Tracks destination for lookups ('main' or 'fittings')
 
 var searchBox = document.getElementById('searchBox');
 var fittingsSearchBox = document.getElementById('fittingsSearchBox');
@@ -362,11 +393,46 @@ function resetSearchFields() {
   searchBox.value = '';
   fittingsSearchBox.value = '';
   renderResults();
+  stopInlineScanner();
   searchBox.focus();
 }
 
-function triggerDirectScan(type) {
-  switchMode('counter');
+/* SMART SCANNING ENGINE FOR FINDER LOOKUPS */
+function startInlineScanner(targetType) {
+  stopScanner(); // Make sure the pre-count scanner is off
+  stopInlineScanner(); // Clear any existing inline instance
+  
+  currentScanTargetField = targetType;
+  document.getElementById('inlineScannerBox').style.display = 'block';
+  
+  inlineFinderScanner = new Html5Qrcode("finderReader");
+  inlineFinderScanner.start(
+    { facingMode: "environment" },
+    { fps: 15, qrbox: { width: 260, height: 160 } },
+    onInlineScanSuccess
+  ).catch(() => { alert("Could not access mobile camera for lookup."); });
+}
+
+function stopInlineScanner() {
+  if (inlineFinderScanner) {
+    inlineFinderScanner.stop().then(() => { inlineFinderScanner = null; }).catch(()=>{});
+  }
+  document.getElementById('inlineScannerBox').style.display = 'none';
+}
+
+function onInlineScanSuccess(decodedText) {
+  let scannedText = decodedText.trim();
+  playBeep('success');
+  stopInlineScanner();
+
+  if (currentScanTargetField === 'main') {
+    fittingsSearchBox.value = '';
+    searchBox.value = scannedText;
+  } else {
+    searchBox.value = '';
+    fittingsSearchBox.value = scannedText;
+  }
+  renderResults();
 }
 
 function switchMode(mode) {
@@ -387,6 +453,7 @@ function switchMode(mode) {
     document.getElementById('footerBar').style.display = 'flex';
     document.getElementById('countSession').style.display = 'block';
     document.getElementById('countSession').textContent = `Counts logged: ${countLogSession.length}`;
+    stopInlineScanner();
     startScanner();
   }
 }
@@ -395,7 +462,6 @@ function updateMetaDisplay() {
   metaDisplay.textContent = `Main items: ${stockRegistry.length} | Fittings: ${fittingsRegistry.length}`;
 }
 
-// Parses standard inventory stocks.csv
 function parseCSV(text) {
   var lines = text.split(/\r?\n/);
   var rows = [];
@@ -420,7 +486,6 @@ function parseCSV(text) {
   return rows;
 }
 
-// Parses new fittings format based on structure: Col 2 (Part), Col 6 (Total), Col 7 (Locator)
 function parseFittingsCSV(text) {
   var lines = text.split(/\r?\n/);
   var rows = [];
@@ -429,16 +494,16 @@ function parseFittingsCSV(text) {
     var line = lines[i].trim();
     if (!line) continue;
     var cols = line.split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/);
-    if (cols.length < 8) continue; // Ensure we have enough columns to fetch locator
+    if (cols.length < 8) continue;
     
-    var qtyRaw = cols[6] || '0'; // TOTAL column field index 6
+    var qtyRaw = cols[6] || '0';
     var qty = parseInt(qtyRaw.replace(/[^0-9.\-]/g, ''), 10);
     if (isNaN(qty)) qty = 0;
     
     rows.push({
-      part: (cols[2] || '').replace(/"/g, '').trim(), // PART NUMBER column field index 2
+      part: (cols[2] || '').replace(/"/g, '').trim(),
       qty: qty,
-      sub: (cols[7] || '').replace(/"/g, '').trim(), // LOCATOR column field index 7
+      sub: (cols[7] || '').replace(/"/g, '').trim(),
       itemNo: '',
       supplierRef: '',
       type: 'fittings'
@@ -460,7 +525,6 @@ function renderResults() {
   var query = searchBox.value.trim();
   var fitQuery = fittingsSearchBox.value.trim();
   
-  // Clear the opposite box to make filtering straightforward and elegant
   if (!query && !fitQuery) {
     tableBody.innerHTML = '';
     tableWrap.style.display = 'block';
@@ -548,13 +612,13 @@ function renderResults() {
 }
 
 searchBox.addEventListener('input', function() {
-  fittingsSearchBox.value = ''; // Auto-clear second box to prevent processing overlaps
+  fittingsSearchBox.value = '';
   clearTimeout(searchTimeout);
   searchTimeout = setTimeout(renderResults, 120);
 });
 
 fittingsSearchBox.addEventListener('input', function() {
-  searchBox.value = ''; // Auto-clear first box to prevent processing overlaps
+  searchBox.value = '';
   clearTimeout(searchTimeout);
   searchTimeout = setTimeout(renderResults, 120);
 });
@@ -598,7 +662,6 @@ function onScanSuccess(decodedText) {
   let scannedQueryLower = scannedQuery.toLowerCase();
   
   let matchedVia = '';
-  // Check main registry first
   let match = stockRegistry.find(row => {
     if (row.part.toLowerCase() === scannedQueryLower) { matchedVia = 'Part Number'; return true; }
     if (row.itemNo.toLowerCase() === scannedQueryLower) { matchedVia = 'Item Number'; return true; }
@@ -606,7 +669,6 @@ function onScanSuccess(decodedText) {
     return false;
   });
 
-  // If not found in main database, cross-reference the new fittings database
   if (!match) {
     match = fittingsRegistry.find(row => {
       if (row.part.toLowerCase() === scannedQueryLower) { matchedVia = 'Fittings Part Number'; return true; }
@@ -700,15 +762,64 @@ function clearCounts() {
   }
 }
 
-function exportCountsToCSV() {
-  if (countLogSession.length === 0) return;
-  let csvContent = "data:text/csv;charset=utf-8,Part Number,Item Number,System Sublocation,Counted Qty,Timestamp\r\n";
+/* HIGH-UPGRADE: EXPORTS LOGS DIRECTLY TO A VALID EXCEL (.XLS) FORMAT */
+function exportCountsToExcel() {
+  if (countLogSession.length === 0) {
+    alert("No counts logged yet.");
+    return;
+  }
+
+  let dateStamp = new Date().toISOString().split('T')[0];
+  
+  // Construct an HTML Table structured precisely for Excel's XML interpreter
+  let excelTemplate = `
+    <html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40">
+    <head>
+      <meta charset="UTF-8">
+      <style>
+        th { background-color: #0284c7; color: #ffffff; font-weight: bold; padding: 8px; border: 0.5pt solid #cbd5e1; }
+        td { padding: 6px; border: 0.5pt solid #cbd5e1; }
+      </style>
+    </head>
+    <body>
+      <h2>Pre-Count Inventory Export - ${dateStamp}</h2>
+      <table>
+        <thead>
+          <tr>
+            <th>Part Number</th>
+            <th>Item Number</th>
+            <th>System Sublocation</th>
+            <th>Counted Quantity</th>
+            <th>Time Logged</th>
+          </tr>
+        </thead>
+        <tbody>
+  `;
+
   countLogSession.forEach(row => {
-    csvContent += `"${row.part}","${row.itemNo}","${row.systemSub}",${row.countedQty},"${row.timestamp}"\r\n`;
+    excelTemplate += `
+      <tr>
+        <td>${row.part}</td>
+        <td>${row.itemNo}</td>
+        <td>${row.systemSub}</td>
+        <td style="text-align:right;">${row.countedQty}</td>
+        <td>${row.timestamp}</td>
+      </tr>
+    `;
   });
+
+  excelTemplate += `
+        </tbody>
+      </table>
+    </body>
+    </html>
+  `;
+
+  // Wrap inside a continuous data blob and trigger phone file system initializer
+  let blob = new Blob([excelTemplate], { type: "application/vnd.ms-excel;charset=utf-8" });
   let link = document.createElement("a");
-  link.setAttribute("href", encodeURI(csvContent));
-  link.setAttribute("download", `PreCount_${new Date().toISOString().split('T')[0]}.csv`);
+  link.href = URL.createObjectURL(blob);
+  link.setAttribute("download", `PreCount_${dateStamp}.xls`);
   document.body.appendChild(link);
   link.click();
   document.body.removeChild(link);
@@ -726,7 +837,6 @@ function fetchDatabases(forceBust = false) {
   let cacheSetting = forceBust ? 'no-store' : 'default';
   let cacheBustToken = '?v=' + new Date().getTime();
 
-  // Fetch file 1: Main Inventory Stocks
   let fetchMain = fetch(CSV_URL + cacheBustToken, { cache: cacheSetting })
     .then(r => r.text())
     .then(text => {
@@ -737,7 +847,6 @@ function fetchDatabases(forceBust = false) {
       }
     });
 
-  // Fetch file 2: New Fittings Inventory Stocks
   let fetchFittings = fetch(FITTINGS_CSV_URL + cacheBustToken, { cache: cacheSetting })
     .then(r => r.text())
     .then(text => {
@@ -795,14 +904,10 @@ themeToggle.addEventListener('change', function() {
   }
 
   var cachedData = localStorage.getItem('ms_cache');
-  if (cachedData) {
-    stockRegistry = JSON.parse(cachedData);
-  }
+  if (cachedData) stockRegistry = JSON.parse(cachedData);
   
   var cachedFittings = localStorage.getItem('ms_fittings_cache');
-  if (cachedFittings) {
-    fittingsRegistry = JSON.parse(cachedFittings);
-  }
+  if (cachedFittings) fittingsRegistry = JSON.parse(cachedFittings);
   
   updateMetaDisplay();
   if (localStorage.getItem('ms_last_sync')) {
