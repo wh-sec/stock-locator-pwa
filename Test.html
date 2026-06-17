@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Stock Locator Pro</title>
+  <title>Stock Tracker Pro</title>
 
   <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
 
@@ -11,33 +11,77 @@
     :root {
       --primary-accent: #0056b3; 
       --bg: #f4f6f9; 
-      --panel: #ffffff;
-      --text: #333333;
-      --muted: #666666;
-      --border: #dbe2ef;
-      --th-bg: #f1f5f9;
+      --panel: rgba(255, 255, 255, 0.85);
+      --text: #1e293b;
+      --muted: #475569;
+      --border: rgba(219, 226, 239, 0.7);
+      --th-bg: rgba(241, 245, 249, 0.9);
       --accent-green: #10b981;
+      --glass-blur: blur(12px);
+      --bg-overlay: rgba(244, 246, 249, 0.4);
     }
     [data-theme="dark"] {
       --primary-accent: #3b82f6;
       --bg: #0f1115;
-      --panel: #161a22;
+      --panel: rgba(22, 26, 34, 0.80);
       --text: #f8fafc;
       --muted: #94a3b8;
-      --border: #2d3748;
-      --th-bg: #1e293b;
+      --border: rgba(45, 55, 72, 0.6);
+      --th-bg: rgba(30, 41, 59, 0.9);
+      --bg-overlay: rgba(15, 17, 21, 0.75);
     }
     * { box-sizing: border-box; margin: 0; padding: 0; }
+    
+    html, body { min-height: 100vh; }
+    
     body { 
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; 
-      background: var(--bg); 
+      background-color: var(--bg);
+      background-position: center;
+      background-size: cover;
+      background-attachment: fixed;
+      background-repeat: no-repeat;
       color: var(--text); 
       padding: 12px; 
       padding-bottom: 90px; 
       transition: background-color 0.2s ease;
+      position: relative;
     }
 
-    .app-container { max-width: 750px; margin: 0 auto; }
+    /* Full-screen protective tint layer to sit behind text but over custom user wallpaper */
+    body::before {
+      content: "";
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: var(--bg-overlay);
+      z-index: -1;
+      pointer-events: none;
+      transition: background 0.2s ease;
+    }
+
+    .app-container { max-width: 750px; margin: 0 auto; position: relative; z-index: 1; }
+
+    /* Premium Branding Header Component */
+    .app-header {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+      margin-bottom: 16px;
+      padding: 10px;
+    }
+    .app-logo {
+      height: 38px;
+      width: auto;
+      object-fit: contain;
+    }
+    .app-title {
+      font-size: 20px;
+      font-weight: 800;
+      letter-spacing: -0.5px;
+      color: var(--text);
+      text-transform: uppercase;
+    }
 
     /* Premium Navigation Tabs */
     .tabs-bar { 
@@ -48,6 +92,7 @@
       padding: 5px; 
       margin-bottom: 14px; 
       box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); 
+      backdrop-filter: var(--glass-blur);
     }
     .tab-btn { 
       flex: 1; 
@@ -69,7 +114,7 @@
     .app-screen { display: none; }
     .app-screen.active { display: block; }
 
-    /* Outer Panel Container styling */
+    /* Outer Panel Container styling - High Elegance Frosted Glass */
     .panel-box { 
       background: var(--panel); 
       padding: 20px; 
@@ -77,6 +122,7 @@
       border: 1px solid var(--border); 
       box-shadow: 0 4px 10px rgba(0,0,0,0.04); 
       margin-bottom: 16px; 
+      backdrop-filter: var(--glass-blur);
     }
 
     .input-group {
@@ -86,11 +132,12 @@
     label { 
       font-weight: 700; 
       font-size: 12px; 
-      color: #4a5568; 
+      color: var(--text); 
       display: block; 
       margin-bottom: 6px; 
       text-transform: uppercase; 
       letter-spacing: 0.5px;
+      opacity: 0.9;
     }
     
     input[type="text"], input[type="number"] { 
@@ -160,8 +207,27 @@
       border-top: 1px dashed var(--border); 
       font-size: 13px; 
     }
-    .accent-picker-wrap { display: flex; align-items: center; gap: 8px; font-weight: 600; }
-    .color-box-input { width: 34px; height: 26px; border: 1px solid var(--border); border-radius: 4px; cursor: pointer; background: none; }
+    .theme-picker-wrap { display: flex; align-items: center; gap: 8px; font-weight: 600; }
+    .custom-file-upload {
+      display: inline-block;
+      padding: 6px 12px;
+      cursor: pointer;
+      background: var(--th-bg);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      font-size: 11px;
+      font-weight: bold;
+      color: var(--text);
+    }
+    .reset-bg-link {
+      font-size: 11px;
+      color: #dc3545;
+      text-decoration: none;
+      margin-left: 6px;
+      cursor: pointer;
+      font-weight: bold;
+    }
+    .reset-bg-link:hover { text-decoration: underline; }
 
     /* Sync and Cache Utility Metadata Strip */
     .sync-status-row {
@@ -189,6 +255,7 @@
       border-radius: 12px; 
       border: 1px solid var(--border); 
       box-shadow: 0 4px 6px -1px rgba(0,0,0,0.02);
+      backdrop-filter: var(--glass-blur);
     }
     table { width: 100%; border-collapse: collapse; text-align: left; table-layout: fixed; }
     th, td { padding: 12px 10px; border-bottom: 1px solid var(--border); border-right: 1px solid var(--border); vertical-align: middle; word-wrap: break-word; }
@@ -225,7 +292,7 @@
 
     /* Precount Scan Overlay Components */
     #reader { width: 100%; background: #000; border-radius: 8px; overflow: hidden; }
-    .count-overlay { display: none; background: var(--panel); border: 2px solid var(--accent-green); border-radius: 12px; padding: 16px; margin-bottom: 12px; position: relative; }
+    .count-overlay { display: none; background: var(--panel); border: 2px solid var(--accent-green); border-radius: 12px; padding: 16px; margin-bottom: 12px; position: relative; backdrop-filter: var(--glass-blur); }
     .count-title { font-size: 12px; font-weight: bold; color: var(--muted); text-transform: uppercase; }
     .count-item-name { font-size: 19px; font-weight: 800; margin: 4px 0; }
     .count-sub { display: inline-block; background: #e0f2fe; color: #0369a1; font-weight: bold; padding: 4px 8px; border-radius: 4px; font-size: 12px; margin-bottom: 12px; }
@@ -239,7 +306,7 @@
     .btn-save { background: var(--accent-green); color: white; }
     .btn-cancel { background: #dc3545; color: white; }
 
-    .log-item { background: var(--panel); padding: 12px; border-radius: 8px; border: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; }
+    .log-item { background: var(--panel); padding: 12px; border-radius: 8px; border: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; backdrop-filter: var(--glass-blur); }
     
     .session-actions-strip {
       display: flex;
@@ -281,6 +348,7 @@
       width: 100%;
       box-shadow: 0 10px 25px rgba(0,0,0,0.3);
       text-align: center;
+      backdrop-filter: var(--glass-blur);
     }
     .intercept-box h3 { margin-bottom: 10px; font-size: 18px; font-weight: 800; }
     .intercept-box p { font-size: 14px; color: var(--muted); margin-bottom: 20px; line-height: 1.5; }
@@ -305,12 +373,17 @@
 
 <div class="app-container">
   
+  <div class="app-header">
+    <img src="https://raw.githubusercontent.com/wh-sec/stock-locator-pwa/main/logo.png" alt="Logo" class="app-logo" onerror="this.style.display='none'"/>
+    <h1 class="app-title">Stock Tracker Pro</h1>
+  </div>
+  
   <div class="tabs-bar">
     <button id="finderTab" class="tab-btn active" onclick="switchMode('finder')">🔍 Stock Lookup</button>
     <button id="counterTab" class="tab-btn" onclick="switchMode('counter')">📋 Audit Scanner</button>
   </div>
 
-  <div style="display: flex; justify-content: space-between; font-size: 12px; color: var(--muted); margin-bottom: 8px; padding: 0 4px;">
+  <div style="display: flex; justify-content: space-between; font-size: 12px; color: var(--text); font-weight: 600; margin-bottom: 8px; padding: 0 4px; opacity:0.85;">
     <div id="metaDisplay">Loading database files...</div>
     <div id="countSession" style="display:none;">Counts logged: 0</div>
   </div>
@@ -340,9 +413,12 @@
       </div>
 
       <div class="preferences-bar">
-        <div class="accent-picker-wrap">
-          <span>Background tone color</span>
-          <input id="accentColorPicker" type="color" class="color-box-input" value="#f4f6f9" />
+        <div class="theme-picker-wrap">
+          <label class="custom-file-upload">
+            <input type="file" id="bgUploader" accept="image/*" style="display: none;" onchange="handleWallpaperUpload(event)" />
+            🖼️ Upload Custom Theme Image
+          </label>
+          <span id="resetBgBtn" class="reset-bg-link" style="display: none;" onclick="clearWallpaperTheme()">Reset</span>
         </div>
         <div>
           <input id="themeToggle" type="checkbox" />
@@ -412,7 +488,7 @@
 
 <script>
 const CSV_URL = 'https://raw.githubusercontent.com/wh-sec/stock-locator-pwa/main/stocks.csv';
-const FITTINGS_CSV_URL = 'https://raw.githubusercontent.com/wh-sec/stock-locator-pwa/main/fittings.csv';
+const FITTINGS_URL = 'https://raw.githubusercontent.com/wh-sec/stock-locator-pwa/main/fittings.csv';
 
 var stockRegistry = [];
 var fittingsRegistry = [];
@@ -421,7 +497,7 @@ var activeScanMatch = null;
 var html5QrcodeScanner = null;
 var inlineFinderScanner = null;
 var currentScanTargetField = 'qr'; 
-var isProcessingScan = false; // Lock flag to prevent processing collisions
+var isProcessingScan = false; 
 
 var searchBox = document.getElementById('searchBox');
 var fittingsSearchBox = document.getElementById('fittingsSearchBox');
@@ -431,19 +507,58 @@ var noResults = document.getElementById('noResults');
 var metaDisplay = document.getElementById('metaDisplay');
 var liveSyncDisplay = document.getElementById('liveSyncDisplay');
 var themeToggle = document.getElementById('themeToggle');
-var accentColorPicker = document.getElementById('accentColorPicker');
 var searchTimeout = null;
 
-function applyBackgroundTone(hexColor) {
-  localStorage.setItem('ms_bg_hex', hexColor);
-  if (!themeToggle.checked) {
-    document.documentElement.style.setProperty('--bg', hexColor);
+// Persistent User Custom Image Engine Handler
+function handleWallpaperUpload(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    const rawImg = new Image();
+    rawImg.src = e.target.result;
+    rawImg.onload = function() {
+      // Downscale wide image strings to maximize LocalStorage quota availability safely
+      const canvas = document.createElement('canvas');
+      const maxDim = 1200;
+      let w = rawImg.width;
+      let h = rawImg.height;
+      if (w > h && w > maxDim) { h = Math.round((h * maxDim) / w); w = maxDim; }
+      else if (h > maxDim) { w = Math.round((w * maxDim) / h); h = maxDim; }
+      
+      canvas.width = w;
+      canvas.height = h;
+      const ctx = canvas.getContext('2document.getContext' ? null : '2d');
+      ctx.drawImage(rawImg, 0, 0, w, h);
+      
+      const compressedBase64 = canvas.toDataURL('image/jpeg', 0.75);
+      try {
+        localStorage.setItem('ms_custom_bg', compressedBase64);
+        applyActiveWallpaper(compressedBase64);
+      } catch (err) {
+        alert("Selected image is too large for localized cache memory storage.");
+      }
+    };
+  };
+  reader.readAsDataURL(file);
+}
+
+function applyActiveWallpaper(base64Data) {
+  if (base64Data) {
+    document.body.style.backgroundImage = `url('${base64Data}')`;
+    document.getElementById('resetBgBtn').style.display = 'inline-block';
+  } else {
+    document.body.style.backgroundImage = 'none';
+    document.getElementById('resetBgBtn').style.display = 'none';
   }
 }
 
-accentColorPicker.addEventListener('input', function() {
-  applyBackgroundTone(accentColorPicker.value);
-});
+function clearWallpaperTheme() {
+  localStorage.removeItem('ms_custom_bg');
+  applyActiveWallpaper(null);
+  document.getElementById('bgUploader').value = '';
+}
 
 function resetSearchFields() {
   searchBox.value = '';
@@ -935,7 +1050,7 @@ function fetchDatabases(forceBust = false) {
       }
     });
 
-  let fetchFittings = fetch(FITTINGS_CSV_URL + cacheBustToken, { cache: cacheSetting })
+  let fetchFittings = fetch(FITTINGS_URL + cacheBustToken, { cache: cacheSetting })
     .then(r => r.text())
     .then(text => {
       var freshlyParsedFittings = parseFittingsCSV(text);
@@ -968,12 +1083,6 @@ themeToggle.addEventListener('change', function() {
   let isDark = themeToggle.checked;
   document.documentElement.setAttribute('data-theme', isDark ? 'dark' : 'light');
   localStorage.setItem('ms_theme', isDark ? 'dark' : 'light');
-  
-  if (isDark) {
-    document.documentElement.style.setProperty('--bg', '#0f1115');
-  } else {
-    applyBackgroundTone(accentColorPicker.value);
-  }
 });
 
 /* INTERCEPT RESPONSE HANDLER */
@@ -993,9 +1102,11 @@ function resolveIntercept(choice) {
   themeToggle.checked = (savedTheme === 'dark');
   document.documentElement.setAttribute('data-theme', savedTheme);
 
-  var savedBgTone = localStorage.getItem('ms_bg_hex') || '#f4f6f9';
-  accentColorPicker.value = savedBgTone;
-  applyBackgroundTone(savedBgTone);
+  // Initialize Persistent Custom Wallpaper Layout
+  var cachedWallpaper = localStorage.getItem('ms_custom_bg');
+  if (cachedWallpaper) {
+    applyActiveWallpaper(cachedWallpaper);
+  }
 
   var savedSession = localStorage.getItem('inv_counts');
   var todayStr = new Date().toISOString().split('T')[0];
