@@ -3,116 +3,198 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Warehouse Master Tool</title>
+  <title>Stock Locator Pro</title>
 
   <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
 
   <style>
     :root {
-      --bg: #f8f9fa;
+      --primary-accent: #0056b3; 
+      --bg: #f4f6f9;
       --panel: #ffffff;
-      --text: #212529;
-      --muted: #6c757d;
-      --accent-blue: #0d6efd; 
-      --accent-green: #10b981; 
-      --card: #ffffff;
-      --border: #e2e8f0;
+      --text: #333333;
+      --muted: #666666;
+      --border: #dbe2ef;
+      --th-bg: #f1f5f9;
+      --accent-green: #10b981;
     }
     [data-theme="dark"] {
-      --bg: #11141a;
-      --panel: #1b1f27;
-      --text: #f8f9fa;
-      --muted: #a0aec0;
-      --accent-blue: #3b82f6;
-      --accent-green: #34d399;
-      --card: #222834;
+      --bg: #0f1115;
+      --panel: #161a22;
+      --text: #f8fafc;
+      --muted: #94a3b8;
       --border: #2d3748;
+      --th-bg: #1e293b;
     }
     * { box-sizing: border-box; margin: 0; padding: 0; }
-    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif; background: var(--bg); color: var(--text); padding: 12px; padding-bottom: 80px; }
+    body { 
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; 
+      background: var(--bg); 
+      color: var(--text); 
+      padding: 12px; 
+      padding-bottom: 90px; 
+    }
 
-    .app-container { max-width: 600px; margin: 0 auto; }
+    .app-container { max-width: 750px; margin: 0 auto; }
 
-    /* Navigation Tabs */
-    .tabs-bar { display: flex; background: var(--panel); border: 1px solid var(--border); border-radius: 12px; padding: 4px; margin-bottom: 12px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
-    .tab-btn { flex: 1; padding: 12px; text-align: center; font-size: 15px; font-weight: bold; border: none; background: transparent; color: var(--muted); cursor: pointer; border-radius: 8px; transition: all 0.2s ease; }
-    .tab-btn.active[data-mode="finder"] { background: var(--accent-blue); color: white; }
-    .tab-btn.active[data-mode="counter"] { background: var(--accent-green); color: white; }
+    /* Premium Navigation Tabs */
+    .tabs-bar { 
+      display: flex; 
+      background: var(--panel); 
+      border: 1px solid var(--border); 
+      border-radius: 12px; 
+      padding: 5px; 
+      margin-bottom: 14px; 
+      box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); 
+    }
+    .tab-btn { 
+      flex: 1; 
+      padding: 14px; 
+      text-align: center; 
+      font-size: 15px; 
+      font-weight: 700; 
+      border: none; 
+      background: transparent; 
+      color: var(--muted); 
+      cursor: pointer; 
+      border-radius: 8px; 
+      transition: all 0.2s ease; 
+    }
+    .tab-btn.active { 
+      background: var(--primary-accent); 
+      color: white; 
+    }
 
     .app-screen { display: none; }
     .app-screen.active { display: block; }
 
-    .panel-box { background: var(--panel); padding: 16px; border-radius: 12px; border: 1px solid var(--border); box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); margin-bottom: 12px; }
+    /* Outer Panel Container styling mimicking original desktop look */
+    .panel-box { 
+      background: var(--panel); 
+      padding: 20px; 
+      border-radius: 12px; 
+      border: 1px solid var(--border); 
+      box-shadow: 0 4px 10px rgba(0,0,0,0.04); 
+      margin-bottom: 16px; 
+    }
 
-    label { font-weight: 700; font-size: 13px; color: var(--muted); display: block; margin-bottom: 8px; text-transform: uppercase; }
+    label { 
+      font-weight: 700; 
+      font-size: 12px; 
+      color: var(--primary-accent); 
+      display: block; 
+      margin-bottom: 6px; 
+      text-transform: uppercase; 
+      letter-spacing: 0.5px;
+    }
+    
     input[type="text"], input[type="number"] { 
       width: 100%; 
       padding: 14px; 
       font-size: 16px; 
-      border: 2px solid #cbd5e1; 
+      border: 2px solid var(--border); 
       border-radius: 8px; 
-      background: transparent; 
+      background: var(--panel); 
       color: var(--text);
+      transition: border-color 0.2s;
     }
-    [data-theme="dark"] input { border-color: #4a5568; }
-    input:focus { outline: none; }
-    #searchBox:focus { border-color: var(--accent-blue); }
-    .qty-input:focus { border-color: var(--accent-green); }
+    input:focus { outline: none; border-color: var(--primary-accent); }
 
-    .controls-row { display: flex; justify-content: space-between; align-items: center; margin-top: 12px; font-size: 13px; }
-    button.clear-btn { background: none; border: none; color: #ef4444; cursor: pointer; font-weight: 600; padding: 4px 8px; }
+    /* Restored Action Row Buttons from Original Desktop Build */
+    .shortcut-row { 
+      display: grid; 
+      grid-template-columns: 1fr 1fr; 
+      gap: 10px; 
+      margin-top: 14px; 
+    }
+    .action-sub-btn { 
+      padding: 12px; 
+      font-size: 14px; 
+      font-weight: 600; 
+      color: white; 
+      background: #198754; 
+      border: none; 
+      border-radius: 6px; 
+      cursor: pointer; 
+      text-align: center;
+    }
+    .action-sub-btn.reset { background: #4a5568; }
+    .shortcut-row .reset { grid-column: span 2; }
 
-    /* Highlights */
-    mark.match { background: #ffeb3b; color: #000; padding: 2px 4px; border-radius: 4px; font-weight: bold; }
-    [data-theme="dark"] mark.match { background: #ffca28; color: #000; }
-    mark.location-match { background: #10b981; color: #fff; padding: 4px 8px; border-radius: 4px; font-weight: bold; display: inline-block; }
+    /* UI Theme / Accent Color Controllers */
+    .preferences-bar { 
+      display: flex; 
+      justify-content: space-between; 
+      align-items: center; 
+      margin-top: 14px; 
+      padding-top: 12px; 
+      border-top: 1px dashed var(--border); 
+      font-size: 13px; 
+    }
+    .accent-picker-wrap { display: flex; align-items: center; gap: 8px; font-weight: 600; }
+    .color-box-input { width: 34px; height: 26px; border: 1px solid var(--border); border-radius: 4px; cursor: pointer; background: none; }
 
-    /* Tables */
-    .table-wrap { overflow-x: auto; background: var(--panel); border-radius: 12px; border: 1px solid var(--border); }
-    table { width: 100%; border-collapse: collapse; text-align: left; }
-    th, td { padding: 14px; border-bottom: 1px solid var(--border); vertical-align: middle; }
-    th { background: #f8fafc; font-weight: 600; color: var(--muted); }
-    [data-theme="dark"] th { background: #1e2530; }
+    /* Restored Clean Column Alignments and Grid Borders */
+    .table-wrap { 
+      overflow-x: auto; 
+      background: var(--panel); 
+      border-radius: 12px; 
+      border: 1px solid var(--border); 
+      box-shadow: 0 4px 6px -1px rgba(0,0,0,0.02);
+    }
+    table { width: 100%; border-collapse: collapse; text-align: left; table-layout: fixed; }
+    th, td { padding: 12px 10px; border-bottom: 1px solid var(--border); border-right: 1px solid var(--border); vertical-align: middle; word-wrap: break-word; }
+    th:last-child, td:last-child { border-right: none; }
+    
+    th { background: var(--th-bg); font-weight: 700; color: var(--muted); font-size: 13px; }
+    
+    /* Strict Width Allocations to Prevent Misalignments */
+    th.col-main, td.col-main { width: 55%; }
+    th.col-qty, td.col-qty { width: 18%; text-align: center; }
+    th.col-sub, td.col-sub { width: 27%; text-align: center; }
+
+    /* Restored Visual Highlight Classes */
+    mark.match { background: #ffeb3b; color: #000; padding: 1px 3px; border-radius: 3px; font-weight: bold; }
+    [data-theme="dark"] mark.match { background: #f59e0b; }
+    
+    .location-badge { 
+      background: #10b981; 
+      color: white; 
+      padding: 6px 8px; 
+      border-radius: 6px; 
+      font-weight: 700; 
+      font-size: 12px; 
+      display: inline-block; 
+      text-align: center;
+      max-width: 100%;
+    }
 
     .alertBox { 
-      display: none; background: #fef3c7; color: #92400e; padding: 16px; border-radius: 8px; 
-      text-align: center; font-weight: bold; margin-top: 12px; 
+      display: none; background: #fff3cd; color: #856404; padding: 16px; border-radius: 8px; 
+      text-align: center; font-weight: bold; margin-top: 12px; border: 1px solid #ffeeba;
     }
-    [data-theme="dark"] .alertBox { background: #2d2315; color: #f59e0b; }
 
-    /* Scanner Container */
-    #reader { width: 100%; background: #000; border-radius: 8px; overflow: hidden; border: none !important; }
+    /* Precount Scan Overlay Components */
+    #reader { width: 100%; background: #000; border-radius: 8px; overflow: hidden; }
+    .count-overlay { display: none; background: var(--panel); border: 2px solid var(--accent-green); border-radius: 12px; padding: 16px; margin-bottom: 12px; }
+    .count-title { font-size: 12px; font-weight: bold; color: var(--muted); text-transform: uppercase; }
+    .count-item-name { font-size: 19px; font-weight: 800; margin: 4px 0; }
+    .count-sub { display: inline-block; background: #e0f2fe; color: #0369a1; font-weight: bold; padding: 4px 8px; border-radius: 4px; font-size: 12px; margin-bottom: 12px; }
+    
+    .input-row { display: flex; gap: 6px; align-items: center; margin-bottom: 12px; }
+    .qty-input { flex: 1; font-size: 22px; font-weight: bold; text-align: center; }
+    .mod-btn { padding: 12px; font-size: 15px; font-weight: bold; border: 1px solid var(--border); background: var(--th-bg); color: var(--text); border-radius: 6px; cursor: pointer; }
 
-    /* Count Overlay Box */
-    .count-overlay { display: none; background: var(--panel); border: 2px solid var(--accent-green); border-radius: 12px; padding: 16px; margin-bottom: 12px; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1); }
-    .count-title { font-size: 12px; font-weight: bold; color: var(--muted); text-transform: uppercase; letter-spacing: 0.5px; }
-    .count-item-name { font-size: 20px; font-weight: 800; color: var(--text); margin: 4px 0 2px 0; }
-    .count-mapping-info { font-size: 13px; color: var(--muted); margin-bottom: 10px; font-style: italic; }
-    .count-sub { display: inline-block; background: #e0f2fe; color: #0369a1; font-weight: bold; padding: 3px 8px; border-radius: 4px; font-size: 12px; margin-bottom: 12px; }
-
-    .input-row { display: flex; gap: 8px; align-items: center; margin-bottom: 12px; }
-    .qty-input { flex: 1; font-size: 24px; font-weight: bold; text-align: center; }
-    .mod-btn { padding: 12px 16px; font-size: 16px; font-weight: bold; border: 1px solid #cbd5e1; background: #f9fafb; color:#111; border-radius: 8px; cursor: pointer; }
-    [data-theme="dark"] .mod-btn { background: #2d3748; color: #fff; border-color: #4a5568; }
-
-    .action-row { display: flex; gap: 8px; }
-    .btn { flex: 1; padding: 12px; font-size: 15px; font-weight: bold; border: none; border-radius: 8px; cursor: pointer; text-align: center; }
+    .action-row { display: flex; gap: 6px; }
+    .btn { flex: 1; padding: 12px; font-size: 14px; font-weight: bold; border: none; border-radius: 6px; cursor: pointer; }
     .btn-save { background: var(--accent-green); color: white; }
-    .btn-cancel { background: #ef4444; color: white; }
+    .btn-cancel { background: #dc3545; color: white; }
 
-    /* History Logs */
-    .history-header { display: flex; justify-content: space-between; align-items: center; margin-top: 16px; margin-bottom: 8px; }
-    .log-item { background: var(--panel); padding: 10px 12px; border-radius: 8px; border: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; font-size: 14px; }
-    .log-meta { font-size: 11px; color: var(--muted); margin-top: 2px; }
+    .log-item { background: var(--panel); padding: 12px; border-radius: 8px; border: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; }
+    .clear-btn { background: none; border: none; color: #dc3545; cursor: pointer; font-weight: 600; padding: 4px; }
 
-    /* Sticky Floating Export Option Bar */
     .footer-bar { position: fixed; bottom: 0; left: 0; right: 0; background: var(--panel); border-top: 1px solid var(--border); padding: 12px; display: flex; justify-content: center; z-index: 999; }
-    .export-btn { width: 100%; max-width: 576px; background: #2563eb; color: white; padding: 14px; border-radius: 8px; text-align: center; font-weight: bold; border: none; font-size: 16px; cursor: pointer; box-shadow: 0 4px 6px -1px rgba(37,99,235,0.2); }
-
-    @media (max-width: 600px) {
-      body { padding: 8px; padding-bottom: 80px; }
-      th, td { padding: 10px; font-size: 14px; }
-    }
+    .export-btn { width: 100%; max-width: 726px; background: #0d6efd; color: white; padding: 14px; border-radius: 8px; text-align: center; font-weight: bold; border: none; font-size: 16px; cursor: pointer; }
   </style>
 </head>
 <body>
@@ -120,26 +202,35 @@
 <div class="app-container">
   
   <div class="tabs-bar">
-    <button class="tab-btn active" data-mode="finder" onclick="switchMode('finder')">🔍 Find Stock</button>
-    <button class="tab-btn" data-mode="counter" onclick="switchMode('counter')">📋 Pre-Count Scanner</button>
+    <button id="finderTab" class="tab-btn active" onclick="switchMode('finder')">🔍 Find Stock</button>
+    <button id="counterTab" class="tab-btn" onclick="switchMode('counter')">📋 Pre-Count Scanner</button>
   </div>
 
-  <div class="status-bar" style="display: flex; justify-content: space-between; font-size: 12px; color: var(--muted); margin-bottom: 8px; padding: 0 4px;">
+  <div style="display: flex; justify-content: space-between; font-size: 12px; color: var(--muted); margin-bottom: 8px; padding: 0 4px;">
     <div id="metaDisplay">Loading database...</div>
     <div id="countSession" style="display:none;">Counts logged: 0</div>
   </div>
 
   <div id="finderScreen" class="app-screen active">
     <div class="panel-box">
-      <label for="searchBox">ENTER PART NUMBER, ITEM NO, OR SUPPLIER REF</label>
-      <input id="searchBox" type="text" placeholder="Type here to search..." autofocus autocomplete="off"/>
+      <label for="searchBox">Search Part Number / Item No. / Supplier Reference</label>
+      <input id="searchBox" type="text" placeholder="DGN 3102C..." autofocus autocomplete="off"/>
       
-      <div class="controls-row">
+      <div class="shortcut-row">
+        <button class="action-sub-btn" onclick="triggerDirectScan('part')">Scan QR Code</button>
+        <button class="action-sub-btn" onclick="triggerDirectScan('ref')">Scan Supplier Ref</button>
+        <button class="action-sub-btn reset" onclick="resetSearchFields()">Reset Search Fields</button>
+      </div>
+
+      <div class="preferences-bar">
+        <div class="accent-picker-wrap">
+          <span>Accent color</span>
+          <input id="accentColorPicker" type="color" class="color-box-input" value="#0056b3" />
+        </div>
         <div>
           <input id="themeToggle" type="checkbox" />
-          <label for="themeToggle" style="display:inline; margin-left:4px; font-weight:normal;">Dark Mode</label>
+          <label for="themeToggle" style="display:inline; margin-left:4px; font-weight:600; color:var(--text);">Dark Mode</label>
         </div>
-        <button id="clearCacheBtn" class="clear-btn">Clear Local Cache</button>
       </div>
     </div>
 
@@ -148,27 +239,27 @@
         <table>
           <thead>
             <tr>
-              <th>Part Number Map</th>
-              <th>Stock</th>
-              <th>SubLocation</th>
+              <th class="col-main">Part Number Map / Cross-Ref</th>
+              <th class="col-qty">Stock</th>
+              <th class="col-sub">SubLocation</th>
             </tr>
           </thead>
           <tbody id="tableBody"></tbody>
         </table>
       </div>
-      <div id="noResults" class="alertBox">❌ No matching stock found.</div>
+      <div id="noResults" class="alertBox">❌ No matching inventory items found.</div>
     </div>
   </div>
 
   <div id="counterScreen" class="app-screen">
-    <div class="panel-box" style="padding:8px;">
+    <div class="panel-box" style="padding:8px; margin-bottom:12px;">
       <div id="reader"></div>
     </div>
 
     <div id="countOverlay" class="count-overlay">
-      <div id="targetTitleHeader" class="count-title">Matched Master Part Number</div>
+      <div id="targetTitleHeader" class="count-title">Matched Database Reference</div>
       <div id="targetItemName" class="count-item-name">---</div>
-      <div id="targetMappingInfo" class="count-mapping-info">Mapped via: ---</div>
+      <div id="targetMappingInfo" style="font-size:12px; color:var(--muted); margin-bottom:8px;">---</div>
       <div id="targetSubLoc" class="count-sub">---</div>
       
       <div class="input-row">
@@ -184,8 +275,8 @@
       </div>
     </div>
 
-    <div class="history-header">
-      <span style="font-size: 14px; font-weight: bold; color: var(--muted);">Logged in this Session</span>
+    <div style="display:flex; justify-content:space-between; align-items:center; margin:14px 0 8px 0;">
+      <span style="font-size: 14px; font-weight: 700; color: var(--muted);">Logged in this Session</span>
       <button class="clear-btn" onclick="clearCounts()">Clear Logs</button>
     </div>
     <div id="logRegistryList"></div>
@@ -211,16 +302,34 @@ var tableWrap = document.getElementById('tableWrap');
 var noResults = document.getElementById('noResults');
 var metaDisplay = document.getElementById('metaDisplay');
 var themeToggle = document.getElementById('themeToggle');
-var clearCacheBtn = document.getElementById('clearCacheBtn');
+var accentColorPicker = document.getElementById('accentColorPicker');
 var searchTimeout = null;
+
+function applyAccentColor(hexColor) {
+  document.documentElement.style.setProperty('--primary-accent', hexColor);
+  localStorage.setItem('ms_accent_hex', hexColor);
+}
+
+accentColorPicker.addEventListener('input', function() {
+  applyAccentColor(accentColorPicker.value);
+});
+
+function resetSearchFields() {
+  searchBox.value = '';
+  renderResults();
+  searchBox.focus();
+}
+
+function triggerDirectScan(type) {
+  switchMode('counter');
+}
 
 function switchMode(mode) {
   document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
   document.querySelectorAll('.app-screen').forEach(scr => scr.classList.remove('active'));
   
-  document.querySelector(`.tab-btn[data-mode="${mode}"]`).classList.add('active');
-  
   if (mode === 'finder') {
+    document.getElementById('finderTab').classList.add('active');
     document.getElementById('finderScreen').classList.add('active');
     document.getElementById('footerBar').style.display = 'none';
     document.getElementById('countSession').style.display = 'none';
@@ -228,6 +337,7 @@ function switchMode(mode) {
     stopScanner();
     setTimeout(() => { searchBox.focus(); }, 100);
   } else {
+    document.getElementById('counterTab').classList.add('active');
     document.getElementById('counterScreen').classList.add('active');
     document.getElementById('footerBar').style.display = 'flex';
     document.getElementById('countSession').style.display = 'block';
@@ -263,16 +373,13 @@ function parseCSV(text) {
   return rows;
 }
 
-// Highlights matching query text dynamically inside strings safely
 function highlightText(sourceText, query) {
   if (!query) return sourceText;
   let idx = sourceText.toLowerCase().indexOf(query.toLowerCase());
   if (idx === -1) return sourceText;
-  
-  let matchLen = query.length;
   return sourceText.substring(0, idx) + 
-         '<mark class="match">' + sourceText.substring(idx, idx + matchLen) + '</mark>' + 
-         sourceText.substring(idx + matchLen);
+         '<mark class="match">' + sourceText.substring(idx, idx + query.length) + '</mark>' + 
+         sourceText.substring(idx + query.length);
 }
 
 function renderResults() {
@@ -305,30 +412,27 @@ function renderResults() {
   noResults.style.display = 'none';
 
   var html = '';
-  var displayCount = Math.min(matches.length, 50);
+  var displayCount = Math.min(matches.length, 60);
   
   for (var i = 0; i < displayCount; i++) {
     var r = matches[i];
     
-    // Apply clean highlights to matching strings
     var displayPart = highlightText(r.part, query);
     var displayItem = r.itemNo ? highlightText(r.itemNo, query) : '';
     var displayRef = r.supplierRef ? highlightText(r.supplierRef, query) : '';
 
-    var labelHTML = '<div><strong>' + displayPart + '</strong></div>';
+    var descriptionHTML = '<div><strong style="font-size:15px; color:var(--text);">' + displayPart + '</strong></div>';
     if (r.itemNo) {
-      labelHTML += '<div style="font-size: 12px; color: var(--muted); margin-top: 2px;">Item: ' + displayItem + '</div>';
+      descriptionHTML += '<div style="font-size: 11px; color: var(--muted); margin-top: 3px;">Item Number: ' + displayItem + '</div>';
     }
     if (r.supplierRef) {
-      labelHTML += '<div style="font-size: 12px; color: var(--muted);">Ref: ' + displayRef + '</div>';
+      descriptionHTML += '<div style="font-size: 11px; color: var(--muted);">Supplier Ref: ' + displayRef + '</div>';
     }
     
-    var highlightedSub = '<mark class="location-match">' + r.sub + '</mark>';
-    
     html += '<tr>' +
-              '<td>' + labelHTML + '</td>' +
-              '<td><strong style="font-size: 16px;">' + r.qty + '</strong></td>' +
-              '<td>' + highlightedSub + '</td>' +
+              '<td class="col-main">' + descriptionHTML + '</td>' +
+              '<td class="col-qty"><strong style="font-size: 16px; color:var(--text);">' + r.qty + '</strong></td>' +
+              '<td class="col-sub"><span class="location-badge">' + r.sub + '</span></td>' +
             '</tr>';
   }
 
@@ -338,7 +442,7 @@ function renderResults() {
 
 searchBox.addEventListener('input', function() {
   clearTimeout(searchTimeout);
-  searchTimeout = setTimeout(renderResults, 150);
+  searchTimeout = setTimeout(renderResults, 120);
 });
 
 function playBeep(type) {
@@ -349,12 +453,12 @@ function playBeep(type) {
     osc.connect(gain); gain.connect(ctx.destination);
     if (type === 'success') {
       osc.frequency.setValueAtTime(880, ctx.currentTime);
-      gain.gain.setValueAtTime(0.1, ctx.currentTime);
-      osc.start(); osc.stop(ctx.currentTime + 0.1);
+      gain.gain.setValueAtTime(0.08, ctx.currentTime);
+      osc.start(); osc.stop(ctx.currentTime + 0.08);
     } else {
       osc.frequency.setValueAtTime(220, ctx.currentTime);
-      gain.gain.setValueAtTime(0.2, ctx.currentTime);
-      osc.start(); osc.stop(ctx.currentTime + 0.25);
+      gain.gain.setValueAtTime(0.15, ctx.currentTime);
+      osc.start(); osc.stop(ctx.currentTime + 0.2);
     }
   } catch(e){}
 }
@@ -364,9 +468,9 @@ function startScanner() {
   html5QrcodeScanner = new Html5Qrcode("reader");
   html5QrcodeScanner.start(
     { facingMode: "environment" },
-    { fps: 10, qrbox: { width: 260, height: 160 } },
+    { fps: 12, qrbox: { width: 260, height: 160 } },
     onScanSuccess
-  ).catch(() => { metaDisplay.textContent = "Camera Error: Check Permissions."; });
+  ).catch(() => { metaDisplay.textContent = "Camera initialization failed."; });
 }
 
 function stopScanner() {
@@ -381,9 +485,9 @@ function onScanSuccess(decodedText) {
   
   let matchedVia = '';
   let match = stockRegistry.find(row => {
-    if (row.part.toLowerCase() === scannedQueryLower) { matchedVia = 'Direct Part Number'; return true; }
-    if (row.itemNo.toLowerCase() === scannedQueryLower) { matchedVia = `Item Number Cross-Ref`; return true; }
-    if (row.supplierRef.toLowerCase() === scannedQueryLower) { matchedVia = `Supplier Ref Cross-Ref`; return true; }
+    if (row.part.toLowerCase() === scannedQueryLower) { matchedVia = 'Part Number'; return true; }
+    if (row.itemNo.toLowerCase() === scannedQueryLower) { matchedVia = 'Item Number'; return true; }
+    if (row.supplierRef.toLowerCase() === scannedQueryLower) { matchedVia = 'Supplier Reference'; return true; }
     return false;
   });
 
@@ -394,27 +498,21 @@ function onScanSuccess(decodedText) {
   if (match) {
     playBeep('success');
     activeScanMatch = match;
-    document.getElementById('targetTitleHeader').textContent = "Matched Master Part Number";
-    
-    // Highlight the exact scanned parameter in the popup window
+    document.getElementById('targetTitleHeader').textContent = "Matched Database Reference";
     document.getElementById('targetItemName').innerHTML = highlightText(match.part, scannedQuery);
-    document.getElementById('targetMappingInfo').textContent = `Mapped via: ${matchedVia}`;
-    document.getElementById('targetSubLoc').textContent = `System SubLocation: ${match.sub || 'N/A'}`;
+    document.getElementById('targetMappingInfo').textContent = `Cross-Referenced via: ${matchedVia}`;
+    document.getElementById('targetSubLoc').textContent = match.sub || 'No SubLocation';
   } else {
     playBeep('error');
-    activeScanMatch = {
-      part: `No available stock [${scannedQuery}]`,
-      itemNo: scannedQuery,
-      sub: 'MANUAL ENTRY'
-    };
-    document.getElementById('targetTitleHeader').textContent = "⚠️ UNREGISTERED BARCODE";
+    activeScanMatch = { part: `Unregistered Entry [${scannedQuery}]`, itemNo: scannedQuery, sub: 'MANUAL RACK' };
+    document.getElementById('targetTitleHeader').textContent = "⚠️ NOT FOUND IN STOCKS.CSV";
     document.getElementById('targetItemName').textContent = activeScanMatch.part;
-    document.getElementById('targetMappingInfo').textContent = "This item code does not exist in your current stocks.csv database records.";
-    document.getElementById('targetSubLoc').textContent = "System SubLocation: Unknown Location";
+    document.getElementById('targetMappingInfo').textContent = "No baseline data match found.";
+    document.getElementById('targetSubLoc').textContent = "Unknown SubLocation";
   }
 
   document.getElementById('countOverlay').style.display = 'block';
-  setTimeout(() => { qtyInput.focus(); }, 150);
+  setTimeout(() => { qtyInput.focus(); }, 120);
 }
 
 function adjustQty(amount) {
@@ -434,8 +532,7 @@ function commitCount() {
   let countedQty = parseInt(qtyInput.value, 10);
 
   if (isNaN(countedQty) || countedQty < 0) {
-    alert("Please assign a valid positive physical count.");
-    qtyInput.focus();
+    alert("Please input a valid quantity.");
     return;
   }
 
@@ -444,7 +541,7 @@ function commitCount() {
     itemNo: activeScanMatch.itemNo || '',
     systemSub: activeScanMatch.sub,
     countedQty: countedQty,
-    timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })
+    timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
   });
 
   localStorage.setItem('inv_counts', JSON.stringify(countLogSession));
@@ -458,15 +555,14 @@ function renderLogs() {
   
   let html = '';
   countLogSession.forEach((item) => {
-    let isUnregistered = item.part.startsWith("No available stock");
-    let displayColor = isUnregistered ? "#ef4444" : "var(--accent-green)";
+    let isUnregistered = item.part.startsWith("Unregistered Entry");
     html += `
-      <div class="log-item" style="${isUnregistered ? 'border-left: 4px solid #ef4444;' : ''}">
+      <div class="log-item" style="${isUnregistered ? 'border-left: 4px solid #dc3545;' : 'border-left: 4px solid #10b981;'}">
         <div>
-          <strong style="color: ${isUnregistered ? '#ef4444' : 'inherit'};">${item.part}</strong>
-          <div class="log-meta">Sublocation: ${item.systemSub || 'N/A'} | Time: ${item.timestamp}</div>
+          <strong style="font-size:14px;">${item.part}</strong>
+          <div style="font-size:11px; color:var(--muted);">Loc: ${item.systemSub} | Time: ${item.timestamp}</div>
         </div>
-        <div style="font-size: 18px; font-weight: bold; color: ${displayColor};">× ${item.countedQty}</div>
+        <div style="font-size: 16px; font-weight: bold; color: var(--primary-accent);">× ${item.countedQty}</div>
       </div>
     `;
   });
@@ -474,7 +570,7 @@ function renderLogs() {
 }
 
 function clearCounts() {
-  if (confirm("Permanently wipe out saved inventory pre-counts from this workspace view?")) {
+  if (confirm("Clear local count logs from this terminal?")) {
     countLogSession = [];
     localStorage.removeItem('inv_counts');
     renderLogs();
@@ -482,28 +578,18 @@ function clearCounts() {
 }
 
 function exportCountsToCSV() {
-  if (countLogSession.length === 0) {
-    alert("No count entries logged yet.");
-    return;
-  }
+  if (countLogSession.length === 0) return;
   let csvContent = "data:text/csv;charset=utf-8,Part Number,Item Number,System Sublocation,Counted Qty,Timestamp\r\n";
   countLogSession.forEach(row => {
     csvContent += `"${row.part}","${row.itemNo}","${row.systemSub}",${row.countedQty},"${row.timestamp}"\r\n`;
   });
   let link = document.createElement("a");
   link.setAttribute("href", encodeURI(csvContent));
-  link.setAttribute("download", `PreCount_Report_${new Date().toISOString().split('T')[0]}.csv`);
+  link.setAttribute("download", `PreCount_${new Date().toISOString().split('T')[0]}.csv`);
   document.body.appendChild(link);
   link.click();
   document.body.removeChild(link);
 }
-
-clearCacheBtn.addEventListener('click', function() {
-  if (confirm("Clear local cache and force data reload?")) {
-    localStorage.removeItem('ms_cache');
-    location.reload();
-  }
-});
 
 themeToggle.addEventListener('change', function() {
   document.documentElement.setAttribute('data-theme', themeToggle.checked ? 'dark' : 'light');
@@ -514,6 +600,10 @@ themeToggle.addEventListener('change', function() {
   var savedTheme = localStorage.getItem('ms_theme') || 'light';
   themeToggle.checked = (savedTheme === 'dark');
   document.documentElement.setAttribute('data-theme', savedTheme);
+
+  var savedAccent = localStorage.getItem('ms_accent_hex') || '#0056b3';
+  accentColorPicker.value = savedAccent;
+  applyAccentColor(savedAccent);
 
   var savedSession = localStorage.getItem('inv_counts');
   if (savedSession) {
@@ -535,10 +625,11 @@ themeToggle.addEventListener('change', function() {
         stockRegistry = freshlyParsed;
         localStorage.setItem('ms_cache', JSON.stringify(stockRegistry));
         metaDisplay.textContent = 'Total items in registry: ' + stockRegistry.length;
+        if (searchBox.value) renderResults();
       }
     })
     .catch(() => {
-      if (!cachedData) metaDisplay.textContent = 'Connection error. Requires internet to initialize.';
+      if (!cachedData) metaDisplay.textContent = 'Offline. No network database available.';
     });
 })();
 </script>
