@@ -115,9 +115,6 @@
     #finderTab.active { background: #0056b3; color: white; }
     #counterTab.active { background: var(--accent-green); color: white; }
 
-    .app-screen { display: none; }
-    .app-screen.active { display: block; }
-
     .panel-box { 
       background: var(--panel); 
       padding: 20px; 
@@ -742,6 +739,13 @@ function startScanner() {
     { facingMode: "environment" },
     { 
       fps: 30, 
+      formatsToSupport: [ 
+        Html5QrcodeSupportedFormats.EAN_13, 
+        Html5QrcodeSupportedFormats.EAN_8, 
+        Html5QrcodeSupportedFormats.CODE_128, 
+        Html5QrcodeSupportedFormats.CODE_39, 
+        Html5QrcodeSupportedFormats.QR_CODE 
+      ],
       videoConstraints: {
         facingMode: "environment", 
         width: { ideal: 1920 },
@@ -750,8 +754,8 @@ function startScanner() {
       },
       qrbox: function(viewfinderWidth, viewfinderHeight) {
         let minEdge = Math.min(viewfinderWidth, viewfinderHeight);
-        let boxSize = Math.floor(minEdge * 0.7);
-        return { width: boxSize, height: Math.floor(boxSize * 0.65) };
+        let boxSize = Math.floor(minEdge * 0.75);
+        return { width: boxSize, height: Math.floor(boxSize * 0.5) };
       },
       experimentalFeatures: { useBarCodeDetectorIfSupported: true }
     }, 
@@ -770,7 +774,14 @@ function startInlineScanner(targetType) {
   inlineFinderScanner.start(
     { facingMode: "environment" },
     { 
-      fps: 25, 
+      fps: 25,
+      formatsToSupport: [ 
+        Html5QrcodeSupportedFormats.EAN_13, 
+        Html5QrcodeSupportedFormats.EAN_8, 
+        Html5QrcodeSupportedFormats.CODE_128, 
+        Html5QrcodeSupportedFormats.CODE_39, 
+        Html5QrcodeSupportedFormats.QR_CODE 
+      ],
       videoConstraints: {
         facingMode: "environment", 
         width: { ideal: 1920 },
@@ -780,7 +791,7 @@ function startInlineScanner(targetType) {
       qrbox: function(viewfinderWidth, viewfinderHeight) {
         let minEdge = Math.min(viewfinderWidth, viewfinderHeight);
         let boxSize = Math.floor(minEdge * 0.75);
-        return { width: boxSize, height: Math.floor(boxSize * 0.6) };
+        return { width: boxSize, height: Math.floor(boxSize * 0.5) };
       }
     },
     onInlineScanSuccess
@@ -1069,9 +1080,24 @@ function onScanSuccess(decodedText) {
     document.getElementById('countOverlay').style.display = 'block';
     setTimeout(() => { qtyInput.focus(); }, 150);
   } else {
-    playBeep('error');
-    alert(`Scanned tag value [ ${scannedQuery} ] does not exist in your local stocks or fittings manifests.`);
-    resumeScanningEngine();
+    // FALLBACK INTERCEPT: Item not found in Masterlist. Allow counting it as a manual layout match!
+    playBeep('success'); 
+    activeScanMatch = {
+      part: scannedQuery,
+      itemNo: 'NOT IN MASTERLIST',
+      sub: 'MANUAL ENTRY',
+      supplierRef: 'N/A',
+      type: 'standard'
+    };
+    
+    document.getElementById('targetTitleHeader').textContent = "⚠️ Unlisted Code Detected";
+    document.getElementById('targetItemName').textContent = scannedQuery;
+    document.getElementById('targetMappingInfo').textContent = "Tag missing from current CSV databases. Counting as manual entry.";
+    document.getElementById('targetSubLoc').textContent = "MANUAL ENTRY";
+    document.getElementById('targetSubLoc').className = "count-sub";
+    
+    document.getElementById('countOverlay').style.display = 'block';
+    setTimeout(() => { qtyInput.focus(); }, 150);
   }
 }
 
@@ -1103,16 +1129,26 @@ function commitCount() {
     return;
   }
 
-  const newLog = {
-    date: new Date().toLocaleDateString(),
-    time: new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}),
-    part: activeScanMatch.part,
-    itemNo: activeScanMatch.itemNo || 'FITTINGS',
-    location: activeScanMatch.sub,
-    counted: enteredQty
-  };
+  const targetPart = activeScanMatch.part;
+  const targetSub = activeScanMatch.sub;
 
-  countLogSession.unshift(newLog);
+  const existingLogIndex = countLogSession.findIndex(log => log.part === targetPart && log.location === targetSub);
+
+  if (existingLogIndex !== -1) {
+    countLogSession[existingLogIndex].counted += enteredQty;
+    countLogSession[existingLogIndex].time = new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+  } else {
+    const newLog = {
+      date: new Date().toLocaleDateString(),
+      time: new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}),
+      part: targetPart,
+      itemNo: activeScanMatch.itemNo || 'FITTINGS',
+      location: targetSub,
+      counted: enteredQty
+    };
+    countLogSession.unshift(newLog);
+  }
+
   saveLogsToCache();
   renderLogTable();
 
