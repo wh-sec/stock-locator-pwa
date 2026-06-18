@@ -88,19 +88,6 @@
       text-transform: uppercase;
     }
 
-    /* Elegant Work Motivation Quote Box Overlay */
-    .quote-banner {
-      width: 100%;
-      text-align: center;
-      padding: 4px 16px;
-      font-size: 13px;
-      font-style: italic;
-      color: var(--muted);
-      max-width: 580px;
-      margin-top: 4px;
-      line-height: 1.4;
-    }
-
     .tabs-bar { 
       display: flex; 
       background: var(--panel); 
@@ -432,7 +419,6 @@
       <img src="https://raw.githubusercontent.com/wh-sec/stock-locator-pwa/main/logo.png" alt="Logo" class="app-logo" onerror="this.style.display='none'"/>
       <h1 class="app-title">STOCK LOCATOR+</h1>
     </div>
-    <div id="quoteDisplayBar" class="quote-banner">"Loading daily motivation..."</div>
   </div>
   
   <div class="tabs-bar">
@@ -571,7 +557,6 @@ var liveSyncDisplay = document.getElementById('liveSyncDisplay');
 var themeToggle = document.getElementById('themeToggle');
 var searchTimeout = null;
 
-// Notification Engine Constants
 var currentQuote = "Quality means doing it right when no one is looking.";
 var currentAuthor = "Henry Ford";
 
@@ -582,7 +567,6 @@ const fallbackQuotes = [
   { q: "There is no substitute for hard work.", a: "Thomas Edison" }
 ];
 
-// Fetch Motivation Quotes from ZenQuotes API
 async function fetchDailyQuote() {
   try {
     const res = await fetch('https://api.allorigins.win/get?url=' + encodeURIComponent('https://zenquotes.io/api/today'));
@@ -597,7 +581,6 @@ async function fetchDailyQuote() {
   } catch (err) {
     useLocalFallback();
   }
-  document.getElementById('quoteDisplayBar').innerText = `"${currentQuote}" — ${currentAuthor}`;
 }
 
 function useLocalFallback() {
@@ -626,7 +609,6 @@ function fireStockUpdateNotification() {
   }
 }
 
-// System Cache, Wallpapers and Core Storage Engines
 function initThemeAndWallpaper() {
   const activeTheme = localStorage.getItem('ms_theme') || 'dark';
   document.documentElement.setAttribute('data-theme', activeTheme);
@@ -699,7 +681,6 @@ function resetSearchFields() {
   searchBox.focus();
 }
 
-// Network CSV Sync Management Engine
 async function fetchInventoryDatabases() {
   liveSyncDisplay.textContent = 'Live Sync: Connecting...';
   try {
@@ -723,7 +704,6 @@ async function fetchInventoryDatabases() {
     liveSyncDisplay.textContent = 'Live Sync: Online';
     updateMetaDisplay();
     
-    // Trigger updated custom lock-screen notification engine!
     fireStockUpdateNotification();
 
   } catch (err) {
@@ -753,7 +733,6 @@ function clearAppCache() {
   }
 }
 
-// Scanner Implementation Systems
 function startScanner() {
   if (html5QrcodeScanner) return;
   isProcessingScan = false;
@@ -1268,7 +1247,6 @@ function exportCountsToCSV() {
   document.body.removeChild(downloadLink);
 }
 
-// App Orchestration Initialization
 window.onload = () => {
   initThemeAndWallpaper();
   fetchDailyQuote();
