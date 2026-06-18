@@ -115,6 +115,13 @@
     #finderTab.active { background: #0056b3; color: white; }
     #counterTab.active { background: var(--accent-green); color: white; }
 
+    .app-screen { 
+      display: none; 
+    }
+    .app-screen.active { 
+      display: block; 
+    }
+
     .panel-box { 
       background: var(--panel); 
       padding: 20px; 
@@ -557,7 +564,8 @@
 
 <script>
 const CSV_URL = 'https://raw.githubusercontent.com/wh-sec/stock-locator-pwa/main/stocks.csv';
-const FITTINGS_URL = 'https://raw.githubusercontent.com/wh-sec/stock-locator-pwa/main/fittings.csv';
+// GOOGLE SHEETS WEB APP URL INTEGRATION
+const GOOGLE_SHEETS_API_URL = 'https://script.google.com/macros/s/AKfycbyKR4oaN27do04aSIthPdPCB6te_Ve6sHJosnBPq0ZpAvVTuOlBGYbPGyFKxlZ2aWS56Q/exec';
 
 var stockRegistry = [];
 var fittingsRegistry = [];
@@ -705,29 +713,22 @@ function resetSearchFields() {
 async function fetchInventoryDatabases() {
   liveSyncDisplay.textContent = 'Live Sync: Connecting...';
   try {
+    // Main stock ledger comes from GitHub, Fittings stock ledger comes live from Google Sheets
     const [stockRes, fitRes] = await Promise.all([
       fetch(CSV_URL + '?t=' + Date.now()),
-      fetch(FITTINGS_URL + '?t=' + Date.now())
+      fetch(GOOGLE_SHEETS_API_URL)
     ]);
 
     if (!stockRes.ok || !fitRes.ok) throw new Error("Server communication fault");
 
     const stockText = await stockRes.text();
-    const fitText = await fitRes.text();
+    const fittingsJson = await fitRes.json();
 
-    // Check if there are any locally mutated modifications saved from editing fittings stocks
-    const localFittingsOverride = localStorage.getItem('mutated_fittings_registry');
-    
     stockRegistry = parseCSV(stockText);
-    
-    if (localFittingsOverride) {
-      fittingsRegistry = JSON.parse(localFittingsOverride);
-    } else {
-      fittingsRegistry = parseFittingsCSV(fitText);
-    }
+    fittingsRegistry = parseGoogleSheetsJSON(fittingsJson);
 
     localStorage.setItem('cached_stocks', stockText);
-    localStorage.setItem('cached_fittings', fitText);
+    localStorage.setItem('cached_fittings_json', JSON.stringify(fittingsJson));
     localStorage.setItem('cached_sync_time', new Date().toLocaleString());
 
     liveSyncDisplay.textContent = 'Live Sync: Online';
@@ -743,17 +744,12 @@ async function fetchInventoryDatabases() {
 
 function loadCachedDatabases() {
   const cStocks = localStorage.getItem('cached_stocks');
-  const cFittings = localStorage.getItem('cached_fittings');
-  const localFittingsOverride = localStorage.getItem('mutated_fittings_registry');
+  const cFittingsJson = localStorage.getItem('cached_fittings_json');
   const cTime = localStorage.getItem('cached_sync_time') || 'Never';
 
-  if (cStocks && cFittings) {
+  if (cStocks && cFittingsJson) {
     stockRegistry = parseCSV(cStocks);
-    if (localFittingsOverride) {
-      fittingsRegistry = JSON.parse(localFittingsOverride);
-    } else {
-      fittingsRegistry = parseFittingsCSV(cFittings);
-    }
+    fittingsRegistry = parseGoogleSheetsJSON(JSON.parse(cFittingsJson));
     metaDisplay.textContent = `Using Cached Data (Synced: ${cTime})`;
   } else {
     metaDisplay.textContent = 'No database connection. Action Required.';
@@ -912,24 +908,23 @@ function parseCSV(text) {
   return rows;
 }
 
-function parseFittingsCSV(text) {
-  var lines = text.split(/\r?\n/);
+function parseGoogleSheetsJSON(dataMatrix) {
   var rows = [];
-  if (lines.length < 2) return [];
-  for (var i = 1; i < lines.length; i++) {
-    var line = lines[i].trim();
-    if (!line) continue;
-    var cols = line.split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/);
+  if (!dataMatrix || dataMatrix.length < 2) return [];
+  
+  // Assumes row 0 contains header names, parsing data rows starting from index 1
+  for (var i = 1; i < dataMatrix.length; i++) {
+    var cols = dataMatrix[i];
     if (cols.length < 8) continue;
     
-    var qtyRaw = cols[6] || '0';
+    var qtyRaw = String(cols[6]) || '0';
     var qty = parseInt(qtyRaw.replace(/[^0-9.\-]/g, ''), 10);
     if (isNaN(qty)) qty = 0;
     
     rows.push({
-      part: (cols[2] || '').replace(/"/g, '').trim(),
+      part: String(cols[2]).trim(),
       qty: qty,
-      sub: (cols[7] || '').replace(/"/g, '').trim(),
+      sub: String(cols[7]).trim(),
       itemNo: '',
       supplierRef: '',
       type: 'fittings'
@@ -947,8 +942,7 @@ function highlightText(sourceText, query) {
          sourceText.substring(idx + query.length);
 }
 
-// REAL-TIME FITTINGS QUANTITY EDIT HANDLERS
-function handleFittingsQtyChange(inputElement, partName) {
+async function handleFittingsQtyChange(inputElement, partName) {
   let nextQty = parseInt(inputElement.value, 10);
   if (isNaN(nextQty) || nextQty < 0) {
     alert("Please enter a valid stock value.");
@@ -959,20 +953,47 @@ function handleFittingsQtyChange(inputElement, partName) {
   let originalIndex = fittingsRegistry.findIndex(r => r.part === partName);
   if (originalIndex === -1) return;
 
+  let executeDeletion = false;
   if (nextQty === 0) {
-    let confirmDelete = confirm(`⚠️ The stock will now be zero, delete part number "${partName}"?`);
-    if (confirmDelete) {
-      fittingsRegistry.splice(originalIndex, 1);
-    } else {
-      fittingsRegistry[originalIndex].qty = 0;
+    let confirmDelete = confirm(`⚠️ The stock will now be zero, delete part number "${partName}" from Google Sheets?`);
+    if (!confirmDelete) {
+      inputElement.value = fittingsRegistry[originalIndex].qty;
+      return;
     }
-  } else {
-    fittingsRegistry[originalIndex].qty = nextQty;
+    executeDeletion = true;
   }
 
-  // Preserve changes across browser updates
-  localStorage.setItem('mutated_fittings_registry', JSON.stringify(fittingsRegistry));
-  renderResults();
+  // Visual interface feedback while syncing with Google Sheets API
+  liveSyncDisplay.textContent = 'Live Sync: Updating Sheet...';
+  inputElement.style.borderColor = '#eab308'; 
+
+  try {
+    const response = await fetch(GOOGLE_SHEETS_API_URL, {
+      method: 'POST',
+      mode: 'no-cors', // Mode configuration allows cross-domain Google deployments execution bypasses
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        part: partName,
+        qty: nextQty
+      })
+    });
+
+    // Optimistic state sync update reflecting immediately to active memory layout
+    if (executeDeletion) {
+      fittingsRegistry.splice(originalIndex, 1);
+    } else {
+      fittingsRegistry[originalIndex].qty = nextQty;
+    }
+
+    liveSyncDisplay.textContent = 'Live Sync: Online';
+    renderResults();
+
+  } catch (err) {
+    alert("Network sync fail. Could not update quantity on Google Sheets.");
+    liveSyncDisplay.textContent = 'Live Sync: Offline';
+    inputElement.value = fittingsRegistry[originalIndex].qty;
+    renderResults();
+  }
 }
 
 function renderResults() {
@@ -1030,7 +1051,6 @@ function renderResults() {
   } 
   else if (fitQuery) {
     var lowerFitQuery = fitQuery.toLowerCase();
-    // Keep parts showing 0 stock if they opted out of deletion
     var fitMatches = fittingsRegistry.filter(function(row) {
       return row.part.toLowerCase().indexOf(lowerFitQuery) !== -1;
     });
@@ -1051,9 +1071,8 @@ function renderResults() {
       var displayFitPart = highlightText(fr.part, fitQuery);
       
       var fitDescriptionHTML = '<div><strong style="font-size:15px; color:var(--text);">' + displayFitPart + '</strong></div>';
-      fitDescriptionHTML += '<div style="font-size: 11px; color: #8b5cf6; font-weight: 600; margin-top: 3px;">Category: Fittings Stock</div>';
+      fitDescriptionHTML += '<div style="font-size: 11px; color: #8b5cf6; font-weight: 600; margin-top: 3px;">Category: Fittings Stock (Google Sheet Sync)</div>';
 
-      // Inline dynamic modifier added specifically to layout the qty updates
       var interactiveQtyHTML = `
         <div class="inline-qty-edit-box">
           <input type="number" class="inline-edit-input" value="${fr.qty}" min="0" onchange="handleFittingsQtyChange(this, '${fr.part.replace(/'/g, "\\'")}')" />
