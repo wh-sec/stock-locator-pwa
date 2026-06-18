@@ -277,9 +277,9 @@
     
     th { background: var(--th-bg); font-weight: 700; color: var(--muted); font-size: 13px; }
     
-    th.col-main, td.col-main { width: 55%; }
-    th.col-qty, td.col-qty { width: 18%; text-align: center; }
-    th.col-sub, td.col-sub { width: 27%; text-align: center; }
+    th.col-main, td.col-main { width: 52%; }
+    th.col-qty, td.col-qty { width: 23%; text-align: center; }
+    th.col-sub, td.col-sub { width: 25%; text-align: center; }
 
     mark.match { background: #ffeb3b; color: #000; padding: 1px 3px; border-radius: 3px; font-weight: bold; }
     [data-theme="dark"] mark.match { background: #f59e0b; }
@@ -297,6 +297,30 @@
     }
     .location-badge.fittings-badge {
       background: #8b5cf6; 
+    }
+
+    .inline-qty-edit-box {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+    }
+    .inline-edit-input {
+      width: 55px !important;
+      padding: 4px 2px !important;
+      font-size: 15px !important;
+      font-weight: bold !important;
+      text-align: center !important;
+      border: 2px solid #8b5cf6 !important;
+      border-radius: 4px !important;
+    }
+    .edit-qty-btn {
+      background: none;
+      border: none;
+      color: #8b5cf6;
+      cursor: pointer;
+      font-size: 15px;
+      padding: 2px;
     }
 
     .alertBox { 
@@ -691,8 +715,16 @@ async function fetchInventoryDatabases() {
     const stockText = await stockRes.text();
     const fitText = await fitRes.text();
 
+    // Check if there are any locally mutated modifications saved from editing fittings stocks
+    const localFittingsOverride = localStorage.getItem('mutated_fittings_registry');
+    
     stockRegistry = parseCSV(stockText);
-    fittingsRegistry = parseFittingsCSV(fitText);
+    
+    if (localFittingsOverride) {
+      fittingsRegistry = JSON.parse(localFittingsOverride);
+    } else {
+      fittingsRegistry = parseFittingsCSV(fitText);
+    }
 
     localStorage.setItem('cached_stocks', stockText);
     localStorage.setItem('cached_fittings', fitText);
@@ -712,11 +744,16 @@ async function fetchInventoryDatabases() {
 function loadCachedDatabases() {
   const cStocks = localStorage.getItem('cached_stocks');
   const cFittings = localStorage.getItem('cached_fittings');
+  const localFittingsOverride = localStorage.getItem('mutated_fittings_registry');
   const cTime = localStorage.getItem('cached_sync_time') || 'Never';
 
   if (cStocks && cFittings) {
     stockRegistry = parseCSV(cStocks);
-    fittingsRegistry = parseFittingsCSV(cFittings);
+    if (localFittingsOverride) {
+      fittingsRegistry = JSON.parse(localFittingsOverride);
+    } else {
+      fittingsRegistry = parseFittingsCSV(cFittings);
+    }
     metaDisplay.textContent = `Using Cached Data (Synced: ${cTime})`;
   } else {
     metaDisplay.textContent = 'No database connection. Action Required.';
@@ -724,7 +761,7 @@ function loadCachedDatabases() {
 }
 
 function clearAppCache() {
-  if (confirm("Reset application local storage cache? This clears themes and cached asset data rows.")) {
+  if (confirm("Reset application local storage cache? This clears themes, custom fittings updates, and cached assets.")) {
     localStorage.clear();
     location.reload();
   }
@@ -910,6 +947,34 @@ function highlightText(sourceText, query) {
          sourceText.substring(idx + query.length);
 }
 
+// REAL-TIME FITTINGS QUANTITY EDIT HANDLERS
+function handleFittingsQtyChange(inputElement, partName) {
+  let nextQty = parseInt(inputElement.value, 10);
+  if (isNaN(nextQty) || nextQty < 0) {
+    alert("Please enter a valid stock value.");
+    inputElement.value = "0";
+    nextQty = 0;
+  }
+
+  let originalIndex = fittingsRegistry.findIndex(r => r.part === partName);
+  if (originalIndex === -1) return;
+
+  if (nextQty === 0) {
+    let confirmDelete = confirm(`⚠️ The stock will now be zero, delete part number "${partName}"?`);
+    if (confirmDelete) {
+      fittingsRegistry.splice(originalIndex, 1);
+    } else {
+      fittingsRegistry[originalIndex].qty = 0;
+    }
+  } else {
+    fittingsRegistry[originalIndex].qty = nextQty;
+  }
+
+  // Preserve changes across browser updates
+  localStorage.setItem('mutated_fittings_registry', JSON.stringify(fittingsRegistry));
+  renderResults();
+}
+
 function renderResults() {
   var query = searchBox.value.trim();
   var fitQuery = fittingsSearchBox.value.trim();
@@ -965,8 +1030,8 @@ function renderResults() {
   } 
   else if (fitQuery) {
     var lowerFitQuery = fitQuery.toLowerCase();
-    var activeFittings = fittingsRegistry.filter(r => r.qty > 0);
-    var fitMatches = activeFittings.filter(function(row) {
+    // Keep parts showing 0 stock if they opted out of deletion
+    var fitMatches = fittingsRegistry.filter(function(row) {
       return row.part.toLowerCase().indexOf(lowerFitQuery) !== -1;
     });
 
@@ -988,9 +1053,17 @@ function renderResults() {
       var fitDescriptionHTML = '<div><strong style="font-size:15px; color:var(--text);">' + displayFitPart + '</strong></div>';
       fitDescriptionHTML += '<div style="font-size: 11px; color: #8b5cf6; font-weight: 600; margin-top: 3px;">Category: Fittings Stock</div>';
 
+      // Inline dynamic modifier added specifically to layout the qty updates
+      var interactiveQtyHTML = `
+        <div class="inline-qty-edit-box">
+          <input type="number" class="inline-edit-input" value="${fr.qty}" min="0" onchange="handleFittingsQtyChange(this, '${fr.part.replace(/'/g, "\\'")}')" />
+          <button class="edit-qty-btn" title="Modify Stock">✏️</button>
+        </div>
+      `;
+
       html += '<tr>' +
                 '<td class="col-main">' + fitDescriptionHTML + '</td>' +
-                '<td class="col-qty"><strong style="font-size: 16px; color:var(--text);">' + fr.qty + '</strong></td>' +
+                '<td class="col-qty">' + interactiveQtyHTML + '</td>' +
                 '<td class="col-sub"><span class="location-badge fittings-badge">' + fr.sub + '</span></td>' +
               '</tr>';
     }
@@ -1080,7 +1153,6 @@ function onScanSuccess(decodedText) {
     document.getElementById('countOverlay').style.display = 'block';
     setTimeout(() => { qtyInput.focus(); }, 150);
   } else {
-    // FALLBACK INTERCEPT: Item not found in Masterlist. Allow counting it as a manual layout match!
     playBeep('success'); 
     activeScanMatch = {
       part: scannedQuery,
