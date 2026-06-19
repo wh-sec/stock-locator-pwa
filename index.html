@@ -5,8 +5,10 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>STOCK LOCATOR+</title>
 
-  <link class="pwa-icon" rel="icon" type="image/png" sizes="512x512" href="https://raw.githubusercontent.com/wh-sec/stock-locator-pwa/main/wh_icon.png">
-  <link class="pwa-icon" rel="apple-touch-icon" sizes="512x512" href="https://raw.githubusercontent.com/wh-sec/stock-locator-pwa/main/wh_icon.png">
+  <link rel="icon" type="image/png" sizes="192x192" href="https://raw.githubusercontent.com/wh-sec/stock-locator-pwa/main/wh_icon.png">
+  <link rel="icon" type="image/png" sizes="512x512" href="https://raw.githubusercontent.com/wh-sec/stock-locator-pwa/main/wh_icon.png">
+  <link rel="apple-touch-icon" sizes="180x180" href="https://raw.githubusercontent.com/wh-sec/stock-locator-pwa/main/wh_icon.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="https://raw.githubusercontent.com/wh-sec/stock-locator-pwa/main/wh_icon.png">
 
   <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
 
@@ -435,7 +437,7 @@
 <div id="startupInterceptModal" class="intercept-modal-overlay">
   <div class="intercept-box">
     <h3 style="color: var(--text);">Unexported Counts Detected! ⏳</h3>
-    <p id="interceptMessage">You have remaining logs saved in this terminal from an earlier date. Would you like to resume your previous work or wipe it to start a completely fresh session?</p>
+    <p id="interceptMessage">You have remaining logs saved in this terminal from an earlier date.</p>
     <div class="intercept-btns">
       <button class="btn-choice continue" onclick="resolveIntercept('continue')">🔄 Continue Previous Session</button>
       <button class="btn-choice purge" onclick="resolveIntercept('purge')">🧹 Wipe & Start New Session</button>
@@ -767,7 +769,6 @@ function startScanner() {
     { facingMode: "environment" },
     { 
       fps: 30, 
-      // ONLY support specific industrial types to prevent digit scrambling glitches
       formatsToSupport: [ 
         Html5QrcodeSupportedFormats.CODE_128, 
         Html5QrcodeSupportedFormats.CODE_39, 
@@ -802,7 +803,6 @@ function startInlineScanner(targetType) {
     { facingMode: "environment" },
     { 
       fps: 25,
-      // ONLY support specific industrial types to prevent digit scrambling glitches
       formatsToSupport: [ 
         Html5QrcodeSupportedFormats.CODE_128, 
         Html5QrcodeSupportedFormats.CODE_39, 
@@ -849,7 +849,6 @@ function onInlineScanSuccess(decodedText) {
   }
   renderResults();
 
-  // Instantly snaps view focus directly to matched output cards
   setTimeout(() => {
     const anchor = document.getElementById('resultsContainerLocationAnchor');
     if (anchor) {
@@ -1324,7 +1323,7 @@ function checkUnexportedSessionIntercept() {
     if (parsed.length > 0) {
       countLogSession = parsed;
       if (savedDate && savedDate !== currentDateString) {
-        document.getElementById('interceptMessage').textContent = `You have remaining records (${parsed.length} items) saved in this mobile terminal from an earlier shift date (${savedDate}). Would you like to resume adding entries or wipe it clean for today?`;
+        document.getElementById('interceptMessage').textContent = `You have remaining records (${parsed.length} items) saved in this mobile terminal from an earlier shift date (${savedDate}).`;
         document.getElementById('startupInterceptModal').style.display = 'flex';
       } else {
         localStorage.setItem('ms_terminal_session_date', currentDateString);
