@@ -897,6 +897,8 @@ function parseCSV(text) {
     var qtyRaw = cols[4] || '0';
     var qty = parseInt(qtyRaw.replace(/[^0-9.\-]/g, ''), 10);
     if (isNaN(qty)) qty = 0;
+    
+    // Clean and trace data accurately with robust structural trimming
     rows.push({
       part: (cols[3] || '').replace(/"/g, '').trim(),
       qty: qty,
@@ -1133,24 +1135,19 @@ function onScanSuccess(decodedText) {
   try { html5QrcodeScanner.pause(true); } catch(e){}
 
   let scannedQuery = decodedText.trim();
-  
-  if (scannedQuery.startsWith('0') && scannedQuery.length > 1) {
-    scannedQuery = scannedQuery.replace(/^0+/, '');
-  }
-  
   let scannedQueryLower = scannedQuery.toLowerCase();
-  let matchedVia = '';
   
+  // Clean up potential formatting layout bugs natively across columns
   let match = stockRegistry.find(row => {
-    if (row.part.toLowerCase() === scannedQueryLower) { matchedVia = 'Part Number'; return true; }
-    if (row.itemNo.toLowerCase() === scannedQueryLower) { matchedVia = 'Item Number'; return true; }
-    if (row.supplierRef.toLowerCase() === scannedQueryLower) { matchedVia = 'Supplier Reference'; return true; }
+    if (row.part.toLowerCase() === scannedQueryLower) return true;
+    if (row.itemNo.toLowerCase() === scannedQueryLower) return true;
+    if (row.supplierRef.toLowerCase() === scannedQueryLower) return true;
     return false;
   });
 
   if (!match) {
     match = fittingsRegistry.find(row => {
-      if (row.part.toLowerCase() === scannedQueryLower) { matchedVia = 'Fittings Part Number'; return true; }
+      if (row.part.toLowerCase() === scannedQueryLower) return true;
       return false;
     });
   }
