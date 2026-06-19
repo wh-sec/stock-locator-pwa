@@ -5,6 +5,10 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>STOCK LOCATOR+</title>
 
+  <!-- PWA Home Screen Icons -->
+  <link rel="icon" type="image/png" sizes="512x512" href="https://raw.githubusercontent.com/wh-sec/stock-locator-pwa/main/mario.png">
+  <link rel="apple-touch-icon" sizes="512x512" href="https://raw.githubusercontent.com/wh-sec/stock-locator-pwa/main/mario.png">
+
   <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
 
   <style>
@@ -459,6 +463,7 @@
     <div id="countSession" style="display:none;">Counts logged: 0</div>
   </div>
 
+  <!-- FINDER TAB SCREEN -->
   <div id="finderScreen" class="app-screen active">
     <div class="panel-box">
       
@@ -525,6 +530,7 @@
     </div>
   </div>
 
+  <!-- COUNTER TAB SCREEN -->
   <div id="counterScreen" class="app-screen">
     <div class="panel-box" style="padding:8px; margin-bottom:12px;">
       <div id="reader"></div>
@@ -564,7 +570,6 @@
 
 <script>
 const CSV_URL = 'https://raw.githubusercontent.com/wh-sec/stock-locator-pwa/main/stocks.csv';
-// UPDATED GOOGLE SHEETS WEB APP URL FOR SYSTEM CORRECTION
 const GOOGLE_SHEETS_API_URL = 'https://script.google.com/macros/s/AKfycbxB9UGRO6c2xPzS5lQGY69J6drPa67sAWvut_XCQDzg9Tfth_OkdBLeSgZpau5oZxy3dQ/exec';
 
 var stockRegistry = [];
