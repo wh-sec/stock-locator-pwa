@@ -131,7 +131,7 @@
       border-radius: 12px; 
       border: 1px solid var(--border); 
       box-shadow: 0 4px 10px rgba(0,0,0,0.04); 
-      margin-bottom: 16px; 
+      margin-bottom: 166px; 
       backdrop-filter: var(--glass-blur);
     }
 
@@ -254,7 +254,7 @@
 
     .sync-status-row {
       display: flex;
-      justify-content: space-between;
+      justify-content: flex-end;
       align-items: center;
       font-size: 11px;
       color: var(--muted);
@@ -505,7 +505,6 @@
         </div>
 
         <div class="sync-status-row">
-          <span id="liveSyncDisplay">Live Sync: Connecting...</span>
           <button class="clear-cache-link" onclick="clearAppCache()">♻️ Clear App Cache</button>
         </div>
       </div>
@@ -584,7 +583,6 @@ var tableBody = document.getElementById('tableBody');
 var tableWrap = document.getElementById('tableWrap');
 var noResults = document.getElementById('noResults');
 var metaDisplay = document.getElementById('metaDisplay');
-var liveSyncDisplay = document.getElementById('liveSyncDisplay');
 var themeToggle = document.getElementById('themeToggle');
 var searchTimeout = null;
 
@@ -713,7 +711,6 @@ function resetSearchFields() {
 }
 
 async function fetchInventoryDatabases() {
-  liveSyncDisplay.textContent = 'Live Sync: Connecting...';
   try {
     const [stockRes, fitRes] = await Promise.all([
       fetch(CSV_URL + '?t=' + Date.now()),
@@ -732,13 +729,10 @@ async function fetchInventoryDatabases() {
     localStorage.setItem('cached_fittings_json', JSON.stringify(fittingsJson));
     localStorage.setItem('cached_sync_time', new Date().toLocaleString());
 
-    liveSyncDisplay.textContent = 'Live Sync: Online';
     updateMetaDisplay();
-    
     fireStockUpdateNotification();
 
   } catch (err) {
-    liveSyncDisplay.textContent = 'Live Sync: Offline';
     loadCachedDatabases();
   }
 }
@@ -751,9 +745,9 @@ function loadCachedDatabases() {
   if (cStocks && cFittingsJson) {
     stockRegistry = parseCSV(cStocks);
     fittingsRegistry = parseGoogleSheetsJSON(JSON.parse(cFittingsJson));
-    metaDisplay.textContent = `Using Cached Data (Synced: ${cTime})`;
+    updateMetaDisplay(cTime);
   } else {
-    metaDisplay.textContent = 'No database connection. Action Required.';
+    metaDisplay.textContent = '❌ No database files found. Connect to office Wi-Fi.';
   }
 }
 
@@ -881,8 +875,9 @@ function switchMode(mode) {
   }
 }
 
-function updateMetaDisplay() {
-  metaDisplay.textContent = `Main items: ${stockRegistry.length} | Fittings: ${fittingsRegistry.length}`;
+function updateMetaDisplay(customTime) {
+  const useTime = customTime || localStorage.getItem('cached_sync_time') || new Date().toLocaleString();
+  metaDisplay.textContent = `✅ Local Database Ready (Last Sync: ${useTime})`;
 }
 
 function parseCSV(text) {
@@ -893,18 +888,24 @@ function parseCSV(text) {
     var line = lines[i].trim();
     if (!line) continue;
     var cols = line.split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/);
-    if (cols.length < 6) continue;
+    if (cols.length < 4) continue; 
+    
+    var partStr = (cols[3] || '').replace(/"/g, '').trim();
+    var supplierRefStr = (cols[1] || '').replace(/"/g, '').trim();
+    var itemNoStr = (cols[6] || '').replace(/"/g, '').trim();
+    var subStr = (cols[5] || '').replace(/"/g, '').trim();
+    
     var qtyRaw = cols[4] || '0';
     var qty = parseInt(qtyRaw.replace(/[^0-9.\-]/g, ''), 10);
     if (isNaN(qty)) qty = 0;
     
-    // Clean and trace data accurately with robust structural trimming
     rows.push({
-      part: (cols[3] || '').replace(/"/g, '').trim(),
+      part: partStr,
       qty: qty,
-      sub: (cols[5] || '').replace(/"/g, '').trim(),
-      itemNo: (cols[6] || '').replace(/"/g, '').trim(),
-      supplierRef: (cols[1] || '').replace(/"/g, '').trim(),
+      sub: subStr || 'MAIN',
+      itemNo: itemNoStr,
+      supplierRef: supplierRefStr,
+      rawLine: line.toLowerCase(), 
       type: 'standard'
     });
   }
@@ -929,6 +930,7 @@ function parseGoogleSheetsJSON(dataMatrix) {
       sub: String(cols[7]).trim(),
       itemNo: '',
       supplierRef: '',
+      rawLine: String(cols[2]).toLowerCase(),
       type: 'fittings'
     });
   }
@@ -965,7 +967,6 @@ async function handleFittingsQtyChange(inputElement, partName) {
     executeDeletion = true;
   }
 
-  liveSyncDisplay.textContent = 'Live Sync: Updating Sheet...';
   inputElement.style.borderColor = '#eab308'; 
 
   try {
@@ -985,12 +986,10 @@ async function handleFittingsQtyChange(inputElement, partName) {
       fittingsRegistry[originalIndex].qty = nextQty;
     }
 
-    liveSyncDisplay.textContent = 'Live Sync: Online';
     renderResults();
 
   } catch (err) {
     alert("Network sync fail. Could not update quantity on Google Sheets.");
-    liveSyncDisplay.textContent = 'Live Sync: Offline';
     inputElement.value = fittingsRegistry[originalIndex].qty;
     renderResults();
   }
@@ -1014,10 +1013,12 @@ function renderResults() {
   if (query) {
     var lowerQuery = query.toLowerCase();
     var activeStock = stockRegistry.filter(r => r.qty > 0);
+    
     var matches = activeStock.filter(function(row) {
       return row.part.toLowerCase().indexOf(lowerQuery) !== -1 || 
              row.itemNo.toLowerCase().indexOf(lowerQuery) !== -1 ||
-             row.supplierRef.toLowerCase().indexOf(lowerQuery) !== -1;
+             row.supplierRef.toLowerCase().indexOf(lowerQuery) !== -1 ||
+             row.rawLine.indexOf(lowerQuery) !== -1;
     });
 
     if (matches.length === 0) {
@@ -1047,7 +1048,6 @@ function renderResults() {
                 '<td class="col-sub"><span class="location-badge">' + r.sub + '</span></td>' +
               '</tr>';
     }
-    metaDisplay.textContent = 'Showing ' + displayCount + ' of ' + matches.length + ' main matches';
   } 
   else if (fitQuery) {
     var lowerFitQuery = fitQuery.toLowerCase();
@@ -1086,7 +1086,6 @@ function renderResults() {
                 '<td class="col-sub"><span class="location-badge fittings-badge">' + fr.sub + '</span></td>' +
               '</tr>';
     }
-    metaDisplay.textContent = 'Showing ' + displayCount + ' of ' + fitMatches.length + ' fittings matches';
   }
 
   tableBody.innerHTML = html;
@@ -1137,18 +1136,16 @@ function onScanSuccess(decodedText) {
   let scannedQuery = decodedText.trim();
   let scannedQueryLower = scannedQuery.toLowerCase();
   
-  // Clean up potential formatting layout bugs natively across columns
   let match = stockRegistry.find(row => {
-    if (row.part.toLowerCase() === scannedQueryLower) return true;
-    if (row.itemNo.toLowerCase() === scannedQueryLower) return true;
-    if (row.supplierRef.toLowerCase() === scannedQueryLower) return true;
-    return false;
+    return row.part.toLowerCase() === scannedQueryLower ||
+           row.itemNo.toLowerCase() === scannedQueryLower ||
+           row.supplierRef.toLowerCase() === scannedQueryLower ||
+           row.rawLine.indexOf(scannedQueryLower) !== -1;
   });
 
   if (!match) {
     match = fittingsRegistry.find(row => {
-      if (row.part.toLowerCase() === scannedQueryLower) return true;
-      return false;
+      return row.part.toLowerCase() === scannedQueryLower;
     });
   }
 
@@ -1173,6 +1170,7 @@ function onScanSuccess(decodedText) {
       itemNo: 'NOT IN MASTERLIST',
       sub: 'MANUAL ENTRY',
       supplierRef: 'N/A',
+      rawLine: scannedQueryLower,
       type: 'standard'
     };
     
