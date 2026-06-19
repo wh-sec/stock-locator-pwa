@@ -1134,6 +1134,12 @@ function onScanSuccess(decodedText) {
   try { html5QrcodeScanner.pause(true); } catch(e){}
 
   let scannedQuery = decodedText.trim();
+  
+  // Clean leading zeros so supplier references match your database format
+  if (scannedQuery.startsWith('0') && scannedQuery.length > 1) {
+    scannedQuery = scannedQuery.replace(/^0+/, '');
+  }
+  
   let scannedQueryLower = scannedQuery.toLowerCase();
   
   let match = stockRegistry.find(row => {
