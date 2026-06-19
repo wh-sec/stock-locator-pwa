@@ -131,7 +131,7 @@
       border-radius: 12px; 
       border: 1px solid var(--border); 
       box-shadow: 0 4px 10px rgba(0,0,0,0.04); 
-      margin-bottom: 166px; 
+      margin-bottom: 16px; 
       backdrop-filter: var(--glass-blur);
     }
 
@@ -510,7 +510,7 @@
       </div>
     </div>
 
-    <div class="results-container">
+    <div class="results-container" id="resultsContainerLocationAnchor">
       <div class="table-wrap" id="tableWrap">
         <table>
           <thead>
@@ -767,9 +767,8 @@ function startScanner() {
     { facingMode: "environment" },
     { 
       fps: 30, 
+      // ONLY support specific industrial types to prevent digit scrambling glitches
       formatsToSupport: [ 
-        Html5QrcodeSupportedFormats.EAN_13, 
-        Html5QrcodeSupportedFormats.EAN_8, 
         Html5QrcodeSupportedFormats.CODE_128, 
         Html5QrcodeSupportedFormats.CODE_39, 
         Html5QrcodeSupportedFormats.QR_CODE 
@@ -803,9 +802,8 @@ function startInlineScanner(targetType) {
     { facingMode: "environment" },
     { 
       fps: 25,
+      // ONLY support specific industrial types to prevent digit scrambling glitches
       formatsToSupport: [ 
-        Html5QrcodeSupportedFormats.EAN_13, 
-        Html5QrcodeSupportedFormats.EAN_8, 
         Html5QrcodeSupportedFormats.CODE_128, 
         Html5QrcodeSupportedFormats.CODE_39, 
         Html5QrcodeSupportedFormats.QR_CODE 
@@ -850,6 +848,14 @@ function onInlineScanSuccess(decodedText) {
     }
   }
   renderResults();
+
+  // Instantly snaps view focus directly to matched output cards
+  setTimeout(() => {
+    const anchor = document.getElementById('resultsContainerLocationAnchor');
+    if (anchor) {
+      anchor.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  }, 100);
 }
 
 function switchMode(mode) {
@@ -1135,7 +1141,6 @@ function onScanSuccess(decodedText) {
 
   let scannedQuery = decodedText.trim();
   
-  // Clean leading zeros so supplier references match your database format
   if (scannedQuery.startsWith('0') && scannedQuery.length > 1) {
     scannedQuery = scannedQuery.replace(/^0+/, '');
   }
