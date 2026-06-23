@@ -593,7 +593,7 @@
 
 <script>
 const CSV_URL = 'https://raw.githubusercontent.com/wh-sec/stock-locator-pwa/main/stocks.csv';
-const GOOGLE_SHEETS_API_URL = 'https://script.google.com/macros/s/AKfycbzdLXynnf2mDm9-PhR66fQIfn6wE9Oy6vVKdpYVgrJhbZm6Z2L457wSNoLJah5pgqGDow/exec';
+const GOOGLE_SHEETS_API_URL = 'https://script.google.com/macros/s/AKfycbxB9UGRO6c2xPzS5lQGY69J6drPa67sAWvut_XCQDzg9Tfth_OkdBLeSgZpau5oZxy3dQ/exec';
 
 var stockRegistry = [];
 var fittingsRegistry = [];
@@ -1000,7 +1000,6 @@ function updateLiveRowValue(type, id, property, newValue) {
   }
 }
 
-// FIX: Dynamic JSONP Engine to dodge network drop issues
 async function pushRowToGoogleSheets(row, btnElement) {
   if (row.type !== 'fittings') {
     alert("Real-time cloud saving is only optimized for the Google Sheets Fittings Database matrix.");
@@ -1008,7 +1007,7 @@ async function pushRowToGoogleSheets(row, btnElement) {
   }
 
   btnElement.disabled = true;
-  btnElement.style.background = "#64748b"; // Neutral gray during sync
+  btnElement.style.background = "#64748b"; 
   btnElement.innerHTML = "⏳";
 
   const callbackName = 'jsonp_sync_' + Math.round(Math.random() * 1000000);
@@ -1016,7 +1015,7 @@ async function pushRowToGoogleSheets(row, btnElement) {
   const timeoutId = setTimeout(() => {
     delete window[callbackName];
     playBeep('fail');
-    btnElement.style.background = "#dc3545"; // Red for fail
+    btnElement.style.background = "#dc3545"; 
     btnElement.innerHTML = "❌";
     setTimeout(() => { 
       btnElement.innerHTML = "💾"; 
@@ -1031,8 +1030,8 @@ async function pushRowToGoogleSheets(row, btnElement) {
     
     if (response && response.result === 'success') {
       playBeep('success');
-      btnElement.style.background = "#10b981"; // Vibrant green for success
-      btnElement.innerHTML = "✔️"; // Clean checkmark icon
+      btnElement.style.background = "#10b981"; 
+      btnElement.innerHTML = "✔️"; 
       
       var cachedJson = localStorage.getItem('cached_fittings_json');
       if (cachedJson) {
@@ -1054,7 +1053,7 @@ async function pushRowToGoogleSheets(row, btnElement) {
       }, 1500);
     } else {
       playBeep('fail');
-      btnElement.style.background = "#dc3545"; // Red for error
+      btnElement.style.background = "#dc3545"; 
       btnElement.innerHTML = "❌";
       setTimeout(() => { 
         btnElement.innerHTML = "💾"; 
@@ -1097,88 +1096,6 @@ async function pushRowToGoogleSheets(row, btnElement) {
     delete window[callbackName];
     btnElement.innerHTML = "❌";
     btnElement.style.background = "var(--accent-green)";
-    btnElement.disabled = false;
-  }
-}
-
-  btnElement.disabled = true;
-  btnElement.innerHTML = "⏳";
-
-  // Create a unique temporary callback function name
-  const callbackName = 'jsonp_sync_' + Math.round(Math.random() * 1000000);
-  
-  // Set up the timeout fallback structure 
-  const timeoutId = setTimeout(() => {
-    delete window[callbackName];
-    playBeep('fail');
-    alert("Sync Timeout. Check your App Script configuration.");
-    btnElement.innerHTML = "❌";
-    setTimeout(() => { btnElement.innerHTML = "💾"; btnElement.disabled = false; }, 2000);
-  }, 8000);
-
-  // Define the temporary callback handler
-  window[callbackName] = function(response) {
-    clearTimeout(timeoutId);
-    delete window[callbackName];
-    
-    if (response && response.result === 'success') {
-      playBeep('success');
-      btnElement.innerHTML = "=== SUCCESS ===";
-      
-      // Update local storage layout cache state
-      var cachedJson = localStorage.getItem('cached_fittings_json');
-      if (cachedJson) {
-        var parsed = JSON.parse(cachedJson);
-        for (var i = 1; i < parsed.length; i++) {
-          if (String(parsed[i][2]).trim() === row.part && String(parsed[i][3]).trim() === row.sub) {
-            parsed[i][5] = row.boxes; 
-            parsed[i][6] = row.qty;   
-            break;
-          }
-        }
-        localStorage.setItem('cached_fittings_json', JSON.stringify(parsed));
-      }
-      
-      setTimeout(() => { btnElement.innerHTML = "💾"; btnElement.disabled = false; }, 1500);
-    } else {
-      playBeep('fail');
-      alert("Sheet update failed: " + (response ? response.message : 'Unknown Error'));
-      btnElement.innerHTML = "❌";
-      setTimeout(() => { btnElement.innerHTML = "💾"; btnElement.disabled = false; }, 2000);
-    }
-  };
-
-  try {
-    // Build parameters that perfectly match your Sheet headers ("NO. OF BOX", "TOTAL")
-    const params = new URLSearchParams({
-      action: "updateRow",
-      partNumber: row.part,
-      boxes: row.boxes,
-      totalQty: row.qty,
-      location: row.sub,
-      callback: callbackName
-    });
-
-    // Inject as a script tag to completely bypass all browser CORS restrictions
-    const script = document.createElement('script');
-    script.src = `${GOOGLE_SHEETS_API_URL}?${params.toString()}`;
-    script.onerror = () => {
-      clearTimeout(timeoutId);
-      delete window[callbackName];
-      playBeep('fail');
-      alert("Network Connection Blocked. Script injection failed.");
-      btnElement.innerHTML = "❌";
-      setTimeout(() => { btnElement.innerHTML = "💾"; btnElement.disabled = false; }, 2000);
-    };
-    
-    document.body.appendChild(script);
-    // Clean up the script tag after it runs
-    setTimeout(() => document.body.removeChild(script), 2000);
-
-  } catch (err) {
-    clearTimeout(timeoutId);
-    delete window[callbackName];
-    btnElement.innerHTML = "❌";
     btnElement.disabled = false;
   }
 }
