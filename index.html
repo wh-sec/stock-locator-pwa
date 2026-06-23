@@ -1,1200 +1,757 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>STOCK LOCATOR+</title>
-
-  <link rel="manifest" href="manifest.json">
-
-  <link rel="icon" type="image/png" sizes="192x192" href="./wh_icon.png">
-  <link rel="icon" type="image/png" sizes="512x512" href="./wh_icon.png">
-  <link rel="apple-touch-icon" sizes="180x180" href="./wh_icon.png">
-  <link rel="icon" type="image/png" sizes="32x32" href="./wh_icon.png">
-
-  <meta name="mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-title" content="STOCK LOCATOR+">
-  <meta name="theme-color" content="#0056b3">
-
-  <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
-
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Stock Locator+</title>
   <style>
     :root {
-      --primary-accent: #0056b3; 
-      --bg: #f4f6f9; 
-      --panel: rgba(255, 255, 255, 0.85);
-      --text: #1e293b;
-      --muted: #475569;
-      --border: rgba(219, 226, 239, 0.7);
-      --th-bg: rgba(241, 245, 249, 0.9);
-      --accent-green: #10b981;
-      --accent-purple: #8b5cf6;
-      --glass-blur: blur(12px);
-      --bg-overlay: rgba(244, 246, 249, 0.4);
-    }
-    [data-theme="dark"] {
-      --primary-accent: #3b82f6;
-      --bg: #0f1115;
-      --panel: rgba(22, 26, 34, 0.80);
-      --text: #f8fafc;
-      --muted: #94a3b8;
-      --border: rgba(45, 55, 72, 0.6);
-      --th-bg: rgba(30, 41, 59, 0.9);
-      --bg-overlay: rgba(15, 17, 21, 0.75);
-    }
-    * { box-sizing: border-box; margin: 0; padding: 0; }
-    
-    html, body { min-height: 100vh; }
-    
-    body { 
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; 
-      background-color: var(--bg);
-      background-position: center;
-      background-size: cover;
-      background-attachment: fixed;
-      background-repeat: no-repeat;
-      color: var(--text); 
-      padding: 12px; 
-      padding-bottom: 90px; 
-      transition: background-color 0.2s ease;
-      position: relative;
+      --bg-dark: #0d1117;
+      --panel-dark: #161b22;
+      --border-dark: #21262d;
+      --text-main: #c9d1d9;
+      --text-muted: #8b949e;
+      --accent-blue: #0969da;
+      --accent-green: #2ea44f;
+      --accent-purple: #8250df;
+      --danger-red: #da3633;
+      --warn-yellow: #f0b429;
     }
 
-    body::before {
-      content: "";
-      position: fixed;
-      top: 0; left: 0; right: 0; bottom: 0;
-      background: var(--bg-overlay);
-      z-index: -1;
-      pointer-events: none;
-      transition: background 0.2s ease;
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
     }
 
-    .app-container { max-width: 750px; margin: 0 auto; position: relative; z-index: 1; }
-
-    .app-header {
+    body {
+      background-color: var(--bg-dark);
+      color: var(--text-main);
+      padding: 12px;
       display: flex;
       flex-direction: column;
+      align-items: center;
+      min-height: 100vh;
+    }
+
+    .app-container {
+      width: 100%;
+      max-width: 600px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    header {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      padding: 10px 0;
+    }
+
+    header h1 {
+      font-size: 20px;
+      font-weight: 800;
+      letter-spacing: 0.5px;
+    }
+
+    /* Tab Controls Layout */
+    .tab-bar {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      background: var(--panel-dark);
+      border: 1px solid var(--border-dark);
+      border-radius: 8px;
+      overflow: hidden;
+      padding: 4px;
+      gap: 4px;
+    }
+
+    .tab-btn {
+      background: transparent;
+      border: none;
+      color: var(--text-muted);
+      padding: 12px 8px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      border-radius: 6px;
+      display: flex;
       align-items: center;
       justify-content: center;
       gap: 6px;
-      margin-bottom: 14px;
-      padding: 10px;
+      transition: all 0.2s ease;
     }
-    .header-main-row {
+
+    .tab-btn.active {
+      background: var(--accent-blue);
+      color: #fff;
+    }
+
+    .tab-btn.active-purple {
+      background: var(--accent-purple);
+      color: #fff;
+    }
+
+    /* Global Notification Banners */
+    .status-banner {
+      padding: 10px 12px;
+      border-radius: 6px;
+      font-size: 12px;
+      font-weight: 600;
       display: flex;
       align-items: center;
+      gap: 8px;
+      border: 1px solid transparent;
+    }
+
+    .status-banner.error {
+      background: rgba(218, 54, 51, 0.1);
+      border-color: rgba(218, 54, 51, 0.4);
+      color: #ff7b72;
+    }
+
+    .status-banner.success {
+      background: rgba(46, 164, 79, 0.1);
+      border-color: rgba(46, 164, 79, 0.4);
+      color: #56d364;
+    }
+
+    .status-banner.alert-warn {
+      background: #fff8e1;
+      border-color: #ffe082;
+      color: #b78103;
+      font-size: 14px;
+      font-weight: 700;
       justify-content: center;
-      gap: 12px;
-    }
-    .app-logo {
-      height: 38px;
-      width: auto;
-      object-fit: contain;
-    }
-    .app-title {
-      font-size: 24px;
-      font-weight: 800;
-      letter-spacing: -0.5px;
-      color: var(--text);
-      text-transform: uppercase;
+      padding: 16px;
     }
 
-    .tabs-bar { 
-      display: flex; 
-      background: var(--panel); 
-      border: 1px solid var(--border); 
-      border-radius: 12px; 
-      padding: 5px; 
-      margin-bottom: 14px; 
-      box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); 
-      backdrop-filter: var(--glass-blur);
-      gap: 4px;
-    }
-    .tab-btn { 
-      flex: 1; 
-      padding: 12px 6px; 
-      text-align: center; 
-      font-size: 13px; 
-      font-weight: 700; 
-      border: none; 
-      background: transparent; 
-      color: var(--muted); 
-      cursor: pointer; 
-      border-radius: 8px; 
-      transition: all 0.2s ease; 
-    }
-    
-    #finderTab.active { background: #0056b3; color: white; }
-    #counterTab.active { background: var(--accent-green); color: white; }
-    #consolidationTab.active { background: var(--accent-purple); color: white; }
-
-    .app-screen { 
-      display: none; 
-    }
-    .app-screen.active { 
-      display: block; 
-    }
-
-    .panel-box { 
-      background: var(--panel); 
-      padding: 20px; 
-      border-radius: 12px; 
-      border: 1px solid var(--border); 
-      box-shadow: 0 4px 10px rgba(0,0,0,0.04); 
-      margin-bottom: 16px; 
-      backdrop-filter: var(--glass-blur);
+    /* Panels & Input Fields */
+    .panel-box {
+      background: var(--panel-dark);
+      border: 1px solid var(--border-dark);
+      border-radius: 8px;
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
     }
 
     .input-group {
-      margin-bottom: 14px;
-    }
-
-    label { 
-      font-weight: 700; 
-      font-size: 12px; 
-      color: var(--text); 
-      display: block; 
-      margin-bottom: 6px; 
-      text-transform: uppercase; 
-      letter-spacing: 0.5px;
-      opacity: 0.9;
-    }
-    
-    input[type="text"], input[type="number"], select { 
-      width: 100%; 
-      padding: 14px; 
-      font-size: 16px; 
-      border: 2px solid var(--border); 
-      border-radius: 8px; 
-      background: var(--panel); 
-      color: var(--text);
-      transition: border-color 0.2s;
-    }
-    input:focus, select:focus { outline: none; border-color: var(--primary-accent); }
-
-    .shortcut-row { 
-      display: grid; 
-      grid-template-columns: 1fr 1fr; 
-      gap: 10px; 
-      margin-top: 14px; 
-    }
-    .action-sub-btn { 
-      padding: 12px; 
-      font-size: 14px; 
-      font-weight: 600; 
-      color: white; 
-      background: #198754; 
-      border: none; 
-      border-radius: 6px; 
-      cursor: pointer; 
-      text-align: center;
-    }
-    .action-sub-btn.reset { background: #4a5568; }
-    .shortcut-row .reset { grid-column: span 2; }
-
-    .inline-scanner-box {
-      display: none;
-      background: #000;
-      border-radius: 8px;
-      overflow: hidden;
-      margin-bottom: 14px;
-      position: relative;
-    }
-    .close-scan-btn {
-      position: absolute;
-      top: 10px;
-      right: 10px;
-      background: rgba(0,0,0,0.7);
-      color: white;
-      border: 1px solid #fff;
-      padding: 6px 12px;
-      border-radius: 4px;
-      cursor: pointer;
-      z-index: 10;
-      font-size: 12px;
-      font-weight: bold;
-    }
-
-    .preferences-container {
-      margin-top: 16px;
-      padding-top: 14px;
-      border-top: 1px dashed var(--border);
       display: flex;
       flex-direction: column;
-      gap: 12px;
-    }
-    .pref-row {
-      display: flex;
-      align-items: center;
-      justify-content: flex-start;
-      gap: 10px;
-      width: 100%;
-      flex-wrap: wrap;
-    }
-    .custom-file-upload {
-      display: inline-block;
-      padding: 8px 12px;
-      cursor: pointer;
-      background: var(--th-bg);
-      border: 1px solid var(--border);
-      border-radius: 6px;
-      font-size: 12px;
-      font-weight: bold;
-      color: var(--text);
-    }
-    .reset-bg-link {
-      font-size: 12px;
-      color: #dc3545;
-      text-decoration: none;
-      cursor: pointer;
-      font-weight: bold;
-      background: rgba(220, 53, 69, 0.1);
-      padding: 8px 12px;
-      border-radius: 6px;
-      border: 1px solid rgba(220, 53, 69, 0.2);
-      display: inline-block;
-      height: auto;
-      line-height: normal;
+      gap: 6px;
     }
 
-    .sync-status-row {
-      display: flex;
-      justify-content: flex-end;
-      align-items: center;
+    .input-group label {
       font-size: 11px;
-      color: var(--muted);
-      border-top: 1px solid var(--border);
-      padding-top: 10px;
-      margin-top: 4px;
-    }
-    .clear-cache-link {
-      color: #dc3545;
-      text-decoration: none;
       font-weight: 700;
-      cursor: pointer;
-      border: none;
-      background: transparent;
-      font-size: 12px;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
     }
 
-    .table-wrap { 
-      overflow-x: auto; 
-      background: var(--panel); 
-      border-radius: 12px; 
-      border: 1px solid var(--border); 
-      box-shadow: 0 4px 6px -1px rgba(0,0,0,0.02);
-      backdrop-filter: var(--glass-blur);
-    }
-    table { width: 100%; border-collapse: collapse; text-align: left; table-layout: fixed; }
-    th, td { padding: 12px 6px; border-bottom: 1px solid var(--border); border-right: 1px solid var(--border); vertical-align: middle; word-wrap: break-word; }
-    th:last-child, td:last-child { border-right: none; }
-    
-    th { background: var(--th-bg); font-weight: 700; color: var(--muted); font-size: 13px; }
-    
-    th.col-main, td.col-main { width: 44%; }
-    th.col-boxes, td.col-boxes { width: 16%; text-align: center; }
-    th.col-total, td.col-total { width: 16%; text-align: center; }
-    th.col-save, td.col-save { width: 11%; text-align: center; }
-    th.col-sub, td.col-sub { width: 13%; text-align: center; }
-
-    mark.match { background: #ffeb3b; color: #000; padding: 1px 3px; border-radius: 3px; font-weight: bold; }
-    [data-theme="dark"] mark.match { background: #f59e0b; }
-    
-    .location-badge { 
-      background: #10b981; 
-      color: white; 
-      padding: 6px 4px; 
-      border-radius: 6px; 
-      font-weight: 700; 
-      font-size: 11px; 
-      display: inline-block; 
-      text-align: center;
-      max-width: 100%;
-    }
-    .location-badge.fittings-badge {
-      background: #8b5cf6; 
-    }
-
-    .inline-edit-input {
-      width: 100% !important;
-      max-width: 60px !important;
-      padding: 6px 2px !important;
-      font-size: 13px !important;
-      font-weight: bold !important;
-      text-align: center !important;
-      border: 2px solid #8b5cf6 !important;
-      border-radius: 6px !important;
-      background: var(--panel) !important;
-      color: var(--text) !important;
-      margin-bottom: 0 !important;
-    }
-    [data-theme="dark"] .inline-edit-input { border-color: #3b82f6 !important; }
-
-    .row-save-btn {
-      background: var(--accent-green);
-      color: white;
-      border: none;
-      padding: 6px;
+    .input-group input {
+      background: #0d1117;
+      border: 1px solid var(--border-dark);
       border-radius: 6px;
-      cursor: pointer;
+      padding: 12px;
+      color: #fff;
+      font-size: 15px;
+      outline: none;
+      width: 100%;
+    }
+
+    .input-group input:focus {
+      border-color: var(--accent-blue);
+    }
+
+    .shortcut-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+
+    /* Buttons */
+    .btn {
+      border: none;
+      border-radius: 6px;
+      padding: 12px;
       font-size: 14px;
-      display: inline-flex;
+      font-weight: 700;
+      color: #fff;
+      cursor: pointer;
+      display: flex;
       align-items: center;
       justify-content: center;
-      width: 32px;
-      height: 32px;
-    }
-    .row-save-btn:disabled { background: #a0aec0; opacity: 0.5; cursor: not-allowed; }
-
-    .alertBox { 
-      display: none; background: #fff3cd; color: #856404; padding: 16px; border-radius: 8px; 
-      text-align: center; font-weight: bold; margin-top: 12px; border: 1px solid #ffeeba;
+      gap: 6px;
     }
 
-    #reader { width: 100%; background: #000; border-radius: 8px; overflow: hidden; }
-    .count-overlay { display: none; background: var(--panel); border: 2px solid var(--accent-green); border-radius: 12px; padding: 16px; margin-bottom: 12px; position: relative; backdrop-filter: var(--glass-blur); }
-    .count-title { font-size: 12px; font-weight: bold; color: var(--muted); text-transform: uppercase; }
-    .count-item-name { font-size: 19px; font-weight: 800; margin: 4px 0; }
-    .count-sub { display: inline-block; background: #e0f2fe; color: #0369a1; font-weight: bold; padding: 4px 8px; border-radius: 4px; font-size: 12px; margin-bottom: 12px; }
+    .btn-green { background: var(--accent-green); }
+    .btn-grey { background: #30363d; color: var(--text-main); }
+
+    /* Tables */
+    .table-wrap {
+      border: 1px solid var(--border-dark);
+      border-radius: 6px;
+      overflow: hidden;
+      background: #0d1117;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13px;
+    }
+
+    th {
+      background: #161b22;
+      color: var(--text-muted);
+      font-weight: 700;
+      text-transform: uppercase;
+      font-size: 11px;
+      letter-spacing: 0.5px;
+      padding: 10px 8px;
+      text-align: left;
+      border-bottom: 1px solid var(--border-dark);
+    }
+
+    td {
+      padding: 12px 8px;
+      border-bottom: 1px solid var(--border-dark);
+      vertical-align: middle;
+    }
+
+    tr:last-child td { border-bottom: none; }
+
+    /* Custom layout styling for items */
+    .badge-part {
+      background: #f0b429;
+      color: #000;
+      font-weight: 800;
+      padding: 2px 4px;
+      border-radius: 4px;
+    }
+
+    .badge-loc {
+      background: #8250df;
+      color: #fff;
+      font-weight: 700;
+      padding: 4px 6px;
+      border-radius: 6px;
+      font-size: 11px;
+    }
+
+    .qty-box {
+      width: 45px;
+      background: #1f242c;
+      border: 1px solid var(--accent-blue);
+      color: #fff;
+      text-align: center;
+      padding: 6px 2px;
+      border-radius: 4px;
+      font-weight: 700;
+    }
+
+    .btn-sync {
+      background: #2ea44f;
+      border: none;
+      padding: 6px 8px;
+      border-radius: 4px;
+      color: white;
+      cursor: pointer;
+    }
+
+    .app-screen { display: none; width: 100%; flex-direction: column; gap: 12px; }
+    .app-screen.active-screen { display: flex; }
     
-    .input-row { display: flex; gap: 6px; align-items: center; margin-bottom: 12px; }
-    .qty-input { flex: 1; font-size: 22px; font-weight: bold; text-align: center; }
-    .mod-btn { padding: 12px; font-size: 15px; font-weight: bold; border: 1px solid var(--border); background: var(--th-bg); color: var(--text); border-radius: 6px; cursor: pointer; }
-
-    .action-row { display: flex; gap: 6px; }
-    .btn { flex: 1; padding: 12px; font-size: 14px; font-weight: bold; border: none; border-radius: 6px; cursor: pointer; }
-    .btn-save { background: var(--accent-green); color: white; }
-    .btn-cancel { background: #dc3545; color: white; }
-
-    .log-item { background: var(--panel); padding: 12px; border-radius: 8px; border: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; backdrop-filter: var(--glass-blur); }
-    
-    .session-actions-strip { display: flex; justify-content: space-between; align-items: center; margin: 14px 0 8px 0; }
-    .new-session-btn { background: #4a5568; color: white; border: none; padding: 6px 12px; font-size: 12px; font-weight: 700; border-radius: 6px; cursor: pointer; }
-    .clear-btn { background: none; border: none; color: #dc3545; cursor: pointer; font-weight: 600; padding: 4px; font-size: 12px; }
-
-    .intercept-modal-overlay {
-      display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0;
-      background: rgba(0, 0, 0, 0.7); backdrop-filter: blur(4px); z-index: 99999;
-      justify-content: center; align-items: center; padding: 20px;
-    }
-    .intercept-box {
-      background: var(--panel); border: 2px solid var(--primary-accent); padding: 24px;
-      border-radius: 16px; max-width: 460px; width: 100%; text-align: center; backdrop-filter: var(--glass-blur);
-    }
-    .intercept-box h3 { margin-bottom: 10px; font-size: 18px; font-weight: 800; }
-    .intercept-box p { font-size: 14px; color: var(--muted); margin-bottom: 20px; line-height: 1.5; }
-    .intercept-btns { display: flex; flex-direction: column; gap: 10px; }
-    .btn-choice { width: 100%; padding: 14px; font-size: 15px; font-weight: bold; border: none; border-radius: 8px; cursor: pointer; }
-    .btn-choice.continue { background: var(--primary-accent); color: white; }
-    .btn-choice.purge { background: #dc3545; color: white; }
-
-    .footer-bar {
-      position: fixed; bottom: 0; left: 0; right: 0; height: 70px;
-      background: var(--panel); border-top: 1px solid var(--border);
-      display: flex; align-items: center; justify-content: center; padding: 0 12px; z-index: 1000; backdrop-filter: var(--glass-blur);
-    }
-    .export-btn { width: 100%; max-width: 726px; background: var(--primary-accent); color: white; border: none; padding: 14px; font-size: 15px; font-weight: 700; border-radius: 8px; cursor: pointer; }
-
-    /* Mobile Typography and Layout Refinements for Table Headers */
-    @media screen and (max-width: 480px) {
-      th {
-        font-size: 11px !important;
-        padding: 8px 4px !important;
-        white-space: nowrap;
-        text-overflow: ellipsis;
-      }
-      th.col-main {
-        white-space: normal;
-        word-break: break-word;
-        min-width: 85px;
-      }
-      .tabs-bar { padding: 4px; }
-      .tab-btn { font-size: 11px; padding: 10px 4px; }
+    .utility-footer {
+      display: flex;
+      justify-content: flex-end;
+      padding: 4px 0;
     }
   </style>
 </head>
 <body>
 
-<div id="startupInterceptModal" class="intercept-modal-overlay">
-  <div class="intercept-box">
-    <h3 style="color: var(--text);">Unexported Counts Detected! ⏳</h3>
-    <p id="interceptMessage">You have remaining logs saved in this terminal from an earlier date.</p>
-    <div class="intercept-btns">
-      <button class="btn-choice continue" onclick="resolveIntercept('continue')">🔄 Continue Previous Session</button>
-      <button class="btn-choice purge" onclick="resolveIntercept('purge')">🧹 Wipe & Start New Session</button>
+  <div class="app-container">
+    
+    <header>
+      <span style="font-size:22px;">📦</span>
+      <h1>STOCK LOCATOR+</h1>
+    </header>
+
+    <div class="tab-bar">
+      <button id="tabLookup" class="tab-btn active" onclick="switchTab('lookup')">🔍 Stock Lookup</button>
+      <button id="tabAudit" class="tab-btn" onclick="switchTab('audit')">📋 Audit Scanner</button>
+      <button id="tabConsolidation" class="tab-btn" onclick="switchTab('consolidation')">📦 Consolidation</button>
     </div>
-  </div>
-</div>
 
-<div class="app-container">
-  
-  <div class="app-header">
-    <div class="header-main-row">
-      <img src="logo.png" alt="Logo" class="app-logo" onerror="this.style.display='none'"/>
-      <h1 class="app-title">STOCK LOCATOR+</h1>
+    <div id="metaDisplay" class="status-banner error">
+      ❌ No database files found. Connect to office Wi-Fi.
     </div>
-  </div>
-  
-  <div class="tabs-bar">
-    <button id="finderTab" class="tab-btn active" onclick="switchMode('finder')">🔍 Stock Lookup</button>
-    <button id="counterTab" class="tab-btn" onclick="switchMode('counter')">📋 Audit Scanner</button>
-    <button id="consolidationTab" class="tab-btn" onclick="switchMode('consolidation')">📦 Consolidation</button>
-  </div>
 
-  <div style="display: flex; justify-content: space-between; font-size: 12px; color: var(--text); font-weight: 600; margin-bottom: 8px; padding: 0 4px; opacity:0.85;">
-    <div id="metaDisplay">Loading database files...</div>
-    <div id="countSession" style="display:none;">Counts logged: 0</div>
-  </div>
-
-  <div id="finderScreen" class="app-screen active">
-    <div class="panel-box">
-      <div id="inlineScannerBox" class="inline-scanner-box">
-        <button class="close-scan-btn" onclick="stopInlineScanner()">✕ Close Camera</button>
-        <div id="finderReader" style="width:100%;"></div>
-      </div>
-
-      <div class="input-group">
-        <label for="searchBox">Search Part Number / Item No. / Supplier Reference</label>
-        <input id="searchBox" type="text" placeholder="Search general stock or fittings..." autofocus autocomplete="off"/>
-      </div>
-      
-      <div class="shortcut-row">
-        <button class="action-sub-btn" onclick="startInlineScanner('qr')">Scan QR Code</button>
-        <button class="action-sub-btn" onclick="startInlineScanner('supplier')">Scan Supplier Ref</button>
-        <button class="action-sub-btn reset" onclick="resetSearchFields()">Reset Search Fields</button>
-      </div>
-
-      <div class="preferences-container">
-        <div class="pref-row">
-          <label class="custom-file-upload">
-            <input type="file" id="bgUploader" accept="image/*" style="display: none;" onchange="handleWallpaperUpload(event)" />
-            🖼️ Upload Custom Theme Image
-          </label>
-          <span id="resetBgBtn" class="reset-bg-link" style="display: none;" onclick="clearWallpaperTheme()">✕ Reset Theme Image</span>
+    <div id="lookupScreen" class="app-screen active-screen">
+      <div class="panel-box">
+        <div class="input-group">
+          <label>Search Part Number / Item No. / Supplier Reference</label>
+          <input id="generalSearchInput" type="text" placeholder="DGN 3102C..." autocomplete="off"/>
         </div>
         
-        <div class="pref-row" style="justify-content: flex-start; gap: 8px;">
-          <input id="themeToggle" type="checkbox" style="width:18px; height:18px; cursor:pointer;" />
-          <label for="themeToggle" style="display:inline; font-weight:600; color:var(--text); text-transform:none; cursor:pointer;">Dark Mode</label>
+        <div class="input-group">
+          <label style="color:#a371f7;">Search Part Number (For Fittings Stock)</label>
+          <input id="fittingsSearchInput" type="text" placeholder="15612-16-16N..." autocomplete="off"/>
         </div>
 
-        <div class="pref-row" style="justify-content: flex-start; gap: 8px;">
-          <button class="custom-file-upload" onclick="requestNotificationPermission()" style="background:#475569; color:white; border:none;">🔔 Activate Notifications</button>
+        <div class="shortcut-row">
+          <button class="btn btn-green">Scan QR Code</button>
+          <button class="btn btn-green">Scan Supplier Ref</button>
         </div>
 
-        <div class="sync-status-row">
-          <button class="clear-cache-link" onclick="clearAppCache()">♻️ Clear App Cache</button>
-        </div>
+        <button class="btn btn-grey" onclick="clearLookupFields()">Reset Search Fields</button>
       </div>
-    </div>
 
-    <div class="results-container" id="resultsContainerLocationAnchor">
-      <div class="table-wrap" id="tableWrap" style="display: none;">
+      <div id="resultsOutputWrapper" style="display:none;" class="table-wrap">
         <table>
           <thead>
             <tr>
-              <th class="col-main">Part Number Map /<br>Cross-Ref</th>
-              <th class="col-boxes">Boxes</th>
-              <th class="col-total">Total Qty</th>
-              <th class="col-save">Sync</th>
-              <th class="col-sub">Loc</th>
+              <th>Part / Location Map</th>
+              <th>Boxes</th>
+              <th>Total Qty</th>
+              <th>Loc</th>
             </tr>
           </thead>
-          <tbody id="tableBody"></tbody>
+          <tbody id="resultsTableBody"></tbody>
         </table>
       </div>
-      <div id="noResults" class="alertBox">❌ No matching inventory items found.</div>
-    </div>
-  </div>
-
-  <div id="counterScreen" class="app-screen">
-    <div class="panel-box" style="padding:8px; margin-bottom:12px;">
-      <div id="reader"></div>
-    </div>
-
-    <div id="countOverlay" class="count-overlay">
-      <div id="targetTitleHeader" class="count-title">Matched Database Reference</div>
-      <div id="targetItemName" class="count-item-name">---</div>
-      <div id="targetMappingInfo" style="font-size:12px; color:var(--muted); margin-bottom:8px;">---</div>
-      <div id="targetSubLoc" class="count-sub">---</div>
       
-      <div class="input-row">
-        <button class="mod-btn" onclick="adjustQty(-1)">-1</button>
-        <input id="qtyInputField" type="number" class="qty-input" placeholder="0" min="0" inputmode="numeric"/>
-        <button class="mod-btn" onclick="adjustQty(1)">+1</button>
-        <button class="mod-btn" onclick="adjustQty(10)">+10</button>
-      </div>
-
-      <div class="action-row">
-        <button class="btn btn-cancel" onclick="dismissOverlay()">Cancel</button>
-        <button class="btn btn-save" onclick="commitCount()">Save Count</button>
+      <div id="emptySearchNotification" class="status-banner alert-warn" style="display:none;">
+        ❌ No matching inventory items found.
       </div>
     </div>
 
-    <div class="session-actions-strip">
-      <button class="new-session-btn" onclick="triggerNewSessionManually()">🧹 Start New Session</button>
-      <button class="clear-btn" onclick="clearCounts()">Clear Current Logs</button>
-    </div>
-    <div id="logRegistryList"></div>
-  </div>
-
-  <div id="consolidationScreen" class="app-screen">
-    <div class="panel-box">
-      <h3 style="font-size:14px; margin-bottom:10px; color:var(--accent-purple); text-transform:uppercase; letter-spacing:0.5px;">Module A: Modify or Zero-Out Pallet</h3>
-      <div class="input-group">
-        <label for="consolidationSearchBox">Search Fitting Part Number to Edit</label>
-        <input id="consolidationSearchBox" type="text" placeholder="Type part number to modify..." autocomplete="off"/>
-      </div>
-      
-      <div class="table-wrap" id="conTableWrap" style="display: none; margin-top:12px;">
-        <table>
-          <thead>
-            <tr>
-              <th class="col-main">Part / Cross-Ref</th>
-              <th class="col-boxes">Boxes</th>
-              <th class="col-total">Total Qty</th>
-              <th class="col-save">Sync</th>
-              <th class="col-sub">Loc</th>
-            </tr>
-          </thead>
-          <tbody id="conTableBody"></tbody>
-        </table>
+    <div id="auditScreen" class="app-screen">
+      <div class="panel-box">
+        <p style="font-size:13px; color:var(--text-muted); text-align:center;">Audit module configuration loaded.</p>
       </div>
     </div>
 
-    <div class="panel-box">
-      <h3 style="font-size:14px; margin-bottom:12px; color:var(--accent-green); text-transform:uppercase; letter-spacing:0.5px;">Module B: Add To New Pallet</h3>
-      
-      <div class="input-group">
-        <label for="newPartNumber">Part Number</label>
-        <input id="newPartNumber" type="text" placeholder="e.g., 15612-16-16N" autocomplete="off"/>
-      </div>
-
-      <div class="input-group">
-        <label for="newPalletNo">Pallet No. / Location</label>
-        <input id="newPalletNo" type="text" placeholder="e.g., 260511-P12" autocomplete="off"/>
-      </div>
-
-      <div class="shortcut-row" style="grid-template-columns: 1fr 1fr; margin-top:0; margin-bottom:14px;">
-        <div class="input-group" style="margin-bottom:0;">
-          <label for="newBoxes">No. of Boxes</label>
-          <input id="newBoxes" type="number" placeholder="0" min="0" inputmode="numeric"/>
+    <div id="consolidationScreen" class="app-screen">
+      <div class="panel-box">
+        <h3 style="font-size:14px; margin-bottom:10px; color:var(--accent-purple); text-transform:uppercase; letter-spacing:0.5px;">Module A: Modify or Zero-Out Item</h3>
+        <div class="input-group">
+          <label for="consolidationSearchBox">Search Fitting Part Number to Edit</label>
+          <input id="consolidationSearchBox" type="text" placeholder="Type part number to modify..." autocomplete="off"/>
         </div>
-        <div class="input-group" style="margin-bottom:0;">
-          <label for="newTotalQty">Total Quantity</label>
-          <input id="newTotalQty" type="number" placeholder="0" min="0" inputmode="numeric"/>
-        </div>
-      </div>
-
-      <button class="btn btn-save" style="width:100%; padding:14px; background:var(--accent-purple);" onclick="submitNewPalletEntry()">➕ Inject New Pallet Entry</button>
-    </div>
-  </div>
-
-</div>
-
-<div id="footerBar" class="footer-bar" style="display: none;">
-  <button class="export-btn" onclick="exportCountsToCSV()">📊 Download Counts Spreadsheet (.CSV)</button>
-</div>
-
-<script>
-const CSV_URL = 'https://raw.githubusercontent.com/wh-sec/stock-locator-pwa/main/stocks.csv';
-const GOOGLE_SHEETS_API_URL = 'https://script.google.com/macros/s/AKfycbyd3FioxawEM7LLzisjdQ1csBO_dzsx8q8KLPMldLB2pbcsYaFCjh74E5dEh2XFjIPyVw/exec';
-
-var stockRegistry = [];
-var fittingsRegistry = [];
-var countLogSession = [];
-var activeScanMatch = null;
-var html5QrcodeScanner = null;
-var inlineFinderScanner = null;
-var currentScanTargetField = 'qr'; 
-var isProcessingScan = false; 
-
-var searchBox = document.getElementById('searchBox');
-var consolidationSearchBox = document.getElementById('consolidationSearchBox');
-var tableBody = document.getElementById('tableBody');
-var tableWrap = document.getElementById('tableWrap');
-var conTableBody = document.getElementById('conTableBody');
-var conTableWrap = document.getElementById('conTableWrap');
-var noResults = document.getElementById('noResults');
-var metaDisplay = document.getElementById('metaDisplay');
-var themeToggle = document.getElementById('themeToggle');
-var searchTimeout = null;
-
-var currentQuote = "Quality means doing it right when no one is looking.";
-var currentAuthor = "Henry Ford";
-
-function requestNotificationPermission() {
-  if ("Notification" in window) {
-    Notification.requestPermission().then(perm => {
-      if (perm === "granted") alert("System Notifications authorized successfully!");
-    });
-  } else {
-    alert("System notifications are unsupported on this mobile layout browser.");
-  }
-}
-
-function initThemeAndWallpaper() {
-  const activeTheme = localStorage.getItem('ms_theme') || 'dark';
-  document.documentElement.setAttribute('data-theme', activeTheme);
-  themeToggle.checked = (activeTheme === 'dark');
-  
-  const savedBg = localStorage.getItem('ms_custom_bg');
-  if (savedBg) applyActiveWallpaper(savedBg);
-}
-
-themeToggle.addEventListener('change', function() {
-  const nextTheme = themeToggle.checked ? 'dark' : 'light';
-  document.documentElement.setAttribute('data-theme', nextTheme);
-  localStorage.setItem('ms_theme', nextTheme);
-});
-
-function handleWallpaperUpload(event) {
-  const file = event.target.files[0];
-  if (!file) return;
-  const reader = new FileReader();
-  reader.onload = function(e) {
-    const rawImg = new Image();
-    rawImg.src = e.target.result;
-    rawImg.onload = function() {
-      const canvas = document.createElement('canvas');
-      const maxDim = 1200;
-      let w = rawImg.width; let h = rawImg.height;
-      if (w > h && w > maxDim) { h = Math.round((h * maxDim) / w); w = maxDim; }
-      else if (h > maxDim) { w = Math.round((w * maxDim) / h); h = maxDim; }
-      canvas.width = w; canvas.height = h;
-      const ctx = canvas.getContext('2d');
-      ctx.drawImage(rawImg, 0, 0, w, h);
-      const compressedBase64 = canvas.toDataURL('image/jpeg', 0.75);
-      try {
-        localStorage.setItem('ms_custom_bg', compressedBase64);
-        applyActiveWallpaper(compressedBase64);
-      } catch (err) { alert("Selected image is too large for localized cache memory storage."); }
-    };
-  };
-  reader.readAsDataURL(file);
-}
-
-function applyActiveWallpaper(base64Data) {
-  if (base64Data) {
-    document.body.style.backgroundImage = `url('${base64Data}')`;
-    document.getElementById('resetBgBtn').style.display = 'inline-block';
-  } else {
-    document.body.style.backgroundImage = 'none';
-    document.getElementById('resetBgBtn').style.display = 'none';
-  }
-}
-
-function clearWallpaperTheme() {
-  localStorage.removeItem('ms_custom_bg');
-  applyActiveWallpaper(null);
-  document.getElementById('bgUploader').value = '';
-}
-
-function resetSearchFields() {
-  searchBox.value = '';
-  consolidationSearchBox.value = '';
-  renderResults();
-  renderConsolidationResults();
-  stopInlineScanner();
-  searchBox.focus();
-}
-
-async function fetchInventoryDatabases() {
-  try {
-    const [stockRes, fitRes] = await Promise.all([
-      fetch(CSV_URL + '?t=' + Date.now()),
-      fetch(GOOGLE_SHEETS_API_URL + '?t=' + Date.now())
-    ]);
-    if (!stockRes.ok || !fitRes.ok) throw new Error("Server communication fault");
-    const stockText = await stockRes.text();
-    const fittingsJson = await fitRes.json();
-
-    stockRegistry = parseCSV(stockText);
-    fittingsRegistry = parseGoogleSheetsJSON(fittingsJson);
-
-    localStorage.setItem('cached_stocks', stockText);
-    localStorage.setItem('cached_fittings_json', JSON.stringify(fittingsJson));
-    localStorage.setItem('cached_sync_time', new Date().toLocaleString());
-    updateMetaDisplay();
-  } catch (err) {
-    loadCachedDatabases();
-  }
-}
-
-function loadCachedDatabases() {
-  const cStocks = localStorage.getItem('cached_stocks');
-  const cFittingsJson = localStorage.getItem('cached_fittings_json');
-  const cTime = localStorage.getItem('cached_sync_time') || 'Never';
-  if (cStocks && cFittingsJson) {
-    stockRegistry = parseCSV(cStocks);
-    fittingsRegistry = parseGoogleSheetsJSON(JSON.parse(cFittingsJson));
-    updateMetaDisplay(cTime);
-  } else {
-    metaDisplay.textContent = '❌ No database files found. Connect to office Wi-Fi.';
-  }
-}
-
-function clearAppCache() {
-  if (confirm("Reset application local storage cache? This clears themes, custom fittings updates, and cached assets.")) {
-    localStorage.clear();
-    location.reload();
-  }
-}
-
-function startScanner() {
-  if (html5QrcodeScanner) return;
-  isProcessingScan = false;
-  html5QrcodeScanner = new Html5Qrcode("reader");
-  html5QrcodeScanner.start(
-    { facingMode: "environment" },
-    { 
-      fps: 30, 
-      formatsToSupport: [ Html5QrcodeSupportedFormats.CODE_128, Html5QrcodeSupportedFormats.CODE_39, Html5QrcodeSupportedFormats.QR_CODE ],
-      videoConstraints: { facingMode: "environment", width: { ideal: 1920 }, height: { ideal: 1080 }, aspectRatio: { ideal: 1.7777777778 } },
-      qrbox: function(viewfinderWidth, viewfinderHeight) {
-        let minEdge = Math.min(viewfinderWidth, viewfinderHeight);
-        let boxSize = Math.floor(minEdge * 0.75);
-        return { width: boxSize, height: Math.floor(boxSize * 0.5) };
-      }
-    }, 
-    onScanSuccess
-  ).catch(() => { metaDisplay.textContent = "Camera initialization failed."; });
-}
-
-function startInlineScanner(targetType) {
-  stopScanner(); stopInlineScanner(); 
-  currentScanTargetField = targetType;
-  document.getElementById('inlineScannerBox').style.display = 'block';
-  inlineFinderScanner = new Html5Qrcode("finderReader");
-  inlineFinderScanner.start(
-    { facingMode: "environment" },
-    { 
-      fps: 25,
-      formatsToSupport: [ Html5QrcodeSupportedFormats.CODE_128, Html5QrcodeSupportedFormats.CODE_39, Html5QrcodeSupportedFormats.QR_CODE ],
-      videoConstraints: { facingMode: "environment", width: { ideal: 1920 }, height: { ideal: 1080 }, aspectRatio: { ideal: 1.7777777778 } },
-      qrbox: function(viewfinderWidth, viewfinderHeight) {
-        let minEdge = Math.min(viewfinderWidth, viewfinderHeight);
-        let boxSize = Math.floor(minEdge * 0.75);
-        return { width: boxSize, height: Math.floor(boxSize * 0.5) };
-      }
-    },
-    onInlineScanSuccess
-  ).catch(() => { alert("Could not access mobile camera for lookup."); });
-}
-
-function stopInlineScanner() {
-  if (inlineFinderScanner) {
-    inlineFinderScanner.stop().then(() => { inlineFinderScanner = null; }).catch(()=>{});
-  }
-  document.getElementById('inlineScannerBox').style.display = 'none';
-}
-
-function onInlineScanSuccess(decodedText) {
-  let scannedText = decodedText.trim();
-  playBeep('success');
-  stopInlineScanner();
-  if (scannedText.startsWith('0') && scannedText.length > 1) {
-    searchBox.value = scannedText.replace(/^0+/, '');
-  } else {
-    searchBox.value = scannedText;
-  }
-  renderResults();
-  setTimeout(() => {
-    const anchor = document.getElementById('resultsContainerLocationAnchor');
-    if (anchor) anchor.scrollIntoView({ behavior: 'smooth', block: 'start' });
-  }, 100);
-}
-
-function switchMode(mode) {
-  document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
-  document.querySelectorAll('.app-screen').forEach(scr => scr.classList.remove('active'));
-  
-  if (mode === 'finder') {
-    document.getElementById('finderTab').classList.add('active');
-    document.getElementById('finderScreen').classList.add('active');
-    document.getElementById('footerBar').style.display = 'none';
-    document.getElementById('countSession').style.display = 'none';
-    updateMetaDisplay(); stopScanner();
-    setTimeout(() => { searchBox.focus(); }, 100);
-  } else if (mode === 'counter') {
-    document.getElementById('counterTab').classList.add('active');
-    document.getElementById('counterScreen').classList.add('active');
-    document.getElementById('footerBar').style.display = 'flex';
-    document.getElementById('countSession').style.display = 'block';
-    document.getElementById('countSession').textContent = `Counts logged: ${countLogSession.length}`;
-    stopInlineScanner(); startScanner();
-  } else if (mode === 'consolidation') {
-    document.getElementById('consolidationTab').classList.add('active');
-    document.getElementById('consolidationScreen').classList.add('active');
-    document.getElementById('footerBar').style.display = 'none';
-    document.getElementById('countSession').style.display = 'none';
-    stopInlineScanner(); stopScanner();
-    setTimeout(() => { consolidationSearchBox.focus(); }, 100);
-  }
-}
-
-function updateMetaDisplay(customTime) {
-  const useTime = customTime || localStorage.getItem('cached_sync_time') || new Date().toLocaleString();
-  metaDisplay.textContent = `✅ Local Database Ready (Last Sync: ${useTime})`;
-}
-
-function parseCSV(text) {
-  var lines = text.split(/\r?\n/); var rows = []; if (lines.length < 2) return [];
-  for (var i = 1; i < lines.length; i++) {
-    var line = lines[i].trim(); if (!line) continue;
-    var cols = line.split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/); if (cols.length < 4) continue; 
-    var partStr = (cols[3] || '').replace(/"/g, '').trim();
-    var supplierRefStr = (cols[1] || '').replace(/"/g, '').trim();
-    var itemNoStr = (cols[6] || '').replace(/"/g, '').trim();
-    var subStr = (cols[5] || '').replace(/"/g, '').trim();
-    var qty = parseInt((cols[4] || '0').replace(/[^0-9.\-]/g, ''), 10); if (isNaN(qty)) qty = 0;
-    
-    rows.push({
-      id: 'std_' + i, part: partStr, boxes: 0, qty: qty, sub: subStr || 'MAIN',
-      itemNo: itemNoStr, supplierRef: supplierRefStr, type: 'standard'
-    });
-  }
-  return rows;
-}
-
-function parseGoogleSheetsJSON(dataMatrix) {
-  var rows = []; if (!dataMatrix || dataMatrix.length < 2) return [];
-  var headers = dataMatrix[0].map(function(h) { return String(h).trim().toUpperCase(); });
-  var partColIndex = headers.indexOf("PART NUMBER");
-  var locColIndex = headers.indexOf("PALLET NO.");
-  var boxesColIndex = headers.indexOf("NO. OF BOX");
-  var totalColIndex = headers.indexOf("TOTAL");
-  
-  if (partColIndex === -1 || locColIndex === -1 || boxesColIndex === -1 || totalColIndex === -1) return [];
-
-  for (var i = 1; i < dataMatrix.length; i++) {
-    var cols = dataMatrix[i]; if (!cols || cols.length === 0) continue;
-    var partStr = String(cols[partColIndex] || '').trim();
-    var locStr = String(cols[locColIndex] || '').trim();
-    var boxesVal = parseInt(cols[boxesColIndex], 10) || 0;
-    var qtyVal = parseInt(cols[totalColIndex], 10) || 0;
-    if (!partStr) continue; 
-    
-    rows.push({
-      id: 'fit_' + i, part: partStr, boxes: boxesVal, qty: qtyVal,
-      sub: locStr || 'FITTINGS', itemNo: '', supplierRef: '', type: 'fittings'
-    });
-  }
-  return rows;
-}
-
-searchBox.addEventListener('input', function() {
-  clearTimeout(searchTimeout);
-  searchTimeout = setTimeout(renderResults, 150);
-});
-
-consolidationSearchBox.addEventListener('input', function() {
-  clearTimeout(searchTimeout);
-  searchTimeout = setTimeout(renderConsolidationResults, 150);
-});
-
-// 🔍 MAIN FINDER SCREEN: 100% READ-ONLY TO REJECT ACCIDENTAL POCKET TOUCHES
-function renderResults() {
-  var query = searchBox.value.trim().toLowerCase();
-  tableBody.innerHTML = '';
-  if (!query) { tableWrap.style.display = 'none'; noResults.style.display = 'none'; return; }
-  
-  var filteredStocks = stockRegistry.filter(r => r.part.toLowerCase().includes(query) || r.itemNo.toLowerCase().includes(query) || r.supplierRef.toLowerCase().includes(query));
-  var filteredFittings = fittingsRegistry.filter(r => r.part.toLowerCase().includes(query));
-  var filtered = filteredStocks.concat(filteredFittings);
-  
-  if (filtered.length === 0) { tableWrap.style.display = 'none'; noResults.style.display = 'block'; return; }
-  
-  tableWrap.style.display = 'block'; noResults.style.display = 'none';
-  
-  filtered.forEach(function(row) {
-    var tr = document.createElement('tr');
-    var regex = new RegExp("(" + escapeRegExp(query) + ")", "gi");
-    var displayPart = row.part.replace(regex, "<mark class='match'>$1</mark>");
-    var isFit = (row.type === 'fittings');
-    
-    tr.innerHTML = `
-      <td class="col-main">
-        <strong>${displayPart}</strong>
-        ${row.itemNo ? '<div style="font-size:11px; opacity:0.7;">Item: ' + row.itemNo + '</div>' : ''}
-        ${row.supplierRef ? '<div style="font-size:11px; opacity:0.7;">Ref: ' + row.supplierRef + '</div>' : ''}
-      </td>
-      <td class="col-boxes" style="font-weight:bold; text-align:center;">${isFit ? row.boxes : '—'}</td>
-      <td class="col-total" style="font-weight:bold; text-align:center;">${row.qty}</td>
-      <td class="col-save" style="opacity:0.3; text-align:center;">🔒</td>
-      <td class="col-sub" style="text-align:center;"><span class="${isFit ? 'location-badge fittings-badge' : 'location-badge'}">${row.sub}</span></td>
-    `;
-    tableBody.appendChild(tr);
-  });
-}
-
-// 📦 TAB 3: CONSOLIDATION WORKFLOW - EDITABLE ENVIRONMENT FOR FITTINGS ONLY
-function renderConsolidationResults() {
-  var query = consolidationSearchBox.value.trim().toLowerCase();
-  conTableBody.innerHTML = '';
-  if (!query) { conTableWrap.style.display = 'none'; return; }
-  
-  var filtered = fittingsRegistry.filter(r => r.part.toLowerCase().includes(query));
-  if (filtered.length === 0) { conTableWrap.style.display = 'none'; return; }
-  
-  conTableWrap.style.display = 'block';
-  filtered.forEach(function(row) {
-    var tr = document.createElement('tr');
-    tr.innerHTML = `
-      <td class="col-main"><strong>${row.part}</strong></td>
-      <td class="col-boxes"><input type="number" class="inline-edit-input" value="${row.boxes}" onchange="updateLocalFittingMemory('${row.id}', 'boxes', this.value)" inputmode="numeric"/></td>
-      <td class="col-total"><input type="number" class="inline-edit-input" value="${row.qty}" onchange="updateLocalFittingMemory('${row.id}', 'qty', this.value)" inputmode="numeric"/></td>
-      <td class="col-save"><button class="row-save-btn" id="btn_${row.id}" onclick="pushRowToGoogleSheets('${row.id}')">💾</button></td>
-      <td class="col-sub"><span class="location-badge fittings-badge">${row.sub}</span></td>
-    `;
-    conTableBody.appendChild(tr);
-  });
-}
-
-function escapeRegExp(string) { return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); }
-
-function updateLocalFittingMemory(id, field, value) {
-  var parsed = parseInt(value, 10) || 0;
-  for (var i = 0; i < fittingsRegistry.length; i++) {
-    if (fittingsRegistry[i].id === id) {
-      if (field === 'boxes') fittingsRegistry[i].boxes = parsed;
-      if (field === 'qty') fittingsRegistry[i].qty = parsed;
-      break;
-    }
-  }
-}
-
-// HANDLES BOTH LOCAL MEMORY UPDATES AND AUTOMATED ROW DELETION IF TOTAL QTY IS 0
-function pushRowToGoogleSheets(id) {
-  var row = null;
-  for (var i = 0; i < fittingsRegistry.length; i++) {
-    if (fittingsRegistry[i].id === id) { row = fittingsRegistry[i]; break; }
-  }
-  if (!row) return;
-
-  var btnElement = document.getElementById("btn_" + id);
-  btnElement.disabled = true; btnElement.innerHTML = "⏳";
-
-  var callbackName = "jsonp_callback_" + Math.round(Math.random() * 1000000);
-  
-  window[callbackName] = function(response) {
-    clearTimeout(timeoutId); delete window[callbackName]; document.body.removeChild(script);
-    
-    if (response && response.result === "success") {
-      playBeep('success');
-      btnElement.style.background = "#198754";
-      btnElement.innerHTML = "✅";
-      
-      var currentCache = JSON.parse(localStorage.getItem('cached_fittings_json') || '[]');
-      if (currentCache.length > 0) {
-        var headers = currentCache[0].map(h => String(h).trim().toUpperCase());
-        var pIdx = headers.indexOf("PART NUMBER");
-        var lIdx = headers.indexOf("PALLET NO.");
-        var bIdx = headers.indexOf("NO. OF BOX");
-        var tIdx = headers.indexOf("TOTAL");
         
-        for (var k = 1; k < currentCache.length; k++) {
-          if (String(currentCache[k][pIdx]).trim() === row.part && String(currentCache[k][lIdx]).trim() === row.sub) {
-            if (row.qty === 0) {
-              // Auto-purge row out of your browser's persistent cache instantly
-              currentCache.splice(k, 1);
-              fittingsRegistry = fittingsRegistry.filter(r => r.id !== id);
-            } else {
-              currentCache[k][bIdx] = row.boxes;
-              currentCache[k][tIdx] = row.qty;
-            }
-            break;
-          }
-        }
-        localStorage.setItem('cached_fittings_json', JSON.stringify(currentCache));
-      }
+        <div class="table-wrap" id="conTableWrap" style="display: none; margin-top:12px;">
+          <table>
+            <thead>
+              <tr>
+                <th>Part / Cross-Ref</th>
+                <th>Boxes</th>
+                <th>Total Qty</th>
+                <th>Sync</th>
+                <th>Loc</th>
+              </tr>
+            </thead>
+            <tbody id="conTableBody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="panel-box">
+        <h3 style="font-size:14px; margin-bottom:12px; color:var(--accent-green); text-transform:uppercase; letter-spacing:0.5px;">Module B: Add To New Pallet</h3>
+        
+        <div class="input-group">
+          <label for="newPartNumber">Part Number</label>
+          <input id="newPartNumber" type="text" placeholder="e.g., 22611D-69-69N" autocomplete="off"/>
+        </div>
+
+        <div class="input-group">
+          <label for="newPalletNo">Pallet No.</label>
+          <input id="newPalletNo" type="text" placeholder="e.g., 7" autocomplete="off"/>
+        </div>
+
+        <div class="input-group">
+          <label for="newPackSize">Pack Size</label>
+          <input id="newPackSize" type="number" placeholder="e.g., 200" min="0" inputmode="numeric"/>
+        </div>
+
+        <div class="shortcut-row" style="grid-template-columns: 1fr 1fr; margin-top:0; margin-bottom:14px;">
+          <div class="input-group" style="margin-bottom:0;">
+            <label for="newBoxes">No. of Boxes</label>
+            <input id="newBoxes" type="number" placeholder="e.g., 3" min="0" inputmode="numeric"/>
+          </div>
+          <div class="input-group" style="margin-bottom:0;">
+            <label for="newTotalQty">Total Quantity</label>
+            <input id="newTotalQty" type="number" placeholder="e.g., 600" min="0" inputmode="numeric"/>
+          </div>
+        </div>
+
+        <button class="btn" style="width:100%; padding:14px; background:var(--accent-purple); font-weight:700;" onclick="submitNewPalletEntry()">💾 Save New Item Entry</button>
+      </div>
+    </div>
+
+    <div class="panel-box" style="padding:12px; gap:10px; font-size:12px; font-weight:600;">
+      <label style="display:flex; align-items:center; gap:8px; cursor:pointer;">
+        <input type="checkbox" checked disabled style="accent-color:var(--accent-blue);"> Dark Mode
+      </label>
+      <button class="btn btn-grey" style="padding:6px 10px; font-size:11px; width:fit-content;">🔔 Activate Notifications</button>
+    </div>
+
+    <div class="utility-footer">
+      <span style="font-size:11px; color:var(--danger-red); cursor:pointer; font-weight:600;" onclick="flushApplicationCache()">♻️ Clear App Cache</span>
+    </div>
+
+  </div>
+
+  <script>
+    // ⚠️ REPLACE THIS WITH YOUR EXECUTABLE APPS SCRIPT WEB APP URL EVERYTIME YOU RE-DEPLOY!
+    const GOOGLE_SHEETS_API_URL = "https://script.google.com/macros/s/AKfycbxu21SoLE_R2Ou8h_gbprwtQ8-rRM8U9dYGQJqtf5m05P-21zMlIi_pCxCBcJAlHpIklA/exec";
+
+    // Application Data Registries
+    let fittingsRegistry = [];
+    let appActiveTab = "lookup";
+
+    // DOM Selections
+    const metaDisplay = document.getElementById('metaDisplay');
+    const generalSearchInput = document.getElementById('generalSearchInput');
+    const fittingsSearchInput = document.getElementById('fittingsSearchInput');
+    const lookupScreen = document.getElementById('lookupScreen');
+    const auditScreen = document.getElementById('auditScreen');
+    const consolidationScreen = document.getElementById('consolidationScreen');
+    const resultsOutputWrapper = document.getElementById('resultsOutputWrapper');
+    const resultsTableBody = document.getElementById('resultsTableBody');
+    const emptySearchNotification = document.getElementById('emptySearchNotification');
+    const consolidationSearchBox = document.getElementById('consolidationSearchBox');
+    const conTableWrap = document.getElementById('conTableWrap');
+    const conTableBody = document.getElementById('conTableBody');
+
+    // Tab Interface Switcher
+    function switchTab(target) {
+      appActiveTab = target;
       
-      setTimeout(function() {
+      // Reset active tab button styles
+      document.getElementById('tabLookup').className = "tab-btn" + (target === 'lookup' ? ' active' : '');
+      document.getElementById('tabAudit').className = "tab-btn" + (target === 'audit' ? ' active' : '');
+      document.getElementById('tabConsolidation').className = "tab-btn" + (target === 'consolidation' ? ' active-purple' : '');
+
+      // Toggle visible container panels
+      lookupScreen.className = "app-screen" + (target === 'lookup' ? ' active-screen' : '');
+      auditScreen.className = "app-screen" + (target === 'audit' ? ' active-screen' : '');
+      consolidationScreen.className = "app-screen" + (target === 'consolidation' ? ' active-screen' : '');
+      
+      if (target === 'consolidation') {
         renderConsolidationResults();
-        renderResults();
-      }, 800);
-    } else {
-      handleSyncFailure(btnElement);
+      }
     }
-  };
 
-  var timeoutId = setTimeout(function() { delete window[callbackName]; handleSyncFailure(btnElement); }, 15000); 
-
-  var script = document.createElement("script");
-  script.src = GOOGLE_SHEETS_API_URL + 
-    "?action=updateRow" +
-    "&partNumber=" + encodeURIComponent(row.part) +
-    "&location=" + encodeURIComponent(row.sub) +
-    "&boxes=" + row.boxes +
-    "&totalQty=" + row.qty +
-    "&callback=" + callbackName;
-    
-  document.body.appendChild(script);
-}
-
-// MODULE B: SUBMITS & APPENDS A FRESH DATA ROW TO THE CLOUD DATABASE
-function submitNewPalletEntry() {
-  var part = document.getElementById('newPartNumber').value.trim();
-  var pallet = document.getElementById('newPalletNo').value.trim();
-  var boxes = parseInt(document.getElementById('newBoxes').value, 10) || 0;
-  var total = parseInt(document.getElementById('newTotalQty').value, 10) || 0;
-
-  if (!part || !pallet) { alert("Please complete both Part Number and Pallet No. fields."); return; }
-
-  var callbackName = "jsonp_callback_" + Math.round(Math.random() * 1000000);
-  metaDisplay.textContent = "⏳ Injecting asset entry into spreadsheet rows...";
-
-  window[callbackName] = function(response) {
-    clearTimeout(timeoutId); delete window[callbackName]; document.body.removeChild(script);
-    
-    if (response && response.result === "success") {
-      playBeep('success');
-      alert("Asset appended successfully onto custom pallet row!");
+    // Initialize Network Synchronization Sequence
+    window.addEventListener('DOMContentLoaded', () => {
+      loadCachedFittingsData();
+      fetchFreshCloudDatabase();
       
-      // Inject new row entry straight inside your engine runtime to minimize syncing latency
-      var newId = 'fit_' + (fittingsRegistry.length + 1);
-      fittingsRegistry.push({ id: newId, part: part, boxes: boxes, qty: total, sub: pallet, itemNo: '', supplierRef: '', type: 'fittings' });
+      // Setup input listeners for dynamic filtering
+      generalSearchInput.addEventListener('input', renderResults);
+      fittingsSearchInput.addEventListener('input', renderResults);
+      consolidationSearchBox.addEventListener('input', renderConsolidationResults);
+    });
+
+    function loadCachedFittingsData() {
+      const cache = localStorage.getItem('cached_fittings_json');
+      if (cache) {
+        try {
+          const parsedMatrix = JSON.parse(cache);
+          fittingsRegistry = parseGoogleSheetsJSON(parsedMatrix);
+          updateMetaDisplay(true);
+        } catch(e) {
+          console.error("Local Cache Corrupted:", e);
+        }
+      }
+    }
+
+    function fetchFreshCloudDatabase() {
+      fetch(GOOGLE_SHEETS_API_URL)
+        .then(res => res.json())
+        .then(dataMatrix => {
+          if (dataMatrix && dataMatrix.length > 0) {
+            localStorage.setItem('cached_fittings_json', JSON.stringify(dataMatrix));
+            fittingsRegistry = parseGoogleSheetsJSON(dataMatrix);
+            updateMetaDisplay(true);
+            renderResults();
+            if (appActiveTab === 'consolidation') renderConsolidationResults();
+          }
+        })
+        .catch(err => {
+          console.error("Cloud database fetch failed. Running offline mode if cache exists.", err);
+        });
+    }
+
+    function updateMetaDisplay(isOnline = false) {
+      if (isOnline) {
+        const timeNow = new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit', second:'2-digit'});
+        const dateNow = new Date().toLocaleDateString();
+        metaDisplay.className = "status-banner success";
+        metaDisplay.textContent = `✅ Local Database Ready (Last Sync: ${dateNow}, ${timeNow})`;
+      } else {
+        metaDisplay.className = "status-banner error";
+        metaDisplay.textContent = "❌ No database files found. Connect to office Wi-Fi.";
+      }
+    }
+
+    // Corrected Spreadsheet Mapping Rules to Match Your Layout Formats Exactly
+    function parseGoogleSheetsJSON(dataMatrix) {
+      let rows = []; 
+      if (!dataMatrix || dataMatrix.length < 2) return [];
       
-      var currentCache = JSON.parse(localStorage.getItem('cached_fittings_json') || '[]');
-      if (currentCache.length > 0) {
-        var headers = currentCache[0].map(h => String(h).trim().toUpperCase());
-        var rowArr = new Array(headers.length).fill("");
-        rowArr[headers.indexOf("PART NUMBER")] = part;
-        rowArr[headers.indexOf("PALLET NO.")] = pallet;
-        rowArr[headers.indexOf("NO. OF BOX")] = boxes;
-        rowArr[headers.indexOf("TOTAL")] = total;
-        currentCache.push(rowArr);
-        localStorage.setItem('cached_fittings_json', JSON.stringify(currentCache));
+      // Target header array string sanitization mapping
+      let headers = dataMatrix[0].map(h => String(h).trim().toUpperCase());
+      
+      // Adjusted Header Lookups tracking columns
+      let partColIndex = headers.indexOf("CODE");          // Your actual item identity sequence row column
+      let locColIndex = headers.indexOf("PART NUMBER");    // This is where your Pallet No. data is living
+      let boxesColIndex = headers.indexOf("PACK SIZE");     // Matches your Box Counts row column
+      let totalColIndex = headers.indexOf("NO. OF BOX");    // Contains total summation counts values row column
+      
+      if (partColIndex === -1 || locColIndex === -1 || boxesColIndex === -1 || totalColIndex === -1) {
+        return [];
       }
 
-      document.getElementById('newPartNumber').value = '';
-      document.getElementById('newPalletNo').value = '';
-      document.getElementById('newBoxes').value = '';
-      document.getElementById('newTotalQty').value = '';
+      for (let i = 1; i < dataMatrix.length; i++) {
+        let cols = dataMatrix[i]; 
+        if (!cols || cols.length === 0) continue;
+        
+        let partStr = String(cols[partColIndex] || '').trim();
+        let locStr = String(cols[locColIndex] || '').trim();
+        let boxesVal = parseInt(cols[boxesColIndex], 10) || 0;
+        let qtyVal = parseInt(cols[totalColIndex], 10) || 0;
+        
+        if (!partStr) continue; 
+        
+        rows.push({
+          id: 'fit_' + i, 
+          part: partStr, 
+          boxes: boxesVal, 
+          qty: qtyVal,
+          sub: locStr || 'FITTINGS', 
+          itemNo: '', 
+          supplierRef: '', 
+          type: 'fittings'
+        });
+      }
+      return rows;
+    }
+
+    // Render Matrix Filter logic for Search lookup screen
+    function renderResults() {
+      const filterGen = generalSearchInput.value.trim().toLowerCase();
+      const filterFit = fittingsSearchInput.value.trim().toLowerCase();
       
-      updateMetaDisplay();
-      renderConsolidationResults();
+      resultsTableBody.innerHTML = '';
+      
+      if (!filterGen && !filterFit) {
+        resultsOutputWrapper.style.display = 'none';
+        emptySearchNotification.style.display = 'none';
+        return;
+      }
+
+      let filtered = fittingsRegistry.filter(item => {
+        let matchGen = !filterGen || item.part.toLowerCase().includes(filterGen);
+        let matchFit = !filterFit || item.part.toLowerCase().includes(filterFit);
+        return matchGen && matchFit;
+      });
+
+      if (filtered.length === 0) {
+        resultsOutputWrapper.style.display = 'none';
+        emptySearchNotification.style.display = 'flex';
+        return;
+      }
+
+      emptySearchNotification.style.display = 'none';
+      resultsOutputWrapper.style.display = 'block';
+
+      filtered.forEach(item => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td><span class="badge-part">${item.part}</span></td>
+          <td><b style="color:#58a6ff">${item.boxes}</b></td>
+          <td><b style="color:#56d364">${item.qty}</b></td>
+          <td><span class="badge-loc">${item.sub}</span></td>
+        `;
+        resultsTableBody.appendChild(tr);
+      });
+    }
+
+    // Render Matrix Logic for Module A (Consolidation Screen)
+    function renderConsolidationResults() {
+      const filterText = consolidationSearchBox.value.trim().toLowerCase();
+      conTableBody.innerHTML = '';
+      
+      if (!filterText) {
+        conTableWrap.style.display = 'none';
+        return;
+      }
+
+      let filtered = fittingsRegistry.filter(item => item.part.toLowerCase().includes(filterText));
+
+      if (filtered.length === 0) {
+        conTableWrap.style.display = 'none';
+        return;
+      }
+
+      conTableWrap.style.display = 'block';
+
+      filtered.forEach(item => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td><span class="badge-part">${item.part}</span></td>
+          <td><input type="number" class="qty-box" id="box_${item.id}" value="${item.boxes}"></td>
+          <td><input type="number" class="qty-box" id="qty_${item.id}" value="${item.qty}"></td>
+          <td><button class="btn-sync" onclick="syncRowUpdates('${item.part}', '${item.sub}', '${item.id}')">💾</button></td>
+          <td><span class="badge-loc">${item.sub}</span></td>
+        `;
+        conTableBody.appendChild(tr);
+      });
+    }
+
+    // Module A Update Submission Function Pipeline
+    function syncRowUpdates(partNumber, location, rowId) {
+      let boxesVal = parseInt(document.getElementById(`box_${rowId}`).value, 10) || 0;
+      let totalQtyVal = parseInt(document.getElementById(`qty_${rowId}`).value, 10) || 0;
+
+      let callbackName = "jsonp_callback_" + Math.round(Math.random() * 1000000);
+      metaDisplay.className = "status-banner error";
+      metaDisplay.textContent = "⏳ Updating database logs in cloud columns...";
+
+      window[callbackName] = function(response) {
+        clearTimeout(timeoutId);
+        delete window[callbackName];
+        document.body.removeChild(script);
+        
+        if (response && response.result === "success") {
+          playBeep('success');
+          alert("Inventory log modified successfully!");
+          fetchFreshCloudDatabase();
+        } else {
+          alert("Error applying inventory modification rules.");
+          updateMetaDisplay(true);
+        }
+      };
+
+      let timeoutId = setTimeout(function() {
+        delete window[callbackName];
+        alert("Server synchronization timed out.");
+        updateMetaDisplay(true);
+      }, 15000);
+
+      let script = document.createElement("script");
+      script.src = GOOGLE_SHEETS_API_URL + 
+        `?action=updateRow` +
+        `&partNumber=${encodeURIComponent(partNumber)}` +
+        `&location=${encodeURIComponent(location)}` +
+        `&boxes=${boxesVal}` +
+        `&totalQty=${totalQtyVal}` +
+        `&callback=${callbackName}`;
+        
+      document.body.appendChild(script);
+    }
+
+    // Module B Insertion Processing Engine Call
+    function submitNewPalletEntry() {
+      let part = document.getElementById('newPartNumber').value.trim();
+      let pallet = document.getElementById('newPalletNo').value.trim();
+      let packSize = parseInt(document.getElementById('newPackSize').value, 10) || 0;
+      let boxes = parseInt(document.getElementById('newBoxes').value, 10) || 0;
+      let total = parseInt(document.getElementById('newTotalQty').value, 10) || 0;
+
+      if (!part || !pallet) {
+        alert("Please complete both Part Number and Pallet No. fields.");
+        return;
+      }
+
+      let callbackName = "jsonp_callback_" + Math.round(Math.random() * 1000000);
+      metaDisplay.className = "status-banner error";
+      metaDisplay.textContent = "⏳ Saving item entry into sheet rows...";
+
+      window[callbackName] = function(response) {
+        clearTimeout(timeoutId);
+        delete window[callbackName];
+        document.body.removeChild(script);
+        
+        if (response && response.result === "success") {
+          playBeep('success');
+          alert("Item successfully appended and indexed!");
+          
+          // Clear form fields
+          document.getElementById('newPartNumber').value = '';
+          document.getElementById('newPalletNo').value = '';
+          document.getElementById('newPackSize').value = '';
+          document.getElementById('newBoxes').value = '';
+          document.getElementById('newTotalQty').value = '';
+          
+          fetchFreshCloudDatabase();
+        } else {
+          alert("Data push rejected by Google Sheets backend.");
+          updateMetaDisplay(true);
+        }
+      };
+
+      let timeoutId = setTimeout(function() {
+        delete window[callbackName];
+        alert("Cloud synchronization timed out.");
+        updateMetaDisplay(true);
+      }, 15000);
+
+      let script = document.createElement("script");
+      script.src = GOOGLE_SHEETS_API_URL + 
+        "?action=addStock" +
+        "&partNumber=" + encodeURIComponent(part) +
+        "&location=" + encodeURIComponent(pallet) +
+        "&packSize=" + packSize +
+        "&boxes=" + boxes +
+        "&totalQty=" + total +
+        "&callback=" + callbackName;
+        
+      document.body.appendChild(script);
+    }
+
+    function clearLookupFields() {
+      generalSearchInput.value = '';
+      fittingsSearchInput.value = '';
       renderResults();
-    } else {
-      alert("Appended data push rejected by Google cloud environment.");
-      updateMetaDisplay();
     }
-  };
 
-  var timeoutId = setTimeout(function() { delete window[callbackName]; alert("Cloud synchronization timed out."); updateMetaDisplay(); }, 15000);
-
-  var script = document.createElement("script");
-  script.src = GOOGLE_SHEETS_API_URL + 
-    "?action=addStock" +
-    "&partNumber=" + encodeURIComponent(part) +
-    "&location=" + encodeURIComponent(pallet) +
-    "&boxes=" + boxes +
-    "&totalQty=" + total +
-    "&callback=" + callbackName;
-    
-  document.body.appendChild(script);
-}
-
-function handleSyncFailure(btnElement) {
-  playBeep('fail'); btnElement.style.background = "#dc3545"; btnElement.innerHTML = "❌";
-  setTimeout(function() { btnElement.innerHTML = "💾"; btnElement.style.background = "var(--accent-green)"; btnElement.disabled = false; }, 2500);
-}
-
-function playBeep(type) {
-  try {
-    var ctx = new (window.AudioContext || window.webkitAudioContext)();
-    var osc = ctx.createOscillator(); var gain = ctx.createGain();
-    osc.connect(gain); gain.connect(ctx.destination);
-    if (type === 'success') {
-      osc.frequency.setValueAtTime(880, ctx.currentTime); gain.gain.setValueAtTime(0.1, ctx.currentTime);
-      osc.start(); osc.stop(ctx.currentTime + 0.1);
-    } else {
-      osc.type = 'sawtooth'; osc.frequency.setValueAtTime(220, ctx.currentTime); gain.gain.setValueAtTime(0.15, ctx.currentTime);
-      osc.start(); osc.stop(ctx.currentTime + 0.25);
+    function flushApplicationCache() {
+      localStorage.removeItem('cached_fittings_json');
+      fittingsRegistry = [];
+      renderResults();
+      renderConsolidationResults();
+      updateMetaDisplay(false);
+      alert("Application cache context storage flushed!");
     }
-  } catch(e) {}
-}
 
-function onScanSuccess(decodedText) {
-  if (isProcessingScan) return;
-  var scanned = decodedText.trim();
-  var match = stockRegistry.find(r => r.part === scanned || r.supplierRef === scanned) || fittingsRegistry.find(r => r.part === scanned);
-  
-  if (match) {
-    playBeep('success'); isProcessingScan = true; activeScanMatch = match;
-    document.getElementById('targetItemName').textContent = match.part;
-    document.getElementById('targetSubLoc').textContent = match.sub;
-    document.getElementById('targetSubLoc').className = match.type === 'fittings' ? "count-sub fittings-badge" : "count-sub";
-    document.getElementById('targetMappingInfo').textContent = match.type === 'standard' ? "Ref: " + match.supplierRef : "Google Sheets Managed Asset Row";
-    document.getElementById('qtyInputField').value = '';
-    document.getElementById('countOverlay').style.display = 'block';
-  }
-}
-
-function adjustQty(amount) {
-  var input = document.getElementById('qtyInputField');
-  var val = parseInt(input.value, 10) || 0;
-  input.value = Math.max(0, val + amount);
-}
-
-function dismissOverlay() { document.getElementById('countOverlay').style.display = 'none'; activeScanMatch = null; isProcessingScan = false; }
-
-function commitCount() {
-  if (!activeScanMatch) return;
-  var val = parseInt(document.getElementById('qtyInputField').value, 10) || 0;
-  countLogSession.unshift({ part: activeScanMatch.part, loc: activeScanMatch.sub, qty: val, time: new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) });
-  localStorage.setItem('ms_count_session_logs', JSON.stringify(countLogSession));
-  document.getElementById('countSession').textContent = "Counts logged: " + countLogSession.length;
-  renderCountLogList(); dismissOverlay();
-}
-
-function renderCountLogList() {
-  var list = document.getElementById('logRegistryList'); list.innerHTML = '';
-  countLogSession.forEach(function(item) {
-    var div = document.createElement('div'); div.className = 'log-item';
-    div.innerHTML = `<div><strong>${item.part}</strong> <small style="opacity:0.6;">(${item.loc})</small></div> <div style="font-weight:800; color:var(--accent-green);">Qty: ${item.qty} <span style="font-size:10px; font-weight:normal; color:var(--muted); margin-left:4px;">${item.time}</span></div>`;
-    list.appendChild(div);
-  });
-}
-
-function triggerNewSessionManually() {
-  if (confirm("Clear terminal and start fresh warehouse auditing session?")) {
-    countLogSession = []; localStorage.removeItem('ms_count_session_logs');
-    document.getElementById('countSession').textContent = "Counts logged: 0"; renderCountLogList();
-  }
-}
-function clearCounts() { triggerNewSessionManually(); }
-
-function exportCountsToCSV() {
-  if (countLogSession.length === 0) { alert("No audit counts available to export."); return; }
-  var csvContent = "data:text/csv;charset=utf-8,PART NUMBER,LOCATION/PALLET,AUDITED COUNT,TIMESTAMP\n";
-  countLogSession.forEach(r => { csvContent += `"${r.part}","${r.loc}",${r.qty},"${r.time}"\n`; });
-  var encodedUri = encodeURI(csvContent); var link = document.createElement("a");
-  link.setAttribute("href", encodedUri); link.setAttribute("download", "Audit_Counts_" + new Date().toISOString().slice(0,10) + ".csv");
-  document.body.appendChild(link); link.click(); document.body.removeChild(link);
-}
-
-function stopScanner() { if (html5QrcodeScanner) { html5QrcodeScanner.stop().then(function() { html5QrcodeScanner = null; }).catch(function(){}); } }
-
-window.addEventListener('DOMContentLoaded', function() {
-  initThemeAndWallpaper();
-  var storedLogs = localStorage.getItem('ms_count_session_logs');
-  if (storedLogs) {
-    countLogSession = JSON.parse(storedLogs); renderCountLogList();
-    document.getElementById('startupInterceptModal').style.display = 'flex';
-  }
-  loadCachedDatabases(); fetchInventoryDatabases();
-});
-
-function resolveIntercept(choice) {
-  document.getElementById('startupInterceptModal').style.display = 'none';
-  if (choice === 'purge') {
-    countLogSession = []; localStorage.removeItem('ms_count_session_logs');
-    document.getElementById('countSession').textContent = "Counts logged: 0"; renderCountLogList();
-  }
-}
-</script>
+    function playBeep(type) {
+      try {
+        let ctx = new (window.AudioContext || window.webkitAudioContext)();
+        let osc = ctx.createOscillator();
+        let gain = ctx.createGain();
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        
+        if (type === 'success') {
+          osc.frequency.setValueAtTime(587.33, ctx.currentTime); // D5
+          gain.gain.setValueAtTime(0.1, ctx.currentTime);
+          osc.start();
+          osc.stop(ctx.currentTime + 0.12);
+        }
+      } catch(e) {
+        console.log("Audio notification block active", e);
+      }
+    }
+  </script>
 </body>
 </html>
