@@ -1,4 +1,4 @@
-const CACHE_NAME = 'stock-locator-v37'; // Changing this version forces a cache reset
+const CACHE_NAME = 'stock-locator-v38'; // Changing this version forces a cache reset
 const ASSETS_TO_CACHE = [
   './',
   './index.html',
