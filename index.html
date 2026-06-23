@@ -1,799 +1,1085 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>Stock Locator+</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
+  <title>STOCK LOCATOR+</title>
+
+  <link rel="manifest" href="manifest.json">
+
+  <link rel="icon" type="image/png" sizes="192x192" href="./wh_icon.png">
+  <link rel="icon" type="image/png" sizes="512x512" href="./wh_icon.png">
+  <link rel="apple-touch-icon" sizes="180x180" href="./wh_icon.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="./wh_icon.png">
+
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="STOCK LOCATOR+">
+  <meta name="theme-color" content="#0056b3">
+
+  <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
+
   <style>
     :root {
-      --bg-dark: #0d1117;
-      --panel-dark: #161b22;
-      --border-dark: #21262d;
-      --text-main: #c9d1d9;
-      --text-muted: #8b949e;
-      --accent-blue: #0969da;
-      --accent-green: #2ea44f;
+      --primary-accent: #0056b3; 
+      --bg: #f4f6f9; 
+      --panel: rgba(255, 255, 255, 0.85);
+      --text: #1e293b;
+      --muted: #475569;
+      --border: rgba(219, 226, 239, 0.7);
+      --th-bg: rgba(241, 245, 249, 0.9);
+      --accent-green: #10b981;
       --accent-purple: #8250df;
-      --danger-red: #da3633;
+      --danger-red: #dc3545;
       --warn-yellow: #f0b429;
+      --glass-blur: blur(12px);
+      --bg-overlay: rgba(244, 246, 249, 0.4);
+    }
+    [data-theme="dark"] {
+      --primary-accent: #3b82f6;
+      --bg: #0f1115;
+      --panel: rgba(22, 26, 34, 0.80);
+      --text: #f8fafc;
+      --muted: #94a3b8;
+      --border: rgba(45, 55, 72, 0.6);
+      --th-bg: rgba(30, 41, 59, 0.9);
+      --bg-overlay: rgba(15, 17, 21, 0.75);
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    
+    html, body { min-height: 100vh; }
+    
+    body { 
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; 
+      background-color: var(--bg);
+      background-position: center;
+      background-size: cover;
+      background-attachment: fixed;
+      background-repeat: no-repeat;
+      color: var(--text); 
+      padding: 12px; 
+      padding-bottom: 90px; 
+      transition: background-color 0.2s ease;
+      position: relative;
     }
 
-    * {
-      box-sizing: border-box;
-      margin: 0;
-      padding: 0;
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    body::before {
+      content: "";
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: var(--bg-overlay);
+      z-index: -1;
+      pointer-events: none;
+      transition: background 0.2s ease;
     }
 
-    body {
-      background-color: var(--bg-dark);
-      color: var(--text-main);
-      padding: 12px;
+    .app-container { max-width: 750px; margin: 0 auto; position: relative; z-index: 1; }
+
+    .app-header {
       display: flex;
       flex-direction: column;
       align-items: center;
-      min-height: 100vh;
+      justify-content: center;
+      gap: 6px;
+      margin-bottom: 14px;
+      padding: 10px;
+    }
+    .header-main-row {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+    }
+    .app-logo { height: 38px; width: auto; object-fit: contain; }
+    .app-title { font-size: 24px; font-weight: 800; letter-spacing: -0.5px; color: var(--text); text-transform: uppercase; }
+
+    .tabs-bar { 
+      display: grid; 
+      grid-template-columns: 1fr 1fr 1fr;
+      background: var(--panel); 
+      border: 1px solid var(--border); 
+      border-radius: 12px; 
+      padding: 5px; 
+      margin-bottom: 14px; 
+      box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); 
+      backdrop-filter: var(--glass-blur);
+    }
+    .tab-btn { 
+      padding: 14px 6px; 
+      text-align: center; 
+      font-size: 13px; 
+      font-weight: 700; 
+      border: none; 
+      background: transparent; 
+      color: var(--muted); 
+      cursor: pointer; 
+      border-radius: 8px; 
+      transition: all 0.2s ease; 
+    }
+    
+    #finderTab.active { background: #0056b3; color: white; }
+    #counterTab.active { background: var(--accent-green); color: white; }
+    #consolidationTab.active { background: var(--accent-purple); color: white; }
+
+    .app-screen { display: none; }
+    .app-screen.active { display: block; }
+
+    .panel-box { 
+      background: var(--panel); 
+      padding: 20px; 
+      border-radius: 12px; 
+      border: 1px solid var(--border); 
+      box-shadow: 0 4px 10px rgba(0,0,0,0.04); 
+      margin-bottom: 16px; 
+      backdrop-filter: var(--glass-blur);
     }
 
-    .app-container {
-      width: 100%;
-      max-width: 600px;
+    .input-group { margin-bottom: 14px; }
+    label { 
+      font-weight: 700; 
+      font-size: 11px; 
+      color: var(--text); 
+      display: block; 
+      margin-bottom: 6px; 
+      text-transform: uppercase; 
+      letter-spacing: 0.5px;
+      opacity: 0.9;
+    }
+    
+    input[type="text"], input[type="number"] { 
+      width: 100%; 
+      padding: 14px; 
+      font-size: 16px; 
+      border: 2px solid var(--border); 
+      border-radius: 8px; 
+      background: var(--panel); 
+      color: var(--text);
+      transition: border-color 0.2s;
+    }
+    input:focus { outline: none; border-color: var(--primary-accent); }
+
+    .shortcut-row { 
+      display: grid; 
+      grid-template-columns: 1fr 1fr; 
+      gap: 10px; 
+      margin-top: 14px; 
+    }
+    .action-sub-btn { 
+      padding: 12px; 
+      font-size: 14px; 
+      font-weight: 600; 
+      color: white; 
+      background: #198754; 
+      border: none; 
+      border-radius: 6px; 
+      cursor: pointer; 
+      text-align: center;
+    }
+    .action-sub-btn.reset { background: #4a5568; }
+    .shortcut-row .reset { grid-column: span 2; }
+
+    .inline-scanner-box {
+      display: none;
+      background: #000;
+      border-radius: 8px;
+      overflow: hidden;
+      margin-bottom: 14px;
+      position: relative;
+    }
+    .close-scan-btn {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      background: rgba(0,0,0,0.7);
+      color: white;
+      border: 1px solid #fff;
+      padding: 6px 12px;
+      border-radius: 4px;
+      cursor: pointer;
+      z-index: 10;
+      font-size: 12px;
+      font-weight: bold;
+    }
+
+    .preferences-container {
+      margin-top: 16px;
+      padding-top: 14px;
+      border-top: 1px dashed var(--border);
       display: flex;
       flex-direction: column;
       gap: 12px;
     }
-
-    header {
+    .pref-row {
       display: flex;
       align-items: center;
-      justify-content: center;
+      justify-content: flex-start;
       gap: 10px;
-      padding: 10px 0;
+      width: 100%;
+      flex-wrap: wrap;
     }
-
-    header h1 {
-      font-size: 20px;
-      font-weight: 800;
-      letter-spacing: 0.5px;
-    }
-
-    .tab-bar {
-      display: grid;
-      grid-template-columns: 1fr 1fr 1fr;
-      background: var(--panel-dark);
-      border: 1px solid var(--border-dark);
-      border-radius: 8px;
-      overflow: hidden;
-      padding: 4px;
-      gap: 4px;
-    }
-
-    .tab-btn {
-      background: transparent;
-      border: none;
-      color: var(--text-muted);
-      padding: 12px 8px;
-      font-size: 13px;
-      font-weight: 600;
+    .custom-file-upload {
+      display: inline-block;
+      padding: 8px 12px;
       cursor: pointer;
-      border-radius: 6px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 6px;
-      transition: all 0.2s ease;
-    }
-
-    .tab-btn.active {
-      background: var(--accent-blue);
-      color: #fff;
-    }
-
-    .tab-btn.active-purple {
-      background: var(--accent-purple);
-      color: #fff;
-    }
-
-    .status-banner {
-      padding: 10px 12px;
+      background: var(--th-bg);
+      border: 1px solid var(--border);
       border-radius: 6px;
       font-size: 12px;
-      font-weight: 600;
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      border: 1px solid transparent;
+      font-weight: bold;
+      color: var(--text);
     }
-
-    .status-banner.error {
-      background: rgba(218, 54, 51, 0.1);
-      border-color: rgba(218, 54, 51, 0.4);
-      color: #ff7b72;
-    }
-
-    .status-banner.success {
-      background: rgba(46, 164, 79, 0.1);
-      border-color: rgba(46, 164, 79, 0.4);
-      color: #56d364;
-    }
-
-    .status-banner.alert-warn {
-      background: rgba(240, 180, 41, 0.1);
-      border-color: rgba(240, 180, 41, 0.4);
-      color: var(--warn-yellow);
-      font-size: 14px;
-      font-weight: 700;
-      justify-content: center;
-      padding: 16px;
-    }
-
-    .panel-box {
-      background: var(--panel-dark);
-      border: 1px solid var(--border-dark);
-      border-radius: 8px;
-      padding: 16px;
-      display: flex;
-      flex-direction: column;
-      gap: 14px;
-    }
-
-    .input-group {
-      display: flex;
-      flex-direction: column;
-      gap: 6px;
-    }
-
-    .input-group label {
-      font-size: 11px;
-      font-weight: 700;
-      color: var(--text-muted);
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
-    }
-
-    .input-group input {
-      background: #0d1117;
-      border: 1px solid var(--border-dark);
-      border-radius: 6px;
-      padding: 12px;
-      color: #fff;
-      font-size: 15px;
-      outline: none;
-      width: 100%;
-    }
-
-    .input-group input:focus {
-      border-color: var(--accent-blue);
-    }
-
-    .shortcut-row {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 10px;
-    }
-
-    .btn {
-      border: none;
-      border-radius: 6px;
-      padding: 12px;
-      font-size: 14px;
-      font-weight: 700;
-      color: #fff;
+    .reset-bg-link {
+      font-size: 12px;
+      color: #dc3545;
+      text-decoration: none;
       cursor: pointer;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 6px;
-    }
-
-    .btn-green { background: var(--accent-green); }
-    .btn-grey { background: #30363d; color: var(--text-main); }
-
-    .table-wrap {
-      border: 1px solid var(--border-dark);
+      font-weight: bold;
+      background: rgba(220, 53, 69, 0.1);
+      padding: 8px 12px;
       border-radius: 6px;
-      overflow: hidden;
-      background: #0d1117;
+      border: 1px solid rgba(220, 53, 69, 0.2);
+      display: inline-block;
     }
 
-    table {
-      width: 100%;
-      border-collapse: collapse;
-      font-size: 13px;
-    }
-
-    th {
-      background: #161b22;
-      color: var(--text-muted);
-      font-weight: 700;
-      text-transform: uppercase;
-      font-size: 11px;
-      letter-spacing: 0.5px;
-      padding: 10px 8px;
-      text-align: left;
-      border-bottom: 1px solid var(--border-dark);
-    }
-
-    td {
-      padding: 12px 8px;
-      border-bottom: 1px solid var(--border-dark);
-      vertical-align: middle;
-    }
-
-    tr:last-child td { border-bottom: none; }
-
-    .badge-part {
-      background: #f0b429;
-      color: #000;
-      font-weight: 800;
-      padding: 2px 4px;
-      border-radius: 4px;
-    }
-
-    .badge-loc {
-      background: #8250df;
-      color: #fff;
-      font-weight: 700;
-      padding: 4px 6px;
-      border-radius: 6px;
-      font-size: 11px;
-    }
-
-    .qty-box {
-      width: 55px;
-      background: #1f242c;
-      border: 1px solid var(--accent-blue);
-      color: #fff;
-      text-align: center;
-      padding: 6px 2px;
-      border-radius: 4px;
-      font-weight: 700;
-    }
-
-    .btn-sync {
-      background: #2ea44f;
-      border: none;
-      padding: 6px 8px;
-      border-radius: 4px;
-      color: white;
-      cursor: pointer;
-    }
-
-    .app-screen { display: none; width: 100%; flex-direction: column; gap: 12px; }
-    .app-screen.active-screen { display: flex; }
-    
-    .utility-footer {
+    .sync-status-row {
       display: flex;
       justify-content: flex-end;
-      padding: 4px 0;
-    }
-    
-    /* Toggle Switch Styles */
-    .switch-label {
-      display: flex;
       align-items: center;
-      justify-content: space-between;
+      font-size: 11px;
+      color: var(--muted);
+      border-top: 1px solid var(--border);
+      padding-top: 10px;
+      margin-top: 4px;
+    }
+    .clear-cache-link { color: #dc3545; text-decoration: none; font-weight: 700; cursor: pointer; border: none; background: transparent; font-size: 12px; }
+
+    .table-wrap { 
+      overflow-x: auto; 
+      background: var(--panel); 
+      border-radius: 12px; 
+      border: 1px solid var(--border); 
+      box-shadow: 0 4px 6px -1px rgba(0,0,0,0.02);
+      backdrop-filter: var(--glass-blur);
+    }
+    table { width: 100%; border-collapse: collapse; text-align: left; table-layout: fixed; }
+    th, td { padding: 12px 6px; border-bottom: 1px solid var(--border); border-right: 1px solid var(--border); vertical-align: middle; word-wrap: break-word; }
+    th:last-child, td:last-child { border-right: none; }
+    th { background: var(--th-bg); font-weight: 700; color: var(--muted); font-size: 12px; text-transform: uppercase; }
+    
+    th.col-main, td.col-main { width: 40%; }
+    th.col-boxes, td.col-boxes { width: 18%; text-align: center; }
+    th.col-total, td.col-total { width: 18%; text-align: center; }
+    th.col-save, td.col-save { width: 11%; text-align: center; }
+    th.col-sub, td.col-sub { width: 13%; text-align: center; }
+
+    mark.match { background: #ffeb3b; color: #000; padding: 1px 3px; border-radius: 3px; font-weight: bold; }
+    [data-theme="dark"] mark.match { background: #f59e0b; }
+    
+    .location-badge { 
+      background: #10b981; 
+      color: white; 
+      padding: 6px 4px; 
+      border-radius: 6px; 
+      font-weight: 700; 
+      font-size: 11px; 
+      display: inline-block; 
+      text-align: center;
+      max-width: 100%;
+    }
+    .location-badge.fittings-badge { background: #8b5cf6; }
+
+    .inline-edit-input {
+      width: 100% !important;
+      max-width: 60px !important;
+      padding: 6px 2px !important;
+      font-size: 13px !important;
+      font-weight: bold !important;
+      text-align: center !important;
+      border: 2px solid #8b5cf6 !important;
+      border-radius: 6px !important;
+      background: var(--panel) !important;
+      color: var(--text) !important;
+    }
+
+    .row-save-btn {
+      background: var(--accent-green);
+      color: white;
+      border: none;
+      padding: 6px;
+      border-radius: 6px;
       cursor: pointer;
-      font-size: 13px;
-      font-weight: 600;
+      font-size: 14px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 32px;
+      height: 32px;
     }
-    .switch-input {
-      margin-left: 10px;
-      accent-color: var(--accent-blue);
+
+    .alertBox { 
+      display: none; background: rgba(240, 180, 41, 0.1); border-color: rgba(240, 180, 41, 0.4); color: #f0b429; padding: 16px; border-radius: 8px; 
+      text-align: center; font-weight: bold; margin-top: 12px; border: 1px solid;
     }
+
+    #reader { width: 100%; background: #000; border-radius: 8px; overflow: hidden; }
+    .count-overlay { display: none; background: var(--panel); border: 2px solid var(--accent-green); border-radius: 12px; padding: 16px; margin-bottom: 12px; position: relative; backdrop-filter: var(--glass-blur); }
+    .count-title { font-size: 12px; font-weight: bold; color: var(--muted); text-transform: uppercase; }
+    .count-item-name { font-size: 19px; font-weight: 800; margin: 4px 0; }
+    .count-sub { display: inline-block; background: #e0f2fe; color: #0369a1; font-weight: bold; padding: 4px 8px; border-radius: 4px; font-size: 12px; margin-bottom: 12px; }
+    
+    .input-row { display: flex; gap: 6px; align-items: center; margin-bottom: 12px; }
+    .qty-input { flex: 1; font-size: 22px; font-weight: bold; text-align: center; }
+    .mod-btn { padding: 12px; font-size: 15px; font-weight: bold; border: 1px solid var(--border); background: var(--th-bg); color: var(--text); border-radius: 6px; cursor: pointer; }
+
+    .action-row { display: flex; gap: 6px; }
+    .btn { flex: 1; padding: 12px; font-size: 14px; font-weight: bold; border: none; border-radius: 6px; cursor: pointer; }
+    .btn-save { background: var(--accent-green); color: white; }
+    .btn-cancel { background: #dc3545; color: white; }
+
+    .log-item { background: var(--panel); padding: 12px; border-radius: 8px; border: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; backdrop-filter: var(--glass-blur); }
+    
+    .session-actions-strip { display: flex; justify-content: space-between; align-items: center; margin: 14px 0 8px 0; }
+    .new-session-btn { background: #4a5568; color: white; border: none; padding: 6px 12px; font-size: 12px; font-weight: 700; border-radius: 6px; cursor: pointer; }
+    .clear-btn { background: none; border: none; color: #dc3545; cursor: pointer; font-weight: 600; padding: 4px; font-size: 12px; }
+
+    .intercept-modal-overlay {
+      display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(0, 0, 0, 0.7); backdrop-filter: blur(4px); z-index: 99999;
+      justify-content: center; align-items: center; padding: 20px;
+    }
+    .intercept-box {
+      background: var(--panel); border: 2px solid var(--primary-accent); padding: 24px;
+      border-radius: 16px; max-width: 460px; width: 100%; box-shadow: 0 10px 25px rgba(0,0,0,0.3);
+      text-align: center; backdrop-filter: var(--glass-blur);
+    }
+    .intercept-btns { display: flex; flex-direction: column; gap: 10px; margin-top: 15px; }
+    .btn-choice { width: 100%; padding: 14px; font-size: 15px; font-weight: bold; border: none; border-radius: 8px; cursor: pointer; }
+    .btn-choice.continue { background: var(--primary-accent); color: white; }
+    .btn-choice.purge { background: #dc3545; color: white; }
+
+    .footer-bar {
+      position: fixed; bottom: 0; left: 0; right: 0; height: 70px;
+      background: var(--panel); border-top: 1px solid var(--border);
+      display: flex; align-items: center; justify-content: center; padding: 0 12px; z-index: 1000; backdrop-filter: var(--glass-blur);
+    }
+    .export-btn { width: 100%; max-width: 726px; background: var(--primary-accent); color: white; border: none; padding: 14px; font-size: 15px; font-weight: 700; border-radius: 8px; cursor: pointer; }
   </style>
 </head>
 <body>
 
-  <div class="app-container">
-    
-    <header>
-      <span style="font-size:22px;">📦</span>
-      <h1>STOCK LOCATOR+</h1>
-    </header>
-
-    <div class="tab-bar">
-      <button id="tabLookup" class="tab-btn active" onclick="switchTab('lookup')">🔍 Stock Lookup</button>
-      <button id="tabAudit" class="tab-btn" onclick="switchTab('audit')">📋 Audit Scanner</button>
-      <button id="tabConsolidation" class="tab-btn" onclick="switchTab('consolidation')">📦 Consolidation</button>
+<div id="startupInterceptModal" class="intercept-modal-overlay">
+  <div class="intercept-box">
+    <h3 style="color: var(--text);">Unexported Counts Detected! ⏳</h3>
+    <p id="interceptMessage">You have remaining logs saved in this terminal from an earlier date.</p>
+    <div class="intercept-btns">
+      <button class="btn-choice continue" onclick="resolveIntercept('continue')">🔄 Continue Previous Session</button>
+      <button class="btn-choice purge" onclick="resolveIntercept('purge')">🧹 Wipe & Start New Session</button>
     </div>
+  </div>
+</div>
 
-    <div id="metaDisplay" class="status-banner error">
-      ❌ No database files found. Connect to office Wi-Fi.
+<div class="app-container">
+  
+  <div class="app-header">
+    <div class="header-main-row">
+      <img src="logo.png" alt="Logo" class="app-logo" onerror="this.style.display='none'"/>
+      <h1 class="app-title">STOCK LOCATOR+</h1>
     </div>
+  </div>
+  
+  <div class="tabs-bar">
+    <button id="finderTab" class="tab-btn active" onclick="switchMode('finder')">🔍 Stock Lookup</button>
+    <button id="counterTab" class="tab-btn" onclick="switchMode('counter')">📋 Audit Scanner</button>
+    <button id="consolidationTab" class="tab-btn" onclick="switchMode('consolidation')">📦 Consolidation</button>
+  </div>
 
-    <div id="lookupScreen" class="app-screen active-screen">
-      <div class="panel-box">
-        <div class="input-group">
-          <label>Search Part Number / Item No. / Supplier Reference</label>
-          <input id="generalSearchInput" type="text" placeholder="DGN 3102C..." autocomplete="off"/>
-        </div>
-        
-        <div class="input-group">
-          <label style="color:#a371f7;">Search Part Number (For Fittings Stock)</label>
-          <input id="fittingsSearchInput" type="text" placeholder="15612-16-16N..." autocomplete="off"/>
-        </div>
+  <div style="display: flex; justify-content: space-between; font-size: 12px; color: var(--text); font-weight: 600; margin-bottom: 8px; padding: 0 4px; opacity:0.85;">
+    <div id="metaDisplay">Loading database files...</div>
+    <div id="countSession" style="display:none;">Counts logged: 0</div>
+  </div>
 
-        <div class="shortcut-row">
-          <button class="btn btn-green" onclick="triggerHardwareScanner('qr')">Scan QR Code</button>
-          <button class="btn btn-green" onclick="triggerHardwareScanner('supplier')">Scan Supplier Ref</button>
-        </div>
-
-        <button class="btn btn-grey" onclick="clearLookupFields()">Reset Search Fields</button>
+  <div id="finderScreen" class="app-screen active">
+    <div class="panel-box">
+      
+      <div id="inlineScannerBox" class="inline-scanner-box">
+        <button class="close-scan-btn" onclick="stopInlineScanner()">✕ Close Camera</button>
+        <div id="finderReader" style="width:100%;"></div>
       </div>
 
-      <div id="resultsOutputWrapper" style="display:none;" class="table-wrap">
+      <div class="input-group">
+        <label for="searchBox">Search Part Number / Item No. / Supplier Reference</label>
+        <input id="searchBox" type="text" placeholder="DGN 3102C..." autofocus autocomplete="off"/>
+      </div>
+
+      <div class="input-group">
+        <label for="fittingsSearchBox" style="color: #8b5cf6;">Search Part Number (For Fittings Stock)</label>
+        <input id="fittingsSearchBox" type="text" placeholder="15612-16-16N..." autocomplete="off"/>
+      </div>
+      
+      <div class="shortcut-row">
+        <button class="action-sub-btn" onclick="startInlineScanner('qr')">Scan QR Code</button>
+        <button class="action-sub-btn" onclick="startInlineScanner('supplier')">Scan Supplier Ref</button>
+        <button class="action-sub-btn reset" onclick="resetSearchFields()">Reset Search Fields</button>
+      </div>
+
+      <div class="preferences-container">
+        <div class="pref-row">
+          <label class="custom-file-upload">
+            <input type="file" id="bgUploader" accept="image/*" style="display: none;" onchange="handleWallpaperUpload(event)" />
+            🖼️ Upload Custom Theme Image
+          </label>
+          <span id="resetBgBtn" class="reset-bg-link" style="display: none;" onclick="clearWallpaperTheme()">✕ Reset Theme Image</span>
+        </div>
+        
+        <div class="pref-row" style="justify-content: flex-start; gap: 8px;">
+          <input id="themeToggle" type="checkbox" style="width:18px; height:18px; cursor:pointer;" />
+          <label for="themeToggle" style="display:inline; font-weight:600; color:var(--text); text-transform:none; cursor:pointer;">Dark Mode</label>
+        </div>
+
+        <div class="pref-row" style="justify-content: flex-start; gap: 8px;">
+          <button class="custom-file-upload" onclick="requestNotificationPermission()" style="background:#475569; color:white; border:none;">🔔 Activate Notifications</button>
+        </div>
+
+        <div class="sync-status-row">
+          <button class="clear-cache-link" onclick="clearAppCache()">♻️ Clear App Cache</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="results-container" id="resultsContainerLocationAnchor">
+      <div class="table-wrap" id="tableWrap" style="display:none;">
         <table>
           <thead>
             <tr>
-              <th>Part Number Map / Cross-Ref</th>
-              <th>Boxes</th>
-              <th>Total Qty</th>
-              <th>Loc</th>
+              <th class="col-main">Part Number Map / Cross-Ref</th>
+              <th class="col-boxes">Boxes</th>
+              <th class="col-total">Total Qty</th>
+              <th class="col-sub">Loc</th>
             </tr>
           </thead>
-          <tbody id="resultsTableBody"></tbody>
+          <tbody id="tableBody"></tbody>
         </table>
       </div>
-      
-      <div id="emptySearchNotification" class="status-banner alert-warn" style="display:none;">
-        ❌ No matching inventory items found.
-      </div>
+      <div id="noResults" class="alertBox">❌ No matching inventory items found.</div>
     </div>
-
-    <div id="auditScreen" class="app-screen">
-      <div class="panel-box">
-        <p style="font-size:13px; color:var(--text-muted); text-align:center;">Audit module configuration loaded.</p>
-      </div>
-    </div>
-
-    <div id="consolidationScreen" class="app-screen">
-      <div class="panel-box">
-        <h3 style="font-size:14px; margin-bottom:10px; color:var(--accent-purple); text-transform:uppercase; letter-spacing:0.5px;">Module A: Modify or Zero-Out Item</h3>
-        <div class="input-group">
-          <label for="consolidationSearchBox">Search Fitting Part Number to Edit</label>
-          <input id="consolidationSearchBox" type="text" placeholder="Type part number to modify..." autocomplete="off"/>
-        </div>
-        
-        <div class="table-wrap" id="conTableWrap" style="display: none; margin-top:12px;">
-          <table>
-            <thead>
-              <tr>
-                <th>Part Number Map / Cross-Ref</th>
-                <th>Boxes</th>
-                <th>Total Qty</th>
-                <th>Sync</th>
-                <th>Loc</th>
-              </tr>
-            </thead>
-            <tbody id="conTableBody"></tbody>
-          </table>
-        </div>
-      </div>
-
-      <div class="panel-box">
-        <h3 style="font-size:14px; margin-bottom:12px; color:var(--accent-green); text-transform:uppercase; letter-spacing:0.5px;">Module B: Add To New Pallet</h3>
-        
-        <div class="input-group">
-          <label for="newPartNumber">Part Number</label>
-          <input id="newPartNumber" type="text" placeholder="e.g., 22611D-69-69N" autocomplete="off"/>
-        </div>
-
-        <div class="input-group">
-          <label for="newPalletNo">Pallet No.</label>
-          <input id="newPalletNo" type="text" placeholder="e.g., 7" autocomplete="off"/>
-        </div>
-
-        <div class="input-group">
-          <label for="newPackSize">Pack Size</label>
-          <input id="newPackSize" type="number" placeholder="e.g., 200" min="0" inputmode="numeric"/>
-        </div>
-
-        <div class="shortcut-row" style="grid-template-columns: 1fr 1fr; margin-top:0; margin-bottom:14px;">
-          <div class="input-group" style="margin-bottom:0;">
-            <label for="newBoxes">No. of Boxes</label>
-            <input id="newBoxes" type="number" placeholder="e.g., 3" min="0" inputmode="numeric"/>
-          </div>
-          <div class="input-group" style="margin-bottom:0;">
-            <label for="newTotalQty">Total Quantity</label>
-            <input id="newTotalQty" type="number" placeholder="e.g., 600" min="0" inputmode="numeric"/>
-          </div>
-        </div>
-
-        <button class="btn" style="width:100%; padding:14px; background:var(--accent-purple); font-weight:700;" onclick="submitNewPalletEntry()">💾 Save New Item Entry</button>
-      </div>
-    </div>
-
-    <div class="panel-box" style="padding:16px; gap:12px; font-size:12px; font-weight:600;">
-      <label class="switch-label">
-        <span>Dark Mode Theme</span>
-        <input type="checkbox" id="darkModeToggle" class="switch-input" checked onchange="toggleThemeMode(this.checked)">
-      </label>
-      <button id="notifBtn" class="btn btn-grey" style="padding:8px 12px; font-size:11px; width:fit-content;" onclick="requestNotificationAccess()">🔔 Activate Notifications</button>
-    </div>
-
-    <div class="utility-footer">
-      <span style="font-size:11px; color:var(--danger-red); cursor:pointer; font-weight:600;" onclick="flushApplicationCache()">♻️ Clear App Cache</span>
-    </div>
-
   </div>
 
-  <script>
-    // ⚠️ REPLACE THIS WITH YOUR EXECUTABLE APPS SCRIPT WEB APP URL EVERYTIME YOU RE-DEPLOY!
-    const GOOGLE_SHEETS_API_URL = "https://script.google.com/macros/s/AKfycbxu21SoLE_R2Ou8h_gbprwtQ8-rRM8U9dYGQJqtf5m05P-21zMlIi_pCxCBcJAlHpIklA/exec";
+  <div id="counterScreen" class="app-screen">
+    <div class="panel-box" style="padding:8px; margin-bottom:12px;">
+      <div id="reader"></div>
+    </div>
 
-    // Application Data Registries
-    let fittingsRegistry = [];
-    let appActiveTab = "lookup";
-    let pushNotificationsAllowed = false;
-
-    // DOM Selections
-    const metaDisplay = document.getElementById('metaDisplay');
-    const generalSearchInput = document.getElementById('generalSearchInput');
-    const fittingsSearchInput = document.getElementById('fittingsSearchInput');
-    const lookupScreen = document.getElementById('lookupScreen');
-    const auditScreen = document.getElementById('auditScreen');
-    const consolidationScreen = document.getElementById('consolidationScreen');
-    const resultsOutputWrapper = document.getElementById('resultsOutputWrapper');
-    const resultsTableBody = document.getElementById('resultsTableBody');
-    const emptySearchNotification = document.getElementById('emptySearchNotification');
-    const consolidationSearchBox = document.getElementById('consolidationSearchBox');
-    const conTableWrap = document.getElementById('conTableWrap');
-    const conTableBody = document.getElementById('conTableBody');
-
-    // Tab Interface Switcher
-    function switchTab(target) {
-      appActiveTab = target;
+    <div id="countOverlay" class="count-overlay">
+      <div id="targetTitleHeader" class="count-title">Matched Database Reference</div>
+      <div id="targetItemName" class="count-item-name">---</div>
+      <div id="targetMappingInfo" style="font-size:12px; color:var(--muted); margin-bottom:8px;">---</div>
+      <div id="targetSubLoc" class="count-sub">---</div>
       
-      // Reset active tab button styles
-      document.getElementById('tabLookup').className = "tab-btn" + (target === 'lookup' ? ' active' : '');
-      document.getElementById('tabAudit').className = "tab-btn" + (target === 'audit' ? ' active' : '');
-      document.getElementById('tabConsolidation').className = "tab-btn" + (target === 'consolidation' ? ' active-purple' : '');
+      <div class="input-row">
+        <button class="mod-btn" onclick="adjustQty(-1)">-1</button>
+        <input id="qtyInputField" type="number" class="qty-input" placeholder="0" min="0" inputmode="numeric"/>
+        <button class="mod-btn" onclick="adjustQty(1)">+1</button>
+        <button class="mod-btn" onclick="adjustQty(10)">+10</button>
+      </div>
 
-      // Toggle visible container panels
-      lookupScreen.className = "app-screen" + (target === 'lookup' ? ' active-screen' : '');
-      auditScreen.className = "app-screen" + (target === 'audit' ? ' active-screen' : '');
-      consolidationScreen.className = "app-screen" + (target === 'consolidation' ? ' active-screen' : '');
-      
-      if (target === 'consolidation') {
-        renderConsolidationResults();
-      }
-    }
+      <div class="action-row">
+        <button class="btn btn-cancel" onclick="dismissOverlay()">Cancel</button>
+        <button class="btn btn-save" onclick="commitCount()">Save Count</button>
+      </div>
+    </div>
 
-    // Initialize Network Synchronization Sequence
-    window.addEventListener('DOMContentLoaded', () => {
-      loadCachedFittingsData();
-      fetchFreshCloudDatabase();
+    <div class="session-actions-strip">
+      <button class="new-session-btn" onclick="triggerNewSessionManually()">Start New Session</button>
+      <button class="clear-btn" onclick="clearCounts()">Clear Current Logs</button>
+    </div>
+    <div id="logRegistryList"></div>
+  </div>
+
+  <div id="consolidationScreen" class="app-screen">
+    
+    <div class="panel-box">
+      <h3 style="font-size:14px; margin-bottom:10px; color:var(--accent-purple); text-transform:uppercase; letter-spacing:0.5px;">Module A: Modify or Zero-Out Item</h3>
+      <div class="input-group">
+        <label for="conSearchBox">Search Fitting Part Number to Edit</label>
+        <input id="conSearchBox" type="text" placeholder="Type part number to modify..." autocomplete="off"/>
+      </div>
       
-      // Setup input listeners for dynamic filtering
-      generalSearchInput.addEventListener('input', renderResults);
-      fittingsSearchInput.addEventListener('input', renderResults);
-      consolidationSearchBox.addEventListener('input', renderConsolidationResults);
+      <div class="table-wrap" id="conTableWrap" style="display: none; margin-top:12px;">
+        <table>
+          <thead>
+            <tr>
+              <th class="col-main">Part Number Map</th>
+              <th class="col-boxes">Boxes</th>
+              <th class="col-total">Total Qty</th>
+              <th class="col-save">Sync</th>
+              <th class="col-sub">Loc</th>
+            </tr>
+          </thead>
+          <tbody id="conTableBody"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="panel-box">
+      <h3 style="font-size:14px; margin-bottom:12px; color:var(--accent-green); text-transform:uppercase; letter-spacing:0.5px;">Module B: Add To New Pallet</h3>
+      
+      <div class="input-group">
+        <label for="newPartNo">Part Number</label>
+        <input id="newPartNo" type="text" placeholder="e.g., 22611D-69-69N" autocomplete="off"/>
+      </div>
+
+      <div class="input-group">
+        <label for="newPalletNo">Pallet No.</label>
+        <input id="newPalletNo" type="text" placeholder="e.g., 7" autocomplete="off"/>
+      </div>
+
+      <div class="input-group">
+        <label for="newPackSize">Pack Size</label>
+        <input id="newPackSize" type="number" placeholder="e.g., 200" min="0" inputmode="numeric"/>
+      </div>
+
+      <div class="shortcut-row" style="grid-template-columns: 1fr 1fr; margin-top:0; margin-bottom:14px;">
+        <div class="input-group" style="margin-bottom:0;">
+          <label for="newBoxes">No. of Boxes</label>
+          <input id="newBoxes" type="number" placeholder="e.g., 3" min="0" inputmode="numeric"/>
+        </div>
+        <div class="input-group" style="margin-bottom:0;">
+          <label for="newTotalQty">Total Quantity</label>
+          <input id="newTotalQty" type="number" placeholder="e.g., 600" min="0" inputmode="numeric"/>
+        </div>
+      </div>
+
+      <button class="btn" style="width:100%; padding:14px; background:var(--accent-purple); font-weight:700; color:#fff;" onclick="submitNewPalletEntry()">💾 Save New Item Entry</button>
+    </div>
+  </div>
+
+</div>
+
+<div id="footerBar" class="footer-bar" style="display: none;">
+  <button class="export-btn" onclick="exportCountsToCSV()">📊 Download Counts Spreadsheet (.CSV)</button>
+</div>
+
+<script>
+const CSV_URL = 'https://raw.githubusercontent.com/wh-sec/stock-locator-pwa/main/stocks.csv';
+const GOOGLE_SHEETS_API_URL = 'https://script.google.com/macros/s/AKfycbzdLXynnf2mDm9-PhR66fQIfn6wE9Oy6vVKdpYVgrJhbZm6Z2L457wSNoLJah5pgqGDow/exec';
+
+var stockRegistry = [];
+var fittingsRegistry = [];
+var countLogSession = [];
+var activeScanMatch = null;
+var html5QrcodeScanner = null;
+var inlineFinderScanner = null;
+var currentScanTargetField = 'qr'; 
+var isProcessingScan = false; 
+
+var searchBox = document.getElementById('searchBox');
+var fittingsSearchBox = document.getElementById('fittingsSearchBox');
+var conSearchBox = document.getElementById('conSearchBox');
+var tableBody = document.getElementById('tableBody');
+var tableWrap = document.getElementById('tableWrap');
+var noResults = document.getElementById('noResults');
+var metaDisplay = document.getElementById('metaDisplay');
+var themeToggle = document.getElementById('themeToggle');
+
+var currentQuote = "Quality means doing it right when no one is looking.";
+var currentAuthor = "Henry Ford";
+
+// Lifecycle Hooks Setup
+window.addEventListener('DOMContentLoaded', () => {
+  initThemeAndWallpaper();
+  checkUnexportedSessionLogs();
+  fetchInventoryDatabases();
+
+  searchBox.addEventListener('input', renderResults);
+  fittingsSearchBox.addEventListener('input', renderResults);
+  conSearchBox.addEventListener('input', renderConsolidationRows);
+});
+
+function requestNotificationPermission() {
+  if ("Notification" in window) {
+    Notification.requestPermission().then(perm => {
+      if (perm === "granted") alert("System Notifications authorized successfully!");
     });
+  } else {
+    alert("System notifications are unsupported on this mobile layout browser.");
+  }
+}
 
-    function loadCachedFittingsData() {
-      const cache = localStorage.getItem('cached_fittings_json');
-      if (cache) {
-        try {
-          const parsedMatrix = JSON.parse(cache);
-          fittingsRegistry = parseGoogleSheetsJSON(parsedMatrix);
-          updateMetaDisplay(true);
-        } catch(e) {
-          console.error("Local Cache Corrupted:", e);
-        }
-      }
-    }
+function fireStockUpdateNotification() {
+  if ("Notification" in window && Notification.permission === "granted") {
+    const timestamp = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    new Notification(`📦 Warehouse System Updated! (${timestamp})`, {
+      body: `"${currentQuote}" — ${currentAuthor}`
+    });
+  }
+}
 
-    function fetchFreshCloudDatabase() {
-      fetch(GOOGLE_SHEETS_API_URL)
-        .then(res => res.json())
-        .then(dataMatrix => {
-          if (dataMatrix && dataMatrix.length > 0) {
-            localStorage.setItem('cached_fittings_json', JSON.stringify(dataMatrix));
-            fittingsRegistry = parseGoogleSheetsJSON(dataMatrix);
-            updateMetaDisplay(true);
-            renderResults();
-            if (appActiveTab === 'consolidation') renderConsolidationResults();
-          }
-        })
-        .catch(err => {
-          console.error("Cloud database fetch failed. Running offline mode if cache exists.", err);
-        });
-    }
+function initThemeAndWallpaper() {
+  const activeTheme = localStorage.getItem('ms_theme') || 'dark';
+  document.documentElement.setAttribute('data-theme', activeTheme);
+  themeToggle.checked = (activeTheme === 'dark');
+  
+  const savedBg = localStorage.getItem('ms_custom_bg');
+  if (savedBg) applyActiveWallpaper(savedBg);
+}
 
-    function updateMetaDisplay(isOnline = false) {
-      if (isOnline) {
-        const timeNow = new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit', second:'2-digit'});
-        const dateNow = new Date().toLocaleDateString();
-        metaDisplay.className = "status-banner success";
-        metaDisplay.textContent = `✅ Local Database Ready (Last Sync: ${dateNow}, ${timeNow})`;
-      } else {
-        metaDisplay.className = "status-banner error";
-        metaDisplay.textContent = "❌ No database files found. Connect to office Wi-Fi.";
-      }
-    }
+themeToggle.addEventListener('change', function() {
+  const nextTheme = themeToggle.checked ? 'dark' : 'light';
+  document.documentElement.setAttribute('data-theme', nextTheme);
+  localStorage.setItem('ms_theme', nextTheme);
+});
 
-    // Spreadsheet Mapping Rules to Match Your Unique Column Sequences
-    function parseGoogleSheetsJSON(dataMatrix) {
-      let rows = []; 
-      if (!dataMatrix || dataMatrix.length < 2) return [];
-      
-      let headers = dataMatrix[0].map(h => String(h).trim().toUpperCase());
-      
-      let partColIndex = headers.indexOf("CODE");          
-      let locColIndex = headers.indexOf("PART NUMBER");    
-      let boxesColIndex = headers.indexOf("PACK SIZE");     
-      let totalColIndex = headers.indexOf("NO. OF BOX");    
-      
-      if (partColIndex === -1 || locColIndex === -1 || boxesColIndex === -1 || totalColIndex === -1) {
-        return [];
-      }
-
-      for (let i = 1; i < dataMatrix.length; i++) {
-        let cols = dataMatrix[i]; 
-        if (!cols || cols.length === 0) continue;
-        
-        let partStr = String(cols[partColIndex] || '').trim();
-        let locStr = String(cols[locColIndex] || '').trim();
-        let boxesVal = parseInt(cols[boxesColIndex], 10) || 0;
-        let qtyVal = parseInt(cols[totalColIndex], 10) || 0;
-        
-        if (!partStr) continue; 
-        
-        rows.push({
-          id: 'fit_' + i, 
-          part: partStr, 
-          boxes: boxesVal, 
-          qty: qtyVal,
-          sub: locStr || 'FITTINGS', 
-          itemNo: '', 
-          supplierRef: '', 
-          type: 'fittings'
-        });
-      }
-      return rows;
-    }
-
-    // Render Logic for Search lookup screen
-    function renderResults() {
-      const filterGen = generalSearchInput.value.trim().toLowerCase();
-      const filterFit = fittingsSearchInput.value.trim().toLowerCase();
-      
-      resultsTableBody.innerHTML = '';
-      
-      if (!filterGen && !filterFit) {
-        resultsOutputWrapper.style.display = 'none';
-        emptySearchNotification.style.display = 'none';
-        return;
-      }
-
-      let filtered = fittingsRegistry.filter(item => {
-        let matchGen = !filterGen || item.part.toLowerCase().includes(filterGen);
-        let matchFit = !filterFit || item.part.toLowerCase().includes(filterFit);
-        return matchGen && matchFit;
-      });
-
-      if (filtered.length === 0) {
-        resultsOutputWrapper.style.display = 'none';
-        emptySearchNotification.style.display = 'flex';
-        return;
-      }
-
-      emptySearchNotification.style.display = 'none';
-      resultsOutputWrapper.style.display = 'block';
-
-      filtered.forEach(item => {
-        const tr = document.createElement('tr');
-        tr.innerHTML = `
-          <td><span class="badge-part">${item.part}</span></td>
-          <td><b style="color:#58a6ff">${item.boxes}</b></td>
-          <td><b style="color:#56d364">${item.qty}</b></td>
-          <td><span class="badge-loc">${item.sub}</span></td>
-        `;
-        resultsTableBody.appendChild(tr);
-      });
-    }
-
-    // Render Matrix Logic for Module A (Consolidation Screen)
-    function renderConsolidationResults() {
-      const filterText = consolidationSearchBox.value.trim().toLowerCase();
-      conTableBody.innerHTML = '';
-      
-      if (!filterText) {
-        conTableWrap.style.display = 'none';
-        return;
-      }
-
-      let filtered = fittingsRegistry.filter(item => item.part.toLowerCase().includes(filterText));
-
-      if (filtered.length === 0) {
-        conTableWrap.style.display = 'none';
-        return;
-      }
-
-      conTableWrap.style.display = 'block';
-
-      filtered.forEach(item => {
-        const tr = document.createElement('tr');
-        tr.innerHTML = `
-          <td><span class="badge-part">${item.part}</span></td>
-          <td><input type="number" class="qty-box" id="box_${item.id}" value="${item.boxes}"></td>
-          <td><input type="number" class="qty-box" id="qty_${item.id}" value="${item.qty}"></td>
-          <td><button class="btn-sync" onclick="syncRowUpdates('${item.part}', '${item.sub}', '${item.id}')">💾</button></td>
-          <td><span class="badge-loc">${item.sub}</span></td>
-        `;
-        conTableBody.appendChild(tr);
-      });
-    }
-
-    // Module A Update Submission Function Pipeline
-    function syncRowUpdates(partNumber, location, rowId) {
-      let boxesVal = parseInt(document.getElementById(`box_${rowId}`).value, 10) || 0;
-      let totalQtyVal = parseInt(document.getElementById(`qty_${rowId}`).value, 10) || 0;
-
-      let callbackName = "jsonp_callback_" + Math.round(Math.random() * 1000000);
-      metaDisplay.className = "status-banner error";
-      metaDisplay.textContent = "⏳ Updating database logs in cloud columns...";
-
-      window[callbackName] = function(response) {
-        clearTimeout(timeoutId);
-        delete window[callbackName];
-        document.body.removeChild(script);
-        
-        if (response && response.result === "success") {
-          playBeep('success');
-          alert("Inventory log modified successfully!");
-          fetchFreshCloudDatabase();
-        } else {
-          alert("Error applying inventory modification rules.");
-          updateMetaDisplay(true);
-        }
-      };
-
-      let timeoutId = setTimeout(function() {
-        delete window[callbackName];
-        alert("Server synchronization timed out.");
-        updateMetaDisplay(true);
-      }, 15000);
-
-      let script = document.createElement("script");
-      script.src = GOOGLE_SHEETS_API_URL + 
-        `?action=updateRow` +
-        `&partNumber=${encodeURIComponent(partNumber)}` +
-        `&location=${encodeURIComponent(location)}` +
-        `&boxes=${boxesVal}` +
-        `&totalQty=${totalQtyVal}` +
-        `&callback=${callbackName}`;
-        
-      document.body.appendChild(script);
-    }
-
-    // Module B Insertion Processing Engine Call
-    function submitNewPalletEntry() {
-      let part = document.getElementById('newPartNumber').value.trim();
-      let pallet = document.getElementById('newPalletNo').value.trim();
-      let packSize = parseInt(document.getElementById('newPackSize').value, 10) || 0;
-      let boxes = parseInt(document.getElementById('newBoxes').value, 10) || 0;
-      let total = parseInt(document.getElementById('newTotalQty').value, 10) || 0;
-
-      if (!part || !pallet) {
-        alert("Please complete both Part Number and Pallet No. fields.");
-        return;
-      }
-
-      let callbackName = "jsonp_callback_" + Math.round(Math.random() * 1000000);
-      metaDisplay.className = "status-banner error";
-      metaDisplay.textContent = "⏳ Saving item entry into sheet rows...";
-
-      window[callbackName] = function(response) {
-        clearTimeout(timeoutId);
-        delete window[callbackName];
-        document.body.removeChild(script);
-        
-        if (response && response.result === "success") {
-          playBeep('success');
-          alert("Item successfully appended and indexed!");
-          
-          document.getElementById('newPartNumber').value = '';
-          document.getElementById('newPalletNo').value = '';
-          document.getElementById('newPackSize').value = '';
-          document.getElementById('newBoxes').value = '';
-          document.getElementById('newTotalQty').value = '';
-          
-          fetchFreshCloudDatabase();
-        } else {
-          alert("Data push rejected by Google Sheets backend.");
-          updateMetaDisplay(true);
-        }
-      };
-
-      let timeoutId = setTimeout(function() {
-        delete window[callbackName];
-        alert("Cloud synchronization timed out.");
-        updateMetaDisplay(true);
-      }, 15000);
-
-      let script = document.createElement("script");
-      script.src = GOOGLE_SHEETS_API_URL + 
-        "?action=addStock" +
-        "&partNumber=" + encodeURIComponent(part) +
-        "&location=" + encodeURIComponent(pallet) +
-        "&packSize=" + packSize +
-        "&boxes=" + boxes +
-        "&totalQty=" + total +
-        "&callback=" + callbackName;
-        
-      document.body.appendChild(script);
-    }
-
-    // Hardware Scanning Hooks
-    function triggerHardwareScanner(scanType) {
-      alert(`Starting built-in device camera scanner for: ${scanType.toUpperCase()} reference parsing...`);
-      // Hardware camera hooks can be implemented here safely
-    }
-
-    // Theme Management Toggles
-    function toggleThemeMode(isDark) {
-      if (isDark) {
-        document.documentElement.style.setProperty('--bg-dark', '#0d1117');
-        document.documentElement.style.setProperty('--panel-dark', '#161b22');
-        document.documentElement.style.setProperty('--text-main', '#c9d1d9');
-      } else {
-        document.documentElement.style.setProperty('--bg-dark', '#f6f8fa');
-        document.documentElement.style.setProperty('--panel-dark', '#ffffff');
-        document.documentElement.style.setProperty('--text-main', '#24292f');
-      }
-    }
-
-    // Local Web Push Notification Approvals
-    function requestNotificationAccess() {
-      if (!('Notification' in window)) {
-        alert("Web notifications are not supported by this browser interface.");
-        return;
-      }
-      Notification.requestPermission().then(permission => {
-        if (permission === 'granted') {
-          pushNotificationsAllowed = true;
-          document.getElementById('notifBtn').textContent = "🔔 Notifications Activated";
-          document.getElementById('notifBtn').style.background = "var(--accent-green)";
-          alert("Sync and scan notification warnings successfully enabled!");
-        }
-      });
-    }
-
-    function clearLookupFields() {
-      generalSearchInput.value = '';
-      fittingsSearchInput.value = '';
-      renderResults();
-    }
-
-    function flushApplicationCache() {
-      localStorage.removeItem('cached_fittings_json');
-      fittingsRegistry = [];
-      renderResults();
-      renderConsolidationResults();
-      updateMetaDisplay(false);
-      alert("Application cache context storage flushed!");
-    }
-
-    function playBeep(type) {
+function handleWallpaperUpload(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    const rawImg = new Image();
+    rawImg.src = e.target.result;
+    rawImg.onload = function() {
+      const canvas = document.createElement('canvas');
+      const maxDim = 1200;
+      let w = rawImg.width, h = rawImg.height;
+      if (w > h && w > maxDim) { h = Math.round((h * maxDim) / w); w = maxDim; }
+      else if (h > maxDim) { w = Math.round((w * maxDim) / h); h = maxDim; }
+      canvas.width = w; canvas.height = h;
+      const ctx = canvas.getContext('2d');
+      ctx.drawImage(rawImg, 0, 0, w, h);
+      const compressedBase64 = canvas.toDataURL('image/jpeg', 0.75);
       try {
-        let ctx = new (window.AudioContext || window.webkitAudioContext)();
-        let osc = ctx.createOscillator();
-        let gain = ctx.createGain();
-        osc.connect(gain);
-        gain.connect(ctx.destination);
-        
-        if (type === 'success') {
-          osc.frequency.setValueAtTime(587.33, ctx.currentTime);
-          gain.gain.setValueAtTime(0.1, ctx.currentTime);
-          osc.start();
-          osc.stop(ctx.currentTime + 0.12);
-        }
-      } catch(e) {
-        console.log("Audio notification block active", e);
-      }
-    }
-  </script>
+        localStorage.setItem('ms_custom_bg', compressedBase64);
+        applyActiveWallpaper(compressedBase64);
+      } catch (err) { alert("Selected image is too large for local cache."); }
+    };
+  };
+  reader.readAsDataURL(file);
+}
+
+function applyActiveWallpaper(base64Data) {
+  if (base64Data) {
+    document.body.style.backgroundImage = `url('${base64Data}')`;
+    document.getElementById('resetBgBtn').style.display = 'inline-block';
+  } else {
+    document.body.style.backgroundImage = 'none';
+    document.getElementById('resetBgBtn').style.display = 'none';
+  }
+}
+
+function clearWallpaperTheme() {
+  localStorage.removeItem('ms_custom_bg');
+  applyActiveWallpaper(null);
+  document.getElementById('bgUploader').value = '';
+}
+
+function resetSearchFields() {
+  searchBox.value = '';
+  fittingsSearchBox.value = '';
+  renderResults();
+  stopInlineScanner();
+  searchBox.focus();
+}
+
+async function fetchInventoryDatabases() {
+  try {
+    const [stockRes, fitRes] = await Promise.all([
+      fetch(CSV_URL + '?t=' + Date.now()),
+      fetch(GOOGLE_SHEETS_API_URL + '?t=' + Date.now())
+    ]);
+    if (!stockRes.ok || !fitRes.ok) throw new Error("Connection fault");
+    const stockText = await stockRes.text();
+    const fittingsJson = await fitRes.json();
+
+    stockRegistry = parseCSV(stockText);
+    fittingsRegistry = parseGoogleSheetsJSON(fittingsJson);
+
+    localStorage.setItem('cached_stocks', stockText);
+    localStorage.setItem('cached_fittings_json', JSON.stringify(fittingsJson));
+    localStorage.setItem('cached_sync_time', new Date().toLocaleString());
+    updateMetaDisplay();
+  } catch (err) {
+    loadCachedDatabases();
+  }
+}
+
+function loadCachedDatabases() {
+  const cStocks = localStorage.getItem('cached_stocks');
+  const cFittingsJson = localStorage.getItem('cached_fittings_json');
+  const cTime = localStorage.getItem('cached_sync_time') || 'Never';
+  if (cStocks && cFittingsJson) {
+    stockRegistry = parseCSV(cStocks);
+    fittingsRegistry = parseGoogleSheetsJSON(JSON.parse(cFittingsJson));
+    updateMetaDisplay(cTime);
+  } else {
+    metaDisplay.textContent = '❌ No database files found. Connect to office Wi-Fi.';
+  }
+}
+
+function updateMetaDisplay(customTime) {
+  const useTime = customTime || localStorage.getItem('cached_sync_time') || new Date().toLocaleString();
+  metaDisplay.textContent = `✅ Local Database Ready (Last Sync: ${useTime})`;
+}
+
+// RESTORED CAMERA SCANNER IMPLEMENTATION ENGINE
+function startScanner() {
+  if (html5QrcodeScanner) return;
+  isProcessingScan = false;
+  html5QrcodeScanner = new Html5Qrcode("reader");
+  html5QrcodeScanner.start(
+    { facingMode: "environment" },
+    { fps: 30, formatsToSupport: [Html5QrcodeSupportedFormats.CODE_128, Html5QrcodeSupportedFormats.CODE_39, Html5QrcodeSupportedFormats.QR_CODE] },
+    onScanSuccess
+  ).catch(() => { metaDisplay.textContent = "Camera configuration failed."; });
+}
+
+function stopScanner() {
+  if (html5QrcodeScanner) {
+    html5QrcodeScanner.stop().then(() => { html5QrcodeScanner = null; }).catch(()=>{});
+  }
+}
+
+function startInlineScanner(targetType) {
+  stopScanner(); 
+  stopInlineScanner(); 
+  currentScanTargetField = targetType;
+  document.getElementById('inlineScannerBox').style.display = 'block';
+  inlineFinderScanner = new Html5Qrcode("finderReader");
+  inlineFinderScanner.start(
+    { facingMode: "environment" },
+    { fps: 25, formatsToSupport: [Html5QrcodeSupportedFormats.CODE_128, Html5QrcodeSupportedFormats.CODE_39, Html5QrcodeSupportedFormats.QR_CODE] },
+    onInlineScanSuccess
+  ).catch(() => { alert("Could not access camera for target layout processing."); });
+}
+
+function stopInlineScanner() {
+  if (inlineFinderScanner) {
+    inlineFinderScanner.stop().then(() => { inlineFinderScanner = null; }).catch(()=>{});
+  }
+  document.getElementById('inlineScannerBox').style.display = 'none';
+}
+
+function onInlineScanSuccess(decodedText) {
+  let scannedText = decodedText.trim();
+  playBeep('success');
+  stopInlineScanner();
+  fittingsSearchBox.value = '';
+  
+  if (currentScanTargetField === 'qr') {
+    searchBox.value = scannedText;
+  } else {
+    searchBox.value = (scannedText.startsWith('0') && scannedText.length > 1) ? scannedText.replace(/^0+/, '') : scannedText;
+  }
+  renderResults();
+  setTimeout(() => {
+    document.getElementById('resultsContainerLocationAnchor')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }, 100);
+}
+
+function onScanSuccess(decodedText) {
+  if (isProcessingScan) return;
+  let term = decodedText.trim().toLowerCase();
+  let matchedItem = stockRegistry.find(i => i.part.toLowerCase() === term || i.itemNo.toLowerCase() === term || i.supplierRef.toLowerCase() === term) ||
+                    fittingsRegistry.find(i => i.part.toLowerCase() === term);
+  if (matchedItem) {
+    isProcessingScan = true;
+    playBeep('success');
+    showOverlay(matchedItem);
+  }
+}
+
+// VIEW SWITCH CONTROLLER
+function switchMode(mode) {
+  document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+  document.querySelectorAll('.app-screen').forEach(scr => scr.classList.remove('active'));
+  
+  if (mode === 'finder') {
+    document.getElementById('finderTab').classList.add('active');
+    document.getElementById('finderScreen').classList.add('active');
+    document.getElementById('footerBar').style.display = 'none';
+    document.getElementById('countSession').style.display = 'none';
+    stopScanner();
+    setTimeout(() => { searchBox.focus(); }, 100);
+  } else if (mode === 'counter') {
+    document.getElementById('counterTab').classList.add('active');
+    document.getElementById('counterScreen').classList.add('active');
+    document.getElementById('footerBar').style.display = 'flex';
+    document.getElementById('countSession').style.display = 'block';
+    renderSessionLogs();
+    stopInlineScanner();
+    startScanner();
+  } else if (mode === 'consolidation') {
+    document.getElementById('consolidationTab').classList.add('active');
+    document.getElementById('consolidationScreen').classList.add('active');
+    document.getElementById('footerBar').style.display = 'none';
+    document.getElementById('countSession').style.display = 'none';
+    stopScanner();
+    stopInlineScanner();
+    renderConsolidationRows();
+  }
+}
+
+// INVENTORY ROW MATCH RENDERING (LOOKUP SCREEN)
+function renderResults() {
+  var termGen = searchBox.value.trim().toLowerCase();
+  var termFit = fittingsSearchBox.value.trim().toLowerCase();
+  tableBody.innerHTML = '';
+  
+  if (!termGen && !termFit) {
+    tableWrap.style.display = 'none';
+    noResults.style.display = 'none';
+    return;
+  }
+
+  var pool = termFit ? fittingsRegistry : stockRegistry.concat(fittingsRegistry);
+  var targetQuery = termFit ? termFit : termGen;
+
+  var matches = pool.filter(function(item) {
+    return item.part.toLowerCase().includes(targetQuery) || 
+           item.itemNo.toLowerCase().includes(targetQuery) || 
+           item.supplierRef.toLowerCase().includes(targetQuery);
+  });
+
+  if (matches.length === 0) {
+    tableWrap.style.display = 'none';
+    noResults.style.display = 'block';
+    return;
+  }
+
+  noResults.style.display = 'none';
+  tableWrap.style.display = 'block';
+
+  matches.forEach(function(item) {
+    var tr = document.createElement('tr');
+    var badgeClass = (item.type === 'fittings') ? 'location-badge fittings-badge' : 'location-badge';
+    tr.innerHTML = `
+      <td class="col-main"><b>${highlightMatch(item.part, targetQuery)}</b></td>
+      <td class="col-boxes" style="color:#3b82f6; font-weight:700;">${item.boxes}</td>
+      <td class="col-total" style="color:#10b981; font-weight:700;">${item.qty}</td>
+      <td class="col-sub"><span class="${badgeClass}">${item.sub}</span></td>
+    `;
+    tableBody.appendChild(tr);
+  });
+}
+
+// RE-REALIGNED COLUMNS AND RE-IMPLEMENTED CONSOLIDATION ROW SYNC ACTIONS
+function renderConsolidationRows() {
+  var term = conSearchBox.value.trim().toLowerCase();
+  var body = document.getElementById('conTableBody');
+  var wrap = document.getElementById('conTableWrap');
+  body.innerHTML = '';
+  
+  if (!term) { wrap.style.display = 'none'; return; }
+  
+  var matches = fittingsRegistry.filter(i => i.part.toLowerCase().includes(term));
+  if (matches.length === 0) { wrap.style.display = 'none'; return; }
+  
+  wrap.style.display = 'block';
+  matches.forEach(item => {
+    var tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td class="col-main"><span class="location-badge fittings-badge">${item.part}</span></td>
+      <td class="col-boxes"><input type="number" class="inline-edit-input" id="con_box_${item.id}" value="${item.boxes}"></td>
+      <td class="col-total"><input type="number" class="inline-edit-input" id="con_qty_${item.id}" value="${item.qty}"></td>
+      <td class="col-save"><button class="row-save-btn" onclick="submitModuleAChange('${item.part}', '${item.sub}', '${item.id}')">💾</button></td>
+      <td class="col-sub"><span class="location-badge" style="background:#4a5568;">${item.sub}</span></td>
+    `;
+    body.appendChild(tr);
+  });
+}
+
+function submitModuleAChange(partNumber, location, rowId) {
+  let boxesVal = parseInt(document.getElementById(`con_box_${rowId}`).value, 10) || 0;
+  let qtyVal = parseInt(document.getElementById(`con_qty_${rowId}`).value, 10) || 0;
+  
+  metaDisplay.textContent = "⏳ Synchronizing rows into App Script storage columns...";
+  let callbackName = "jsonp_fit_" + Math.round(Math.random() * 1000000);
+  
+  window[callbackName] = function(res) {
+    clearTimeout(timeoutId); delete window[callbackName]; document.body.removeChild(script);
+    if (res && res.result === "success") {
+      playBeep('success'); alert("Inventory cell log modified successfully!"); fetchInventoryDatabases();
+    } else { alert("Data cell deployment rejected."); updateMetaDisplay(); }
+  };
+  
+  let timeoutId = setTimeout(() => { delete window[callbackName]; alert("Cloud execution sync timed out."); updateMetaDisplay(); }, 15000);
+  let script = document.createElement("script");
+  script.src = GOOGLE_SHEETS_API_URL + `?action=updateRow&partNumber=${encodeURIComponent(partNumber)}&location=${encodeURIComponent(location)}&boxes=${boxesVal}&totalQty=${qtyVal}&callback=${callbackName}`;
+  document.body.appendChild(script);
+}
+
+function submitNewPalletEntry() {
+  let part = document.getElementById('newPartNo').value.trim();
+  let pallet = document.getElementById('newPalletNo').value.trim();
+  let packSize = parseInt(document.getElementById('newPackSize').value, 10) || 0;
+  let boxes = parseInt(document.getElementById('newBoxes').value, 10) || 0;
+  let total = parseInt(document.getElementById('newTotalQty').value, 10) || 0;
+
+  if (!part || !pallet) { alert("Please complete both Part Number and Pallet No. fields."); return; }
+  
+  metaDisplay.textContent = "⏳ Saving new item row index entry...";
+  let callbackName = "jsonp_add_" + Math.round(Math.random() * 1000000);
+  
+  window[callbackName] = function(res) {
+    clearTimeout(timeoutId); delete window[callbackName]; document.body.removeChild(script);
+    if (res && res.result === "success") {
+      playBeep('success'); alert("Item entry appended and indexed!");
+      ['newPartNo', 'newPalletNo', 'newPackSize', 'newBoxes', 'newTotalQty'].forEach(id => document.getElementById(id).value = '');
+      fetchInventoryDatabases();
+    } else { alert("Cloud addition error configuration rejected."); updateMetaDisplay(); }
+  };
+  
+  let timeoutId = setTimeout(() => { delete window[callbackName]; alert("Sync runtime timeout."); updateMetaDisplay(); }, 15000);
+  let script = document.createElement("script");
+  script.src = GOOGLE_SHEETS_API_URL + `?action=addStock&partNumber=${encodeURIComponent(part)}&location=${encodeURIComponent(pallet)}&packSize=${packSize}&boxes=${boxes}&totalQty=${total}&callback=${callbackName}`;
+  document.body.appendChild(script);
+}
+
+// AUDIT ENGINE SUBSYSTEMS LOGIC
+function showOverlay(item) {
+  activeScanMatch = item;
+  document.getElementById('targetItemName').textContent = item.part;
+  document.getElementById('targetMappingInfo').textContent = item.itemNo ? `Item No: ${item.itemNo} | Ref: ${item.supplierRef}` : `Fittings Stock Map`;
+  document.getElementById('targetSubLoc').textContent = item.sub;
+  document.getElementById('qtyInputField').value = '';
+  document.getElementById('countOverlay').style.display = 'block';
+  setTimeout(() => { document.getElementById('qtyInputField').focus(); }, 1500);
+}
+
+function dismissOverlay() {
+  document.getElementById('countOverlay').style.display = 'none';
+  activeScanMatch = null;
+  isProcessingScan = false;
+}
+
+function adjustQty(amt) {
+  let f = document.getElementById('qtyInputField');
+  let current = parseInt(f.value, 10) || 0;
+  f.value = Math.max(0, current + amt);
+}
+
+function commitCount() {
+  if (!activeScanMatch) return;
+  let val = parseInt(document.getElementById('qtyInputField').value, 10) || 0;
+  countLogSession.push({ part: activeScanMatch.part, location: activeScanMatch.sub, qty: val, time: new Date().toLocaleTimeString() });
+  localStorage.setItem('saved_audit_logs', JSON.stringify(countLogSession));
+  localStorage.setItem('saved_audit_date', new Date().toDateString());
+  document.getElementById('countSession').textContent = `Counts logged: ${countLogSession.length}`;
+  dismissOverlay();
+  renderSessionLogs();
+}
+
+function renderSessionLogs() {
+  let container = document.getElementById('logRegistryList');
+  container.innerHTML = '';
+  countLogSession.slice().reverse().forEach((log, index) => {
+    let div = document.createElement('div');
+    div.className = 'log-item';
+    div.innerHTML = `<div><b>${log.part}</b> <small style="color:var(--muted)">(${log.location})</small></div><div style="font-weight:700; color:var(--accent-green); font-size:16px;">${log.qty} pcs</div>`;
+    container.appendChild(div);
+  });
+}
+
+function triggerNewSessionManually() {
+  if (confirm("Wipe clear current session parameters to start over fresh?")) { clearCounts(); }
+}
+
+function clearCounts() {
+  countLogSession = [];
+  localStorage.removeItem('saved_audit_logs');
+  localStorage.removeItem('saved_audit_date');
+  document.getElementById('countSession').textContent = `Counts logged: 0`;
+  renderSessionLogs();
+}
+
+function checkUnexportedSessionLogs() {
+  let saved = localStorage.getItem('saved_audit_logs');
+  let date = localStorage.getItem('saved_audit_date');
+  if (saved && date && date !== new Date().toDateString()) {
+    document.getElementById('startupInterceptModal').style.display = 'flex';
+  } else if (saved) {
+    countLogSession = JSON.parse(saved);
+  }
+}
+
+function resolveIntercept(choice) {
+  if (choice === 'continue') {
+    countLogSession = JSON.parse(localStorage.getItem('saved_audit_logs') || '[]');
+    document.getElementById('countSession').textContent = `Counts logged: ${countLogSession.length}`;
+    renderSessionLogs();
+  } else {
+    clearCounts();
+  }
+  document.getElementById('startupInterceptModal').style.display = 'none';
+}
+
+function exportCountsToCSV() {
+  if (countLogSession.length === 0) { alert("Log session registry is currently empty."); return; }
+  let csv = "Part Number,Location,Logged Quantity,Timestamp\n";
+  countLogSession.forEach(r => { csv += `"${r.part}","${r.location}",${r.qty},"${r.time}"\n`; });
+  let blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+  let link = document.createElement("a");
+  link.href = URL.createObjectURL(blob);
+  link.setAttribute("download", `Audit_Report_${new Date().toISOString().slice(0,10)}.csv`);
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+}
+
+// FORMAT PARSING UTILITIES
+function parseCSV(text) {
+  var lines = text.split(/\r?\n/), rows = [];
+  if (lines.length < 2) return [];
+  for (var i = 1; i < lines.length; i++) {
+    var line = lines[i].trim(); if (!line) continue;
+    var cols = line.split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/);
+    if (cols.length < 4) continue; 
+    var partStr = (cols[3] || '').replace(/"/g, '').trim();
+    var supplierRefStr = (cols[1] || '').replace(/"/g, '').trim();
+    var itemNoStr = (cols[6] || '').replace(/"/g, '').trim();
+    var subStr = (cols[5] || '').replace(/"/g, '').trim();
+    var qty = parseInt((cols[4] || '0').replace(/[^0-9.\-]/g, ''), 10) || 0;
+    
+    rows.push({ id: 'std_' + i, part: partStr, boxes: 0, qty: qty, sub: subStr || 'MAIN', itemNo: itemNoStr, supplierRef: supplierRefStr, type: 'standard' });
+  }
+  return rows;
+}
+
+function parseGoogleSheetsJSON(dataMatrix) {
+  var rows = []; if (!dataMatrix || dataMatrix.length < 2) return [];
+  var headers = dataMatrix[0].map(h => String(h).trim().toUpperCase());
+  var partCol = headers.indexOf("CODE"), locCol = headers.indexOf("PART NUMBER"), boxCol = headers.indexOf("PACK SIZE"), totalCol = headers.indexOf("NO. OF BOX");
+  if (partCol === -1 || locCol === -1 || boxCol === -1 || totalCol === -1) return [];
+
+  for (var i = 1; i < dataMatrix.length; i++) {
+    var cols = dataMatrix[i]; if (!cols || cols.length === 0) continue;
+    var partStr = String(cols[partCol] || '').trim();
+    if (!partStr) continue;
+    rows.push({
+      id: 'fit_' + i, part: partStr, boxes: parseInt(cols[boxCol], 10) || 0, qty: parseInt(cols[totalCol], 10) || 0,
+      sub: String(cols[locCol] || '').trim() || 'FITTINGS', itemNo: '', supplierRef: '', type: 'fittings'
+    });
+  }
+  return rows;
+}
+
+function highlightMatch(text, term) {
+  if (!term) return text;
+  var idx = text.toLowerCase().indexOf(term.toLowerCase());
+  if (idx === -1) return text;
+  return text.substring(0, idx) + '<mark class="match">' + text.substring(idx, idx + term.length) + '</mark>' + text.substring(idx + term.length);
+}
+
+function clearAppCache() {
+  if (confirm("Reset layout application local store cache memory?")) { localStorage.clear(); location.reload(); }
+}
+
+function playBeep(type) {
+  try {
+    let ctx = new (window.AudioContext || window.webkitAudioContext)();
+    let osc = ctx.createOscillator(), gain = ctx.createGain();
+    osc.connect(gain); gain.connect(ctx.destination);
+    if (type === 'success') { osc.frequency.setValueAtTime(587.33, ctx.currentTime); gain.gain.setValueAtTime(0.1, ctx.currentTime); osc.start(); osc.stop(ctx.currentTime + 0.12); }
+  } catch(e) {}
+}
+</script>
 </body>
 </html>
