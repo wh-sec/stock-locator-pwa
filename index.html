@@ -1008,6 +1008,100 @@ async function pushRowToGoogleSheets(row, btnElement) {
   }
 
   btnElement.disabled = true;
+  btnElement.style.background = "#64748b"; // Neutral gray during sync
+  btnElement.innerHTML = "⏳";
+
+  const callbackName = 'jsonp_sync_' + Math.round(Math.random() * 1000000);
+  
+  const timeoutId = setTimeout(() => {
+    delete window[callbackName];
+    playBeep('fail');
+    btnElement.style.background = "#dc3545"; // Red for fail
+    btnElement.innerHTML = "❌";
+    setTimeout(() => { 
+      btnElement.innerHTML = "💾"; 
+      btnElement.style.background = "var(--accent-green)"; 
+      btnElement.disabled = false; 
+    }, 2000);
+  }, 8000);
+
+  window[callbackName] = function(response) {
+    clearTimeout(timeoutId);
+    delete window[callbackName];
+    
+    if (response && response.result === 'success') {
+      playBeep('success');
+      btnElement.style.background = "#10b981"; // Vibrant green for success
+      btnElement.innerHTML = "✔️"; // Clean checkmark icon
+      
+      var cachedJson = localStorage.getItem('cached_fittings_json');
+      if (cachedJson) {
+        var parsed = JSON.parse(cachedJson);
+        for (var i = 1; i < parsed.length; i++) {
+          if (String(parsed[i][2]).trim() === row.part && String(parsed[i][3]).trim() === row.sub) {
+            parsed[i][5] = row.boxes; 
+            parsed[i][6] = row.qty;   
+            break;
+          }
+        }
+        localStorage.setItem('cached_fittings_json', JSON.stringify(parsed));
+      }
+      
+      setTimeout(() => { 
+        btnElement.innerHTML = "💾"; 
+        btnElement.style.background = "var(--accent-green)"; 
+        btnElement.disabled = false; 
+      }, 1500);
+    } else {
+      playBeep('fail');
+      btnElement.style.background = "#dc3545"; // Red for error
+      btnElement.innerHTML = "❌";
+      setTimeout(() => { 
+        btnElement.innerHTML = "💾"; 
+        btnElement.style.background = "var(--accent-green)"; 
+        btnElement.disabled = false; 
+      }, 2000);
+    }
+  };
+
+  try {
+    const params = new URLSearchParams({
+      action: "updateRow",
+      partNumber: row.part,
+      boxes: row.boxes,
+      totalQty: row.qty,
+      location: row.sub,
+      callback: callbackName
+    });
+
+    const script = document.createElement('script');
+    script.src = `${GOOGLE_SHEETS_API_URL}?${params.toString()}`;
+    script.onerror = () => {
+      clearTimeout(timeoutId);
+      delete window[callbackName];
+      playBeep('fail');
+      btnElement.style.background = "#dc3545";
+      btnElement.innerHTML = "❌";
+      setTimeout(() => { 
+        btnElement.innerHTML = "💾"; 
+        btnElement.style.background = "var(--accent-green)"; 
+        btnElement.disabled = false; 
+      }, 2000);
+    };
+    
+    document.body.appendChild(script);
+    setTimeout(() => document.body.removeChild(script), 2000);
+
+  } catch (err) {
+    clearTimeout(timeoutId);
+    delete window[callbackName];
+    btnElement.innerHTML = "❌";
+    btnElement.style.background = "var(--accent-green)";
+    btnElement.disabled = false;
+  }
+}
+
+  btnElement.disabled = true;
   btnElement.innerHTML = "⏳";
 
   // Create a unique temporary callback function name
