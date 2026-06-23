@@ -593,7 +593,7 @@
 
 <script>
 const CSV_URL = 'https://raw.githubusercontent.com/wh-sec/stock-locator-pwa/main/stocks.csv';
-const GOOGLE_SHEETS_API_URL = 'https://script.google.com/macros/library/d/1CZbXup_51nGuostDRRiKah6-pbAK1e3ABJF6BIVDkiQYUvdF10DCOEh8/7';
+const GOOGLE_SHEETS_API_URL = 'https://script.google.com/macros/s/AKfycbz_9yXl4Lp_N858A9nfeZfM123_YOUR_DEPLOYMENT_ID/exec';
 
 var stockRegistry = [];
 var fittingsRegistry = [];
@@ -948,165 +948,61 @@ function parseGoogleSheetsJSON(dataMatrix) {
   var rows = [];
   if (!dataMatrix || dataMatrix.length < 2) return [];
   
+  var headers = dataMatrix[0].map(function(h) { return String(h).trim().toUpperCase(); });
+  var partColIndex = headers.indexOf("PART NUMBER");
+  var locColIndex = headers.indexOf("PALLET NO.");
+  var boxesColIndex = headers.indexOf("NO. OF BOX");
+  var totalColIndex = headers.indexOf("TOTAL");
+  
+  if (partColIndex === -1 || locColIndex === -1 || boxesColIndex === -1 || totalColIndex === -1) {
+    return []; 
+  }
+
   for (var i = 1; i < dataMatrix.length; i++) {
     var cols = dataMatrix[i];
-    if (cols.length < 4) continue; 
+    if (!cols || cols.length === 0) continue;
     
-    var partStr = String(cols[2] || '').trim();
-    if (!partStr || partStr.toLowerCase() === 'part number') continue;
-
-    var boxesRaw = cols.length >= 6 ? String(cols[5]) : '0';
-    var boxes = parseInt(boxesRaw.replace(/[^0-9.\-]/g, ''), 10);
-    if (isNaN(boxes)) boxes = 0;
-
-    var qtyRaw = cols.length >= 7 ? String(cols[6]) : '0'; 
-    var qty = parseInt(qtyRaw.replace(/[^0-9.\-]/g, ''), 10);
-    if (isNaN(qty)) qty = 0;
+    var partStr = String(cols[partColIndex] || '').trim();
+    var locStr = String(cols[locColIndex] || '').trim();
+    var boxesVal = parseInt(cols[boxesColIndex], 10) || 0;
+    var qtyVal = parseInt(cols[totalColIndex], 10) || 0;
+    
+    if (!partStr) continue; 
     
     rows.push({
       id: 'fit_' + i,
-      part: partStr,       
-      boxes: boxes,
-      qty: qty,
-      sub: String(cols[3] || '').trim() || 'MAIN', 
+      part: partStr,
+      boxes: boxesVal,
+      qty: qtyVal,
+      sub: locStr || 'FITTINGS',
       itemNo: '',
       supplierRef: '',
-      rawLine: partStr.toLowerCase(),
+      rawLine: (partStr + " " + locStr).toLowerCase(),
       type: 'fittings'
     });
   }
   return rows;
 }
 
-function highlightText(sourceText, query) {
-  if (!query) return sourceText;
-  let txt = String(sourceText);
-  let q = query.toLowerCase();
-  let idx = txt.toLowerCase().indexOf(q);
-  if (idx === -1) return sourceText;
-  return txt.substring(0, idx) + "<mark class='match'>" + txt.substring(idx, idx + q.length) + "</mark>" + txt.substring(idx + q.length);
-}
+searchBox.addEventListener('input', function() {
+  clearTimeout(searchTimeout);
+  fittingsSearchBox.value = ''; 
+  searchTimeout = setTimeout(renderResults, 150);
+});
 
-function updateLiveRowValue(type, id, property, newValue) {
-  var intVal = parseInt(newValue, 10);
-  if (isNaN(intVal) || intVal < 0) intVal = 0;
-
-  if (type === 'fittings') {
-    var match = fittingsRegistry.find(r => r.id === id);
-    if (match) match[property] = intVal;
-  } else {
-    var match = stockRegistry.find(r => r.id === id);
-    if (match) match[property] = intVal;
-  }
-}
-
-async function pushRowToGoogleSheets(row, btnElement) {
-  if (row.type !== 'fittings') {
-    alert("Real-time cloud saving is only optimized for the Google Sheets Fittings Database matrix.");
-    return;
-  }
-
-  btnElement.disabled = true;
-  btnElement.style.background = "#64748b"; 
-  btnElement.innerHTML = "⏳";
-
-  const callbackName = 'jsonp_sync_' + Math.round(Math.random() * 1000000);
-  
-  const timeoutId = setTimeout(() => {
-    delete window[callbackName];
-    playBeep('fail');
-    btnElement.style.background = "#dc3545"; 
-    btnElement.innerHTML = "❌";
-    setTimeout(() => { 
-      btnElement.innerHTML = "💾"; 
-      btnElement.style.background = "var(--accent-green)"; 
-      btnElement.disabled = false; 
-    }, 2000);
-  }, 8000);
-
-  window[callbackName] = function(response) {
-    clearTimeout(timeoutId);
-    delete window[callbackName];
-    
-    if (response && response.result === 'success') {
-      playBeep('success');
-      btnElement.style.background = "#10b981"; 
-      btnElement.innerHTML = "✔️"; 
-      
-      var cachedJson = localStorage.getItem('cached_fittings_json');
-      if (cachedJson) {
-        var parsed = JSON.parse(cachedJson);
-        for (var i = 1; i < parsed.length; i++) {
-          if (String(parsed[i][2]).trim() === row.part && String(parsed[i][3]).trim() === row.sub) {
-            parsed[i][5] = row.boxes; 
-            parsed[i][6] = row.qty;   
-            break;
-          }
-        }
-        localStorage.setItem('cached_fittings_json', JSON.stringify(parsed));
-      }
-      
-      setTimeout(() => { 
-        btnElement.innerHTML = "💾"; 
-        btnElement.style.background = "var(--accent-green)"; 
-        btnElement.disabled = false; 
-      }, 1500);
-    } else {
-      playBeep('fail');
-      btnElement.style.background = "#dc3545"; 
-      btnElement.innerHTML = "❌";
-      setTimeout(() => { 
-        btnElement.innerHTML = "💾"; 
-        btnElement.style.background = "var(--accent-green)"; 
-        btnElement.disabled = false; 
-      }, 2000);
-    }
-  };
-
-  try {
-    const params = new URLSearchParams({
-      action: "updateRow",
-      partNumber: row.part,
-      boxes: row.boxes,
-      totalQty: row.qty,
-      location: row.sub,
-      callback: callbackName
-    });
-
-    const script = document.createElement('script');
-    script.src = `${GOOGLE_SHEETS_API_URL}?${params.toString()}`;
-    script.onerror = () => {
-      clearTimeout(timeoutId);
-      delete window[callbackName];
-      playBeep('fail');
-      btnElement.style.background = "#dc3545";
-      btnElement.innerHTML = "❌";
-      setTimeout(() => { 
-        btnElement.innerHTML = "💾"; 
-        btnElement.style.background = "var(--accent-green)"; 
-        btnElement.disabled = false; 
-      }, 2000);
-    };
-    
-    document.body.appendChild(script);
-    setTimeout(() => document.body.removeChild(script), 2000);
-
-  } catch (err) {
-    clearTimeout(timeoutId);
-    delete window[callbackName];
-    btnElement.innerHTML = "❌";
-    btnElement.style.background = "var(--accent-green)";
-    btnElement.disabled = false;
-  }
-}
+fittingsSearchBox.addEventListener('input', function() {
+  clearTimeout(searchTimeout);
+  searchBox.value = ''; 
+  searchTimeout = setTimeout(renderResults, 150);
+});
 
 function renderResults() {
-  var q = searchBox.value.trim().toLowerCase();
-  var fq = fittingsSearchBox.value.trim().toLowerCase();
+  var query = searchBox.value.trim().toLowerCase();
+  var fitQuery = fittingsSearchBox.value.trim().toLowerCase();
   
   tableBody.innerHTML = '';
   
-  if (!q && !fq) {
+  if (!query && !fitQuery) {
     tableWrap.style.display = 'none';
     noResults.style.display = 'none';
     return;
@@ -1114,15 +1010,15 @@ function renderResults() {
   
   var filtered = [];
   
-  if (fq) {
-    filtered = fittingsRegistry.filter(function(row) {
-      return row.rawLine.indexOf(fq) !== -1;
-    });
-  } else if (q) {
+  if (query) {
     filtered = stockRegistry.filter(function(row) {
-      return row.rawLine.indexOf(q) !== -1 || 
-             row.itemNo.toLowerCase().indexOf(q) !== -1 || 
-             row.supplierRef.toLowerCase().indexOf(q) !== -1;
+      return row.part.toLowerCase().includes(query) || 
+             row.itemNo.toLowerCase().includes(query) || 
+             row.supplierRef.toLowerCase().includes(query);
+    });
+  } else if (fitQuery) {
+    filtered = fittingsRegistry.filter(function(row) {
+      return row.part.toLowerCase().includes(fitQuery);
     });
   }
   
@@ -1138,95 +1034,136 @@ function renderResults() {
   filtered.forEach(function(row) {
     var tr = document.createElement('tr');
     
-    var tdMain = document.createElement('td');
-    tdMain.className = 'col-main';
-    if (row.type === 'fittings') {
-      tdMain.innerHTML = `<strong>${highlightText(row.part, fq)}</strong>`;
-    } else {
-      tdMain.innerHTML = `<strong>PN:</strong> ${highlightText(row.part, q)}<br/>` +
-                         `<strong>Item No:</strong> ${highlightText(row.itemNo, q)}<br/>` +
-                         `<strong>Ref:</strong> ${highlightText(row.supplierRef, q)}`;
+    var activeTerm = query || fitQuery;
+    var displayPart = row.part;
+    if (activeTerm) {
+      var regex = new RegExp("(" + escapeRegExp(activeTerm) + ")", "gi");
+      displayPart = row.part.replace(regex, "<mark class='match'>$1</mark>");
     }
     
-    var tdBoxes = document.createElement('td');
-    tdBoxes.className = 'col-boxes';
-    tdBoxes.style.textAlign = 'center';
+    var isFit = (row.type === 'fittings');
+    var badgeClass = isFit ? "location-badge fittings-badge" : "location-badge";
     
-    var boxInput = document.createElement('input');
-    boxInput.type = 'number';
-    boxInput.className = 'inline-edit-input';
-    boxInput.value = row.boxes;
-    boxInput.min = 0;
-    boxInput.inputMode = 'numeric';
-    boxInput.addEventListener('input', function() {
-      updateLiveRowValue(row.type, row.id, 'boxes', boxInput.value);
-    });
-    tdBoxes.appendChild(boxInput);
-    
-    var tdTotal = document.createElement('td');
-    tdTotal.className = 'col-total';
-    tdTotal.style.textAlign = 'center';
-
-    var totalInput = document.createElement('input');
-    totalInput.type = 'number';
-    totalInput.className = 'inline-edit-input';
-    totalInput.value = row.qty;
-    totalInput.min = 0;
-    totalInput.inputMode = 'numeric';
-    totalInput.style.borderColor = 'var(--accent-green)';
-    totalInput.addEventListener('input', function() {
-      updateLiveRowValue(row.type, row.id, 'qty', totalInput.value);
-    });
-    tdTotal.appendChild(totalInput);
-
-    var tdSave = document.createElement('td');
-    tdSave.className = 'col-save';
-    tdSave.style.textAlign = 'center';
-    
-    var saveBtn = document.createElement('button');
-    saveBtn.className = 'row-save-btn';
-    saveBtn.innerHTML = '💾';
-    saveBtn.title = 'Save modifications directly to Google Sheets database';
-    
-    if (row.type !== 'fittings') {
-      saveBtn.disabled = true; 
-      saveBtn.style.background = '#cbd5e1';
+    if (isFit) {
+      tr.innerHTML = `
+        <td class="col-main"><strong>${displayPart}</strong></td>
+        <td class="col-boxes"><input type="number" class="inline-edit-input" value="${row.boxes}" onchange="updateLocalFittingMemory('${row.id}', 'boxes', this.value)" inputmode="numeric"/></td>
+        <td class="col-total"><input type="number" class="inline-edit-input" value="${row.qty}" onchange="updateLocalFittingMemory('${row.id}', 'qty', this.value)" inputmode="numeric"/></td>
+        <td class="col-save"><button class="row-save-btn" id="btn_${row.id}" onclick="pushRowToGoogleSheets('${row.id}')">💾</button></td>
+        <td class="col-sub"><span class="${badgeClass}">${row.sub}</span></td>
+      `;
     } else {
-      saveBtn.addEventListener('click', function() {
-        pushRowToGoogleSheets(row, saveBtn);
-      });
+      tr.innerHTML = `
+        <td class="col-main">
+          <strong>${displayPart}</strong>
+          ${row.itemNo ? '<div style="font-size:11px; opacity:0.7;">Item: ' + row.itemNo + '</div>' : ''}
+          ${row.supplierRef ? '<div style="font-size:11px; opacity:0.7;">Ref: ' + row.supplierRef + '</div>' : ''}
+        </td>
+        <td class="col-boxes" style="opacity:0.4;">—</td>
+        <td class="col-total" style="font-weight:bold;">${row.qty}</td>
+        <td class="col-save" style="opacity:0.4;">—</td>
+        <td class="col-sub"><span class="${badgeClass}">${row.sub}</span></td>
+      `;
     }
-    tdSave.appendChild(saveBtn);
-    
-    var tdSub = document.createElement('td');
-    tdSub.className = 'col-sub';
-    tdSub.style.textAlign = 'center';
-    
-    var badge = document.createElement('span');
-    badge.className = 'location-badge' + (row.type === 'fittings' ? ' fittings-badge' : '');
-    badge.textContent = row.sub;
-    tdSub.appendChild(badge);
-    
-    tr.appendChild(tdMain);
-    tr.appendChild(tdBoxes);
-    tr.appendChild(tdTotal);
-    tr.appendChild(tdSave);
-    tr.appendChild(tdSub);
     tableBody.appendChild(tr);
   });
 }
 
-searchBox.addEventListener('input', function() {
-  fittingsSearchBox.value = '';
-  clearTimeout(searchTimeout);
-  searchTimeout = setTimeout(renderResults, 150);
-});
+function escapeRegExp(string) {
+  return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
 
-fittingsSearchBox.addEventListener('input', function() {
-  searchBox.value = '';
-  clearTimeout(searchTimeout);
-  searchTimeout = setTimeout(renderResults, 150);
-});
+function updateLocalFittingMemory(id, field, value) {
+  var parsed = parseInt(value, 10) || 0;
+  for (var i = 0; i < fittingsRegistry.length; i++) {
+    if (fittingsRegistry[i].id === id) {
+      if (field === 'boxes') fittingsRegistry[i].boxes = parsed;
+      if (field === 'qty') fittingsRegistry[i].qty = parsed;
+      break;
+    }
+  }
+}
+
+function pushRowToGoogleSheets(id) {
+  var row = null;
+  for (var i = 0; i < fittingsRegistry.length; i++) {
+    if (fittingsRegistry[i].id === id) {
+      row = fittingsRegistry[i];
+      break;
+    }
+  }
+  if (!row) return;
+
+  var btnElement = document.getElementById("btn_" + id);
+  btnElement.disabled = true;
+  btnElement.innerHTML = "⏳";
+
+  var callbackName = "jsonp_callback_" + Math.round(Math.random() * 1000000);
+  
+  window[callbackName] = function(response) {
+    clearTimeout(timeoutId);
+    delete window[callbackName];
+    document.body.removeChild(script);
+    
+    if (response && response.result === "success") {
+      playBeep('success');
+      btnElement.style.background = "#198754";
+      btnElement.innerHTML = "✅";
+      
+      var currentCache = JSON.parse(localStorage.getItem('cached_fittings_json') || '[]');
+      if (currentCache.length > 0) {
+        var headers = currentCache[0].map(function(h) { return String(h).trim().toUpperCase(); });
+        var pIdx = headers.indexOf("PART NUMBER");
+        var lIdx = headers.indexOf("PALLET NO.");
+        var bIdx = headers.indexOf("NO. OF BOX");
+        var tIdx = headers.indexOf("TOTAL");
+        
+        for (var k = 1; k < currentCache.length; k++) {
+          if (String(currentCache[k][pIdx]).trim() === row.part && String(currentCache[k][lIdx]).trim() === row.sub) {
+            currentCache[k][bIdx] = row.boxes;
+            currentCache[k][tIdx] = row.qty;
+            break;
+          }
+        }
+        localStorage.setItem('cached_fittings_json', JSON.stringify(currentCache));
+      }
+      setTimeout(function() {
+        btnElement.innerHTML = "💾";
+        btnElement.style.background = "var(--accent-green)";
+        btnElement.disabled = false;
+      }, 2000);
+    } else {
+      handleSyncFailure(btnElement);
+    }
+  };
+
+  var timeoutId = setTimeout(function() {
+    delete window[callbackName];
+    handleSyncFailure(btnElement);
+  }, 15000); 
+
+  var script = document.createElement("script");
+  script.src = GOOGLE_SHEETS_API_URL + 
+    "?action=updateRow" +
+    "&partNumber=" + encodeURIComponent(row.part) +
+    "&location=" + encodeURIComponent(row.sub) +
+    "&boxes=" + row.boxes +
+    "&totalQty=" + row.qty +
+    "&callback=" + callbackName;
+    
+  document.body.appendChild(script);
+}
+
+function handleSyncFailure(btnElement) {
+  playBeep('fail');
+  btnElement.style.background = "#dc3545";
+  btnElement.innerHTML = "❌";
+  setTimeout(function() {
+    btnElement.innerHTML = "💾";
+    btnElement.style.background = "var(--accent-green)";
+    btnElement.disabled = false;
+  }, 2500);
+}
 
 function playBeep(type) {
   try {
@@ -1242,8 +1179,9 @@ function playBeep(type) {
       osc.start();
       osc.stop(ctx.currentTime + 0.1);
     } else {
+      osc.type = 'sawtooth';
       osc.frequency.setValueAtTime(220, ctx.currentTime);
-      gain.gain.setValueAtTime(0.1, ctx.currentTime);
+      gain.gain.setValueAtTime(0.15, ctx.currentTime);
       osc.start();
       osc.stop(ctx.currentTime + 0.25);
     }
@@ -1254,16 +1192,20 @@ function onScanSuccess(decodedText) {
   if (isProcessingScan) return;
   var scanned = decodedText.trim();
   
-  var match = stockRegistry.find(function(row) {
-    return row.part.toLowerCase() === scanned.toLowerCase() || 
-           row.itemNo.toLowerCase() === scanned.toLowerCase() || 
-           row.supplierRef.toLowerCase() === scanned.toLowerCase();
-  });
-  
+  var match = null;
+  for (var i = 0; i < stockRegistry.length; i++) {
+    if (stockRegistry[i].part === scanned || stockRegistry[i].supplierRef === scanned) {
+      match = stockRegistry[i];
+      break;
+    }
+  }
   if (!match) {
-    match = fittingsRegistry.find(function(row) {
-      return row.part.toLowerCase() === scanned.toLowerCase();
-    });
+    for (var j = 0; j < fittingsRegistry.length; j++) {
+      if (fittingsRegistry[j].part === scanned) {
+        match = fittingsRegistry[j];
+        break;
+      }
+    }
   }
   
   if (match) {
@@ -1272,21 +1214,19 @@ function onScanSuccess(decodedText) {
     activeScanMatch = match;
     
     document.getElementById('targetItemName').textContent = match.part;
-    document.getElementById('targetMappingInfo').textContent = match.itemNo ? `Item No: ${match.itemNo}` : 'Fittings Database Entry';
     document.getElementById('targetSubLoc').textContent = match.sub;
-    document.getElementById('qtyInputField').value = '';
+    document.getElementById('targetSubLoc').className = match.type === 'fittings' ? "count-sub fittings-badge" : "count-sub";
+    document.getElementById('targetMappingInfo').textContent = match.type === 'standard' ? "Ref: " + match.supplierRef : "Google Sheets Managed Asset Row";
     
+    document.getElementById('qtyInputField').value = '';
     document.getElementById('countOverlay').style.display = 'block';
-  } else {
-    playBeep('fail');
-    alert(`Scanned tag "${scanned}" is not linked to any active record.`);
   }
 }
 
-function adjustQty(amt) {
-  var el = document.getElementById('qtyInputField');
-  var val = parseInt(el.value || '0', 10);
-  el.value = Math.max(0, val + amt);
+function adjustQty(amount) {
+  var input = document.getElementById('qtyInputField');
+  var val = parseInt(input.value, 10) || 0;
+  input.value = Math.max(0, val + amount);
 }
 
 function dismissOverlay() {
@@ -1296,88 +1236,60 @@ function dismissOverlay() {
 }
 
 function commitCount() {
-  var el = document.getElementById('qtyInputField');
-  var countVal = parseInt(el.value, 10);
-  if (isNaN(countVal) || countVal < 0) {
-    alert("Please supply a valid quantity amount.");
-    return;
-  }
+  if (!activeScanMatch) return;
+  var val = parseInt(document.getElementById('qtyInputField').value, 10) || 0;
   
   countLogSession.unshift({
     part: activeScanMatch.part,
-    location: activeScanMatch.sub,
-    qty: countVal,
-    time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+    loc: activeScanMatch.sub,
+    qty: val,
+    time: new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})
   });
   
-  localStorage.setItem('ms_unsaved_logs', JSON.stringify(countLogSession));
-  renderLogs();
+  localStorage.setItem('ms_count_session_logs', JSON.stringify(countLogSession));
+  document.getElementById('countSession').textContent = "Counts logged: " + countLogSession.length;
+  
+  renderCountLogList();
   dismissOverlay();
 }
 
-function renderLogs() {
+function renderCountLogList() {
   var list = document.getElementById('logRegistryList');
   list.innerHTML = '';
-  document.getElementById('countSession').textContent = `Counts logged: ${countLogSession.length}`;
-  
-  countLogSession.forEach(function(item, index) {
+  countLogSession.forEach(function(item) {
     var div = document.createElement('div');
     div.className = 'log-item';
-    div.innerHTML = `<div><strong>${item.part}</strong> <br/><span style='font-size:11px; color:var(--muted);'>Loc: ${item.location} @ ${item.time}</span></div>` +
-                    `<div style='font-weight:bold; font-size:16px; color:var(--accent-green);'>${item.qty} pcs` +
-                    `<button onclick='deleteLog(${index})' style='margin-left:12px; color:#dc3545; background:none; border:none; cursor:pointer; font-weight:bold;'>✕</button></div>`;
+    div.innerHTML = `<div><strong>${item.part}</strong> <small style="opacity:0.6;">(${item.loc})</small></div> <div style="font-weight:800; color:var(--accent-green);">Qty: ${item.qty} <span style="font-size:10px; font-weight:normal; color:var(--muted); margin-left:4px;">${item.time}</span></div>`;
     list.appendChild(div);
   });
 }
 
-function deleteLog(idx) {
-  countLogSession.splice(idx, 1);
-  localStorage.setItem('ms_unsaved_logs', JSON.stringify(countLogSession));
-  renderLogs();
+function triggerNewSessionManually() {
+  if (confirm("Clear terminal and start fresh warehouse auditing session?")) {
+    countLogSession = [];
+    localStorage.removeItem('ms_count_session_logs');
+    document.getElementById('countSession').textContent = "Counts logged: 0";
+    renderCountLogList();
+  }
 }
 
 function clearCounts() {
-  if (confirm("Permanently wipe current session count list?")) {
-    countLogSession = [];
-    localStorage.removeItem('ms_unsaved_logs');
-    renderLogs();
-  }
-}
-
-function triggerNewSessionManually() {
-  if (confirm("Wipe all active log entries to initialize a pristine session? Ensure data is downloaded first.")) {
-    countLogSession = [];
-    localStorage.removeItem('ms_unsaved_logs');
-    renderLogs();
-  }
-}
-
-function resolveIntercept(action) {
-  if (action === 'purge') {
-    countLogSession = [];
-    localStorage.removeItem('ms_unsaved_logs');
-  } else {
-    var saved = localStorage.getItem('ms_unsaved_logs');
-    if (saved) countLogSession = JSON.parse(saved);
-  }
-  document.getElementById('startupInterceptModal').style.display = 'none';
-  renderLogs();
+  triggerNewSessionManually();
 }
 
 function exportCountsToCSV() {
   if (countLogSession.length === 0) {
-    alert("No active audit logs available to export.");
+    alert("No audit counts available to export.");
     return;
   }
-  var csvContent = "data:text/csv;charset=utf-8,PART NUMBER,LOCATION,AUDIT QUANTITY,TIME\n";
+  var csvContent = "data:text/csv;charset=utf-8,PART NUMBER,LOCATION/PALLET,AUDITED COUNT,TIMESTAMP\n";
   countLogSession.forEach(function(r) {
-    csvContent += `"${r.part}","${r.location}",${r.qty},"${r.time}"\n`;
+    csvContent += `"${r.part}","${r.loc}",${r.qty},"${r.time}"\n`;
   });
-  
   var encodedUri = encodeURI(csvContent);
   var link = document.createElement("a");
   link.setAttribute("href", encodedUri);
-  link.setAttribute("download", `Inventory_Audit_Counts_${new Date().toISOString().slice(0,10)}.csv`);
+  link.setAttribute("download", "Audit_Counts_" + new Date().toISOString().slice(0,10) + ".csv");
   document.body.appendChild(link);
   link.click();
   document.body.removeChild(link);
@@ -1385,20 +1297,34 @@ function exportCountsToCSV() {
 
 function stopScanner() {
   if (html5QrcodeScanner) {
-    html5QrcodeScanner.stop().then(() => { html5QrcodeScanner = null; }).catch(()=>{});
+    html5QrcodeScanner.stop().then(function() { html5QrcodeScanner = null; }).catch(function(){});
   }
 }
 
-window.addEventListener('DOMContentLoaded', () => {
+window.addEventListener('DOMContentLoaded', function() {
   initThemeAndWallpaper();
   fetchDailyQuote();
-  fetchInventoryDatabases();
   
-  var savedLogs = localStorage.getItem('ms_unsaved_logs');
-  if (savedLogs && JSON.parse(savedLogs).length > 0) {
+  var storedLogs = localStorage.getItem('ms_count_session_logs');
+  if (storedLogs) {
+    countLogSession = JSON.parse(storedLogs);
+    renderCountLogList();
     document.getElementById('startupInterceptModal').style.display = 'flex';
   }
+  
+  loadCachedDatabases();
+  fetchInventoryDatabases();
 });
+
+function resolveIntercept(choice) {
+  document.getElementById('startupInterceptModal').style.display = 'none';
+  if (choice === 'purge') {
+    countLogSession = [];
+    localStorage.removeItem('ms_count_session_logs');
+    document.getElementById('countSession').textContent = "Counts logged: 0";
+    renderCountLogList();
+  }
+}
 </script>
 </body>
 </html>
