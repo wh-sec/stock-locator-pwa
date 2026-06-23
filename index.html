@@ -29,6 +29,7 @@
       --border: rgba(219, 226, 239, 0.7);
       --th-bg: rgba(241, 245, 249, 0.9);
       --accent-green: #10b981;
+      --accent-purple: #8b5cf6;
       --glass-blur: blur(12px);
       --bg-overlay: rgba(244, 246, 249, 0.4);
     }
@@ -109,12 +110,13 @@
       margin-bottom: 14px; 
       box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); 
       backdrop-filter: var(--glass-blur);
+      gap: 4px;
     }
     .tab-btn { 
       flex: 1; 
-      padding: 14px; 
+      padding: 12px 6px; 
       text-align: center; 
-      font-size: 15px; 
+      font-size: 13px; 
       font-weight: 700; 
       border: none; 
       background: transparent; 
@@ -126,6 +128,7 @@
     
     #finderTab.active { background: #0056b3; color: white; }
     #counterTab.active { background: var(--accent-green); color: white; }
+    #consolidationTab.active { background: var(--accent-purple); color: white; }
 
     .app-screen { 
       display: none; 
@@ -159,7 +162,7 @@
       opacity: 0.9;
     }
     
-    input[type="text"], input[type="number"] { 
+    input[type="text"], input[type="number"], select { 
       width: 100%; 
       padding: 14px; 
       font-size: 16px; 
@@ -169,7 +172,7 @@
       color: var(--text);
       transition: border-color 0.2s;
     }
-    input:focus { outline: none; border-color: var(--primary-accent); }
+    input:focus, select:focus { outline: none; border-color: var(--primary-accent); }
 
     .shortcut-row { 
       display: grid; 
@@ -255,11 +258,6 @@
       height: auto;
       line-height: normal;
     }
-    .reset-bg-link:hover { background: rgba(220, 53, 69, 0.18); }
-
-    .pref-row input[type="checkbox"] {
-      accent-color: var(--primary-accent);
-    }
 
     .sync-status-row {
       display: flex;
@@ -280,7 +278,6 @@
       background: transparent;
       font-size: 12px;
     }
-    .clear-cache-link:hover { text-decoration: underline; }
 
     .table-wrap { 
       overflow-x: auto; 
@@ -296,9 +293,9 @@
     
     th { background: var(--th-bg); font-weight: 700; color: var(--muted); font-size: 13px; }
     
-    th.col-main, td.col-main { width: 40%; }
-    th.col-boxes, td.col-boxes { width: 18%; text-align: center; }
-    th.col-total, td.col-total { width: 18%; text-align: center; }
+    th.col-main, td.col-main { width: 44%; }
+    th.col-boxes, td.col-boxes { width: 16%; text-align: center; }
+    th.col-total, td.col-total { width: 16%; text-align: center; }
     th.col-save, td.col-save { width: 11%; text-align: center; }
     th.col-sub, td.col-sub { width: 13%; text-align: center; }
 
@@ -333,9 +330,7 @@
       color: var(--text) !important;
       margin-bottom: 0 !important;
     }
-    [data-theme="dark"] .inline-edit-input {
-      border-color: #3b82f6 !important;
-    }
+    [data-theme="dark"] .inline-edit-input { border-color: #3b82f6 !important; }
 
     .row-save-btn {
       background: var(--accent-green);
@@ -350,13 +345,8 @@
       justify-content: center;
       width: 32px;
       height: 32px;
-      transition: opacity 0.2s;
     }
-    .row-save-btn:disabled {
-      background: #a0aec0;
-      opacity: 0.5;
-      cursor: not-allowed;
-    }
+    .row-save-btn:disabled { background: #a0aec0; opacity: 0.5; cursor: not-allowed; }
 
     .alertBox { 
       display: none; background: #fff3cd; color: #856404; padding: 16px; border-radius: 8px; 
@@ -380,46 +370,18 @@
 
     .log-item { background: var(--panel); padding: 12px; border-radius: 8px; border: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; backdrop-filter: var(--glass-blur); }
     
-    .session-actions-strip {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin: 14px 0 8px 0;
-    }
-    .new-session-btn {
-      background: #4a5568;
-      color: white;
-      border: none;
-      padding: 6px 12px;
-      font-size: 12px;
-      font-weight: 700;
-      border-radius: 6px;
-      cursor: pointer;
-    }
-    .new-session-btn:hover { background: #2d3748; }
+    .session-actions-strip { display: flex; justify-content: space-between; align-items: center; margin: 14px 0 8px 0; }
+    .new-session-btn { background: #4a5568; color: white; border: none; padding: 6px 12px; font-size: 12px; font-weight: 700; border-radius: 6px; cursor: pointer; }
     .clear-btn { background: none; border: none; color: #dc3545; cursor: pointer; font-weight: 600; padding: 4px; font-size: 12px; }
 
     .intercept-modal-overlay {
-      display: none;
-      position: fixed;
-      top: 0; left: 0; right: 0; bottom: 0;
-      background: rgba(0, 0, 0, 0.7);
-      backdrop-filter: blur(4px);
-      z-index: 99999;
-      justify-content: center;
-      align-items: center;
-      padding: 20px;
+      display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(0, 0, 0, 0.7); backdrop-filter: blur(4px); z-index: 99999;
+      justify-content: center; align-items: center; padding: 20px;
     }
     .intercept-box {
-      background: var(--panel);
-      border: 2px solid var(--primary-accent);
-      padding: 24px;
-      border-radius: 16px;
-      max-width: 460px;
-      width: 100%;
-      box-shadow: 0 10px 25px rgba(0,0,0,0.3);
-      text-align: center;
-      backdrop-filter: var(--glass-blur);
+      background: var(--panel); border: 2px solid var(--primary-accent); padding: 24px;
+      border-radius: 16px; max-width: 460px; width: 100%; text-align: center; backdrop-filter: var(--glass-blur);
     }
     .intercept-box h3 { margin-bottom: 10px; font-size: 18px; font-weight: 800; }
     .intercept-box p { font-size: 14px; color: var(--muted); margin-bottom: 20px; line-height: 1.5; }
@@ -429,29 +391,27 @@
     .btn-choice.purge { background: #dc3545; color: white; }
 
     .footer-bar {
-      position: fixed;
-      bottom: 0; left: 0; right: 0;
-      height: 70px;
-      background: var(--panel);
-      border-top: 1px solid var(--border);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      padding: 0 12px;
-      z-index: 1000;
-      backdrop-filter: var(--glass-blur);
+      position: fixed; bottom: 0; left: 0; right: 0; height: 70px;
+      background: var(--panel); border-top: 1px solid var(--border);
+      display: flex; align-items: center; justify-content: center; padding: 0 12px; z-index: 1000; backdrop-filter: var(--glass-blur);
     }
-    .export-btn {
-      width: 100%;
-      max-width: 726px;
-      background: var(--primary-accent);
-      color: white;
-      border: none;
-      padding: 14px;
-      font-size: 15px;
-      font-weight: 700;
-      border-radius: 8px;
-      cursor: pointer;
+    .export-btn { width: 100%; max-width: 726px; background: var(--primary-accent); color: white; border: none; padding: 14px; font-size: 15px; font-weight: 700; border-radius: 8px; cursor: pointer; }
+
+    /* Mobile Typography and Layout Refinements for Table Headers */
+    @media screen and (max-width: 480px) {
+      th {
+        font-size: 11px !important;
+        padding: 8px 4px !important;
+        white-space: nowrap;
+        text-overflow: ellipsis;
+      }
+      th.col-main {
+        white-space: normal;
+        word-break: break-word;
+        min-width: 85px;
+      }
+      .tabs-bar { padding: 4px; }
+      .tab-btn { font-size: 11px; padding: 10px 4px; }
     }
   </style>
 </head>
@@ -480,6 +440,7 @@
   <div class="tabs-bar">
     <button id="finderTab" class="tab-btn active" onclick="switchMode('finder')">🔍 Stock Lookup</button>
     <button id="counterTab" class="tab-btn" onclick="switchMode('counter')">📋 Audit Scanner</button>
+    <button id="consolidationTab" class="tab-btn" onclick="switchMode('consolidation')">📦 Consolidation</button>
   </div>
 
   <div style="display: flex; justify-content: space-between; font-size: 12px; color: var(--text); font-weight: 600; margin-bottom: 8px; padding: 0 4px; opacity:0.85;">
@@ -489,7 +450,6 @@
 
   <div id="finderScreen" class="app-screen active">
     <div class="panel-box">
-      
       <div id="inlineScannerBox" class="inline-scanner-box">
         <button class="close-scan-btn" onclick="stopInlineScanner()">✕ Close Camera</button>
         <div id="finderReader" style="width:100%;"></div>
@@ -497,12 +457,7 @@
 
       <div class="input-group">
         <label for="searchBox">Search Part Number / Item No. / Supplier Reference</label>
-        <input id="searchBox" type="text" placeholder="DGN 3102C..." autofocus autocomplete="off"/>
-      </div>
-
-      <div class="input-group">
-        <label for="fittingsSearchBox" style="color: #8b5cf6;">Search Part Number (For Fittings Stock)</label>
-        <input id="fittingsSearchBox" type="text" placeholder="15612-16-16N..." autocomplete="off"/>
+        <input id="searchBox" type="text" placeholder="Search general stock or fittings..." autofocus autocomplete="off"/>
       </div>
       
       <div class="shortcut-row">
@@ -536,11 +491,11 @@
     </div>
 
     <div class="results-container" id="resultsContainerLocationAnchor">
-      <div class="table-wrap" id="tableWrap">
+      <div class="table-wrap" id="tableWrap" style="display: none;">
         <table>
           <thead>
             <tr>
-              <th class="col-main">Part Number Map / Cross-Ref</th>
+              <th class="col-main">Part Number Map /<br>Cross-Ref</th>
               <th class="col-boxes">Boxes</th>
               <th class="col-total">Total Qty</th>
               <th class="col-save">Sync</th>
@@ -585,6 +540,58 @@
     <div id="logRegistryList"></div>
   </div>
 
+  <div id="consolidationScreen" class="app-screen">
+    <div class="panel-box">
+      <h3 style="font-size:14px; margin-bottom:10px; color:var(--accent-purple); text-transform:uppercase; letter-spacing:0.5px;">Module A: Modify or Zero-Out Pallet</h3>
+      <div class="input-group">
+        <label for="consolidationSearchBox">Search Fitting Part Number to Edit</label>
+        <input id="consolidationSearchBox" type="text" placeholder="Type part number to modify..." autocomplete="off"/>
+      </div>
+      
+      <div class="table-wrap" id="conTableWrap" style="display: none; margin-top:12px;">
+        <table>
+          <thead>
+            <tr>
+              <th class="col-main">Part / Cross-Ref</th>
+              <th class="col-boxes">Boxes</th>
+              <th class="col-total">Total Qty</th>
+              <th class="col-save">Sync</th>
+              <th class="col-sub">Loc</th>
+            </tr>
+          </thead>
+          <tbody id="conTableBody"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="panel-box">
+      <h3 style="font-size:14px; margin-bottom:12px; color:var(--accent-green); text-transform:uppercase; letter-spacing:0.5px;">Module B: Add To New Pallet</h3>
+      
+      <div class="input-group">
+        <label for="newPartNumber">Part Number</label>
+        <input id="newPartNumber" type="text" placeholder="e.g., 15612-16-16N" autocomplete="off"/>
+      </div>
+
+      <div class="input-group">
+        <label for="newPalletNo">Pallet No. / Location</label>
+        <input id="newPalletNo" type="text" placeholder="e.g., 260511-P12" autocomplete="off"/>
+      </div>
+
+      <div class="shortcut-row" style="grid-template-columns: 1fr 1fr; margin-top:0; margin-bottom:14px;">
+        <div class="input-group" style="margin-bottom:0;">
+          <label for="newBoxes">No. of Boxes</label>
+          <input id="newBoxes" type="number" placeholder="0" min="0" inputmode="numeric"/>
+        </div>
+        <div class="input-group" style="margin-bottom:0;">
+          <label for="newTotalQty">Total Quantity</label>
+          <input id="newTotalQty" type="number" placeholder="0" min="0" inputmode="numeric"/>
+        </div>
+      </div>
+
+      <button class="btn btn-save" style="width:100%; padding:14px; background:var(--accent-purple);" onclick="submitNewPalletEntry()">➕ Inject New Pallet Entry</button>
+    </div>
+  </div>
+
 </div>
 
 <div id="footerBar" class="footer-bar" style="display: none;">
@@ -605,9 +612,11 @@ var currentScanTargetField = 'qr';
 var isProcessingScan = false; 
 
 var searchBox = document.getElementById('searchBox');
-var fittingsSearchBox = document.getElementById('fittingsSearchBox');
+var consolidationSearchBox = document.getElementById('consolidationSearchBox');
 var tableBody = document.getElementById('tableBody');
 var tableWrap = document.getElementById('tableWrap');
+var conTableBody = document.getElementById('conTableBody');
+var conTableWrap = document.getElementById('conTableWrap');
 var noResults = document.getElementById('noResults');
 var metaDisplay = document.getElementById('metaDisplay');
 var themeToggle = document.getElementById('themeToggle');
@@ -616,35 +625,6 @@ var searchTimeout = null;
 var currentQuote = "Quality means doing it right when no one is looking.";
 var currentAuthor = "Henry Ford";
 
-const fallbackQuotes = [
-  { q: "Quality means doing it right when no one is looking.", a: "Henry Ford" },
-  { q: "Alone we can do so little; together we can do so much.", a: "Helen Keller" },
-  { q: "Efficiency is doing better what is already being done.", a: "Peter Drucker" },
-  { q: "There is no substitute for hard work.", a: "Thomas Edison" }
-];
-
-async function fetchDailyQuote() {
-  try {
-    const res = await fetch('https://api.allorigins.win/get?url=' + encodeURIComponent('https://zenquotes.io/api/today'));
-    if (res.ok) {
-      const data = await res.json();
-      const parsedArr = JSON.parse(data.contents);
-      currentQuote = parsedArr[0].q;
-      currentAuthor = parsedArr[0].a;
-    } else {
-      useLocalFallback();
-    }
-  } catch (err) {
-    useLocalFallback();
-  }
-}
-
-function useLocalFallback() {
-  const rand = fallbackQuotes[Math.floor(Math.random() * fallbackQuotes.length)];
-  currentQuote = rand.q;
-  currentAuthor = rand.a;
-}
-
 function requestNotificationPermission() {
   if ("Notification" in window) {
     Notification.requestPermission().then(perm => {
@@ -652,16 +632,6 @@ function requestNotificationPermission() {
     });
   } else {
     alert("System notifications are unsupported on this mobile layout browser.");
-  }
-}
-
-function fireStockUpdateNotification() {
-  if ("Notification" in window && Notification.permission === "granted") {
-    const timestamp = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-    new Notification(`📦 Warehouse System Updated! (${timestamp})`, {
-      body: `"${currentQuote}" — ${currentAuthor}`,
-      icon: 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="%233b82f6"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>'
-    });
   }
 }
 
@@ -683,7 +653,6 @@ themeToggle.addEventListener('change', function() {
 function handleWallpaperUpload(event) {
   const file = event.target.files[0];
   if (!file) return;
-
   const reader = new FileReader();
   reader.onload = function(e) {
     const rawImg = new Image();
@@ -691,23 +660,17 @@ function handleWallpaperUpload(event) {
     rawImg.onload = function() {
       const canvas = document.createElement('canvas');
       const maxDim = 1200;
-      let w = rawImg.width;
-      let h = rawImg.height;
+      let w = rawImg.width; let h = rawImg.height;
       if (w > h && w > maxDim) { h = Math.round((h * maxDim) / w); w = maxDim; }
       else if (h > maxDim) { w = Math.round((w * maxDim) / h); h = maxDim; }
-      
-      canvas.width = w;
-      canvas.height = h;
+      canvas.width = w; canvas.height = h;
       const ctx = canvas.getContext('2d');
       ctx.drawImage(rawImg, 0, 0, w, h);
-      
       const compressedBase64 = canvas.toDataURL('image/jpeg', 0.75);
       try {
         localStorage.setItem('ms_custom_bg', compressedBase64);
         applyActiveWallpaper(compressedBase64);
-      } catch (err) {
-        alert("Selected image is too large for localized cache memory storage.");
-      }
+      } catch (err) { alert("Selected image is too large for localized cache memory storage."); }
     };
   };
   reader.readAsDataURL(file);
@@ -731,8 +694,9 @@ function clearWallpaperTheme() {
 
 function resetSearchFields() {
   searchBox.value = '';
-  fittingsSearchBox.value = '';
+  consolidationSearchBox.value = '';
   renderResults();
+  renderConsolidationResults();
   stopInlineScanner();
   searchBox.focus();
 }
@@ -743,9 +707,7 @@ async function fetchInventoryDatabases() {
       fetch(CSV_URL + '?t=' + Date.now()),
       fetch(GOOGLE_SHEETS_API_URL + '?t=' + Date.now())
     ]);
-
     if (!stockRes.ok || !fitRes.ok) throw new Error("Server communication fault");
-
     const stockText = await stockRes.text();
     const fittingsJson = await fitRes.json();
 
@@ -755,10 +717,7 @@ async function fetchInventoryDatabases() {
     localStorage.setItem('cached_stocks', stockText);
     localStorage.setItem('cached_fittings_json', JSON.stringify(fittingsJson));
     localStorage.setItem('cached_sync_time', new Date().toLocaleString());
-
     updateMetaDisplay();
-    fireStockUpdateNotification();
-
   } catch (err) {
     loadCachedDatabases();
   }
@@ -768,7 +727,6 @@ function loadCachedDatabases() {
   const cStocks = localStorage.getItem('cached_stocks');
   const cFittingsJson = localStorage.getItem('cached_fittings_json');
   const cTime = localStorage.getItem('cached_sync_time') || 'Never';
-
   if (cStocks && cFittingsJson) {
     stockRegistry = parseCSV(cStocks);
     fittingsRegistry = parseGoogleSheetsJSON(JSON.parse(cFittingsJson));
@@ -789,56 +747,33 @@ function startScanner() {
   if (html5QrcodeScanner) return;
   isProcessingScan = false;
   html5QrcodeScanner = new Html5Qrcode("reader");
-  
   html5QrcodeScanner.start(
     { facingMode: "environment" },
     { 
       fps: 30, 
-      formatsToSupport: [ 
-        Html5QrcodeSupportedFormats.CODE_128, 
-        Html5QrcodeSupportedFormats.CODE_39, 
-        Html5QrcodeSupportedFormats.QR_CODE 
-      ],
-      videoConstraints: {
-        facingMode: "environment", 
-        width: { ideal: 1920 },
-        height: { ideal: 1080 },
-        aspectRatio: { ideal: 1.7777777778 }
-      },
+      formatsToSupport: [ Html5QrcodeSupportedFormats.CODE_128, Html5QrcodeSupportedFormats.CODE_39, Html5QrcodeSupportedFormats.QR_CODE ],
+      videoConstraints: { facingMode: "environment", width: { ideal: 1920 }, height: { ideal: 1080 }, aspectRatio: { ideal: 1.7777777778 } },
       qrbox: function(viewfinderWidth, viewfinderHeight) {
         let minEdge = Math.min(viewfinderWidth, viewfinderHeight);
         let boxSize = Math.floor(minEdge * 0.75);
         return { width: boxSize, height: Math.floor(boxSize * 0.5) };
-      },
-      experimentalFeatures: { useBarCodeDetectorIfSupported: true }
+      }
     }, 
     onScanSuccess
   ).catch(() => { metaDisplay.textContent = "Camera initialization failed."; });
 }
 
 function startInlineScanner(targetType) {
-  stopScanner(); 
-  stopInlineScanner(); 
-  
+  stopScanner(); stopInlineScanner(); 
   currentScanTargetField = targetType;
   document.getElementById('inlineScannerBox').style.display = 'block';
-  
   inlineFinderScanner = new Html5Qrcode("finderReader");
   inlineFinderScanner.start(
     { facingMode: "environment" },
     { 
       fps: 25,
-      formatsToSupport: [ 
-        Html5QrcodeSupportedFormats.CODE_128, 
-        Html5QrcodeSupportedFormats.CODE_39, 
-        Html5QrcodeSupportedFormats.QR_CODE 
-      ],
-      videoConstraints: {
-        facingMode: "environment", 
-        width: { ideal: 1920 },
-        height: { ideal: 1080 },
-        aspectRatio: { ideal: 1.7777777778 }
-      },
+      formatsToSupport: [ Html5QrcodeSupportedFormats.CODE_128, Html5QrcodeSupportedFormats.CODE_39, Html5QrcodeSupportedFormats.QR_CODE ],
+      videoConstraints: { facingMode: "environment", width: { ideal: 1920 }, height: { ideal: 1080 }, aspectRatio: { ideal: 1.7777777778 } },
       qrbox: function(viewfinderWidth, viewfinderHeight) {
         let minEdge = Math.min(viewfinderWidth, viewfinderHeight);
         let boxSize = Math.floor(minEdge * 0.75);
@@ -860,25 +795,15 @@ function onInlineScanSuccess(decodedText) {
   let scannedText = decodedText.trim();
   playBeep('success');
   stopInlineScanner();
-
-  fittingsSearchBox.value = '';
-  
-  if (currentScanTargetField === 'qr') {
-    searchBox.value = scannedText;
+  if (scannedText.startsWith('0') && scannedText.length > 1) {
+    searchBox.value = scannedText.replace(/^0+/, '');
   } else {
-    if (scannedText.startsWith('0') && scannedText.length > 1) {
-      searchBox.value = scannedText.replace(/^0+/, '');
-    } else {
-      searchBox.value = scannedText;
-    }
+    searchBox.value = scannedText;
   }
   renderResults();
-
   setTimeout(() => {
     const anchor = document.getElementById('resultsContainerLocationAnchor');
-    if (anchor) {
-      anchor.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    }
+    if (anchor) anchor.scrollIntoView({ behavior: 'smooth', block: 'start' });
   }, 100);
 }
 
@@ -891,17 +816,22 @@ function switchMode(mode) {
     document.getElementById('finderScreen').classList.add('active');
     document.getElementById('footerBar').style.display = 'none';
     document.getElementById('countSession').style.display = 'none';
-    updateMetaDisplay();
-    stopScanner();
+    updateMetaDisplay(); stopScanner();
     setTimeout(() => { searchBox.focus(); }, 100);
-  } else {
+  } else if (mode === 'counter') {
     document.getElementById('counterTab').classList.add('active');
     document.getElementById('counterScreen').classList.add('active');
     document.getElementById('footerBar').style.display = 'flex';
     document.getElementById('countSession').style.display = 'block';
     document.getElementById('countSession').textContent = `Counts logged: ${countLogSession.length}`;
-    stopInlineScanner();
-    startScanner();
+    stopInlineScanner(); startScanner();
+  } else if (mode === 'consolidation') {
+    document.getElementById('consolidationTab').classList.add('active');
+    document.getElementById('consolidationScreen').classList.add('active');
+    document.getElementById('footerBar').style.display = 'none';
+    document.getElementById('countSession').style.display = 'none';
+    stopInlineScanner(); stopScanner();
+    setTimeout(() => { consolidationSearchBox.focus(); }, 100);
   }
 }
 
@@ -911,74 +841,45 @@ function updateMetaDisplay(customTime) {
 }
 
 function parseCSV(text) {
-  var lines = text.split(/\r?\n/);
-  var rows = [];
-  if (lines.length < 2) return [];
+  var lines = text.split(/\r?\n/); var rows = []; if (lines.length < 2) return [];
   for (var i = 1; i < lines.length; i++) {
-    var line = lines[i].trim();
-    if (!line) continue;
-    var cols = line.split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/);
-    if (cols.length < 4) continue; 
-    
+    var line = lines[i].trim(); if (!line) continue;
+    var cols = line.split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/); if (cols.length < 4) continue; 
     var partStr = (cols[3] || '').replace(/"/g, '').trim();
     var supplierRefStr = (cols[1] || '').replace(/"/g, '').trim();
     var itemNoStr = (cols[6] || '').replace(/"/g, '').trim();
     var subStr = (cols[5] || '').replace(/"/g, '').trim();
-    
-    var qtyRaw = cols[4] || '0';
-    var qty = parseInt(qtyRaw.replace(/[^0-9.\-]/g, ''), 10);
-    if (isNaN(qty)) qty = 0;
+    var qty = parseInt((cols[4] || '0').replace(/[^0-9.\-]/g, ''), 10); if (isNaN(qty)) qty = 0;
     
     rows.push({
-      id: 'std_' + i,
-      part: partStr,
-      boxes: 0,
-      qty: qty,
-      sub: subStr || 'MAIN',
-      itemNo: itemNoStr,
-      supplierRef: supplierRefStr,
-      rawLine: line.toLowerCase(), 
-      type: 'standard'
+      id: 'std_' + i, part: partStr, boxes: 0, qty: qty, sub: subStr || 'MAIN',
+      itemNo: itemNoStr, supplierRef: supplierRefStr, type: 'standard'
     });
   }
   return rows;
 }
 
 function parseGoogleSheetsJSON(dataMatrix) {
-  var rows = [];
-  if (!dataMatrix || dataMatrix.length < 2) return [];
-  
+  var rows = []; if (!dataMatrix || dataMatrix.length < 2) return [];
   var headers = dataMatrix[0].map(function(h) { return String(h).trim().toUpperCase(); });
   var partColIndex = headers.indexOf("PART NUMBER");
   var locColIndex = headers.indexOf("PALLET NO.");
   var boxesColIndex = headers.indexOf("NO. OF BOX");
   var totalColIndex = headers.indexOf("TOTAL");
   
-  if (partColIndex === -1 || locColIndex === -1 || boxesColIndex === -1 || totalColIndex === -1) {
-    return []; 
-  }
+  if (partColIndex === -1 || locColIndex === -1 || boxesColIndex === -1 || totalColIndex === -1) return [];
 
   for (var i = 1; i < dataMatrix.length; i++) {
-    var cols = dataMatrix[i];
-    if (!cols || cols.length === 0) continue;
-    
+    var cols = dataMatrix[i]; if (!cols || cols.length === 0) continue;
     var partStr = String(cols[partColIndex] || '').trim();
     var locStr = String(cols[locColIndex] || '').trim();
     var boxesVal = parseInt(cols[boxesColIndex], 10) || 0;
     var qtyVal = parseInt(cols[totalColIndex], 10) || 0;
-    
     if (!partStr) continue; 
     
     rows.push({
-      id: 'fit_' + i,
-      part: partStr,
-      boxes: boxesVal,
-      qty: qtyVal,
-      sub: locStr || 'FITTINGS',
-      itemNo: '',
-      supplierRef: '',
-      rawLine: (partStr + " " + locStr).toLowerCase(),
-      type: 'fittings'
+      id: 'fit_' + i, part: partStr, boxes: boxesVal, qty: qtyVal,
+      sub: locStr || 'FITTINGS', itemNo: '', supplierRef: '', type: 'fittings'
     });
   }
   return rows;
@@ -986,92 +887,73 @@ function parseGoogleSheetsJSON(dataMatrix) {
 
 searchBox.addEventListener('input', function() {
   clearTimeout(searchTimeout);
-  fittingsSearchBox.value = ''; 
   searchTimeout = setTimeout(renderResults, 150);
 });
 
-fittingsSearchBox.addEventListener('input', function() {
+consolidationSearchBox.addEventListener('input', function() {
   clearTimeout(searchTimeout);
-  searchBox.value = ''; 
-  searchTimeout = setTimeout(renderResults, 150);
+  searchTimeout = setTimeout(renderConsolidationResults, 150);
 });
 
+// 🔍 MAIN FINDER SCREEN: 100% READ-ONLY TO REJECT ACCIDENTAL POCKET TOUCHES
 function renderResults() {
   var query = searchBox.value.trim().toLowerCase();
-  var fitQuery = fittingsSearchBox.value.trim().toLowerCase();
-  
   tableBody.innerHTML = '';
+  if (!query) { tableWrap.style.display = 'none'; noResults.style.display = 'none'; return; }
   
-  if (!query && !fitQuery) {
-    tableWrap.style.display = 'none';
-    noResults.style.display = 'none';
-    return;
-  }
+  var filteredStocks = stockRegistry.filter(r => r.part.toLowerCase().includes(query) || r.itemNo.toLowerCase().includes(query) || r.supplierRef.toLowerCase().includes(query));
+  var filteredFittings = fittingsRegistry.filter(r => r.part.toLowerCase().includes(query));
+  var filtered = filteredStocks.concat(filteredFittings);
   
-  var filtered = [];
+  if (filtered.length === 0) { tableWrap.style.display = 'none'; noResults.style.display = 'block'; return; }
   
-  if (query) {
-    filtered = stockRegistry.filter(function(row) {
-      return row.part.toLowerCase().includes(query) || 
-             row.itemNo.toLowerCase().includes(query) || 
-             row.supplierRef.toLowerCase().includes(query);
-    });
-  } else if (fitQuery) {
-    filtered = fittingsRegistry.filter(function(row) {
-      return row.part.toLowerCase().includes(fitQuery);
-    });
-  }
-  
-  if (filtered.length === 0) {
-    tableWrap.style.display = 'none';
-    noResults.style.display = 'block';
-    return;
-  }
-  
-  tableWrap.style.display = 'block';
-  noResults.style.display = 'none';
+  tableWrap.style.display = 'block'; noResults.style.display = 'none';
   
   filtered.forEach(function(row) {
     var tr = document.createElement('tr');
-    
-    var activeTerm = query || fitQuery;
-    var displayPart = row.part;
-    if (activeTerm) {
-      var regex = new RegExp("(" + escapeRegExp(activeTerm) + ")", "gi");
-      displayPart = row.part.replace(regex, "<mark class='match'>$1</mark>");
-    }
-    
+    var regex = new RegExp("(" + escapeRegExp(query) + ")", "gi");
+    var displayPart = row.part.replace(regex, "<mark class='match'>$1</mark>");
     var isFit = (row.type === 'fittings');
-    var badgeClass = isFit ? "location-badge fittings-badge" : "location-badge";
     
-    if (isFit) {
-      tr.innerHTML = `
-        <td class="col-main"><strong>${displayPart}</strong></td>
-        <td class="col-boxes"><input type="number" class="inline-edit-input" value="${row.boxes}" onchange="updateLocalFittingMemory('${row.id}', 'boxes', this.value)" inputmode="numeric"/></td>
-        <td class="col-total"><input type="number" class="inline-edit-input" value="${row.qty}" onchange="updateLocalFittingMemory('${row.id}', 'qty', this.value)" inputmode="numeric"/></td>
-        <td class="col-save"><button class="row-save-btn" id="btn_${row.id}" onclick="pushRowToGoogleSheets('${row.id}')">💾</button></td>
-        <td class="col-sub"><span class="${badgeClass}">${row.sub}</span></td>
-      `;
-    } else {
-      tr.innerHTML = `
-        <td class="col-main">
-          <strong>${displayPart}</strong>
-          ${row.itemNo ? '<div style="font-size:11px; opacity:0.7;">Item: ' + row.itemNo + '</div>' : ''}
-          ${row.supplierRef ? '<div style="font-size:11px; opacity:0.7;">Ref: ' + row.supplierRef + '</div>' : ''}
-        </td>
-        <td class="col-boxes" style="opacity:0.4;">—</td>
-        <td class="col-total" style="font-weight:bold;">${row.qty}</td>
-        <td class="col-save" style="opacity:0.4;">—</td>
-        <td class="col-sub"><span class="${badgeClass}">${row.sub}</span></td>
-      `;
-    }
+    tr.innerHTML = `
+      <td class="col-main">
+        <strong>${displayPart}</strong>
+        ${row.itemNo ? '<div style="font-size:11px; opacity:0.7;">Item: ' + row.itemNo + '</div>' : ''}
+        ${row.supplierRef ? '<div style="font-size:11px; opacity:0.7;">Ref: ' + row.supplierRef + '</div>' : ''}
+      </td>
+      <td class="col-boxes" style="font-weight:bold; text-align:center;">${isFit ? row.boxes : '—'}</td>
+      <td class="col-total" style="font-weight:bold; text-align:center;">${row.qty}</td>
+      <td class="col-save" style="opacity:0.3; text-align:center;">🔒</td>
+      <td class="col-sub" style="text-align:center;"><span class="${isFit ? 'location-badge fittings-badge' : 'location-badge'}">${row.sub}</span></td>
+    `;
     tableBody.appendChild(tr);
   });
 }
 
-function escapeRegExp(string) {
-  return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+// 📦 TAB 3: CONSOLIDATION WORKFLOW - EDITABLE ENVIRONMENT FOR FITTINGS ONLY
+function renderConsolidationResults() {
+  var query = consolidationSearchBox.value.trim().toLowerCase();
+  conTableBody.innerHTML = '';
+  if (!query) { conTableWrap.style.display = 'none'; return; }
+  
+  var filtered = fittingsRegistry.filter(r => r.part.toLowerCase().includes(query));
+  if (filtered.length === 0) { conTableWrap.style.display = 'none'; return; }
+  
+  conTableWrap.style.display = 'block';
+  filtered.forEach(function(row) {
+    var tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td class="col-main"><strong>${row.part}</strong></td>
+      <td class="col-boxes"><input type="number" class="inline-edit-input" value="${row.boxes}" onchange="updateLocalFittingMemory('${row.id}', 'boxes', this.value)" inputmode="numeric"/></td>
+      <td class="col-total"><input type="number" class="inline-edit-input" value="${row.qty}" onchange="updateLocalFittingMemory('${row.id}', 'qty', this.value)" inputmode="numeric"/></td>
+      <td class="col-save"><button class="row-save-btn" id="btn_${row.id}" onclick="pushRowToGoogleSheets('${row.id}')">💾</button></td>
+      <td class="col-sub"><span class="location-badge fittings-badge">${row.sub}</span></td>
+    `;
+    conTableBody.appendChild(tr);
+  });
 }
+
+function escapeRegExp(string) { return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); }
 
 function updateLocalFittingMemory(id, field, value) {
   var parsed = parseInt(value, 10) || 0;
@@ -1084,26 +966,21 @@ function updateLocalFittingMemory(id, field, value) {
   }
 }
 
+// HANDLES BOTH LOCAL MEMORY UPDATES AND AUTOMATED ROW DELETION IF TOTAL QTY IS 0
 function pushRowToGoogleSheets(id) {
   var row = null;
   for (var i = 0; i < fittingsRegistry.length; i++) {
-    if (fittingsRegistry[i].id === id) {
-      row = fittingsRegistry[i];
-      break;
-    }
+    if (fittingsRegistry[i].id === id) { row = fittingsRegistry[i]; break; }
   }
   if (!row) return;
 
   var btnElement = document.getElementById("btn_" + id);
-  btnElement.disabled = true;
-  btnElement.innerHTML = "⏳";
+  btnElement.disabled = true; btnElement.innerHTML = "⏳";
 
   var callbackName = "jsonp_callback_" + Math.round(Math.random() * 1000000);
   
   window[callbackName] = function(response) {
-    clearTimeout(timeoutId);
-    delete window[callbackName];
-    document.body.removeChild(script);
+    clearTimeout(timeoutId); delete window[callbackName]; document.body.removeChild(script);
     
     if (response && response.result === "success") {
       playBeep('success');
@@ -1112,7 +989,7 @@ function pushRowToGoogleSheets(id) {
       
       var currentCache = JSON.parse(localStorage.getItem('cached_fittings_json') || '[]');
       if (currentCache.length > 0) {
-        var headers = currentCache[0].map(function(h) { return String(h).trim().toUpperCase(); });
+        var headers = currentCache[0].map(h => String(h).trim().toUpperCase());
         var pIdx = headers.indexOf("PART NUMBER");
         var lIdx = headers.indexOf("PALLET NO.");
         var bIdx = headers.indexOf("NO. OF BOX");
@@ -1120,27 +997,30 @@ function pushRowToGoogleSheets(id) {
         
         for (var k = 1; k < currentCache.length; k++) {
           if (String(currentCache[k][pIdx]).trim() === row.part && String(currentCache[k][lIdx]).trim() === row.sub) {
-            currentCache[k][bIdx] = row.boxes;
-            currentCache[k][tIdx] = row.qty;
+            if (row.qty === 0) {
+              // Auto-purge row out of your browser's persistent cache instantly
+              currentCache.splice(k, 1);
+              fittingsRegistry = fittingsRegistry.filter(r => r.id !== id);
+            } else {
+              currentCache[k][bIdx] = row.boxes;
+              currentCache[k][tIdx] = row.qty;
+            }
             break;
           }
         }
         localStorage.setItem('cached_fittings_json', JSON.stringify(currentCache));
       }
+      
       setTimeout(function() {
-        btnElement.innerHTML = "💾";
-        btnElement.style.background = "var(--accent-green)";
-        btnElement.disabled = false;
-      }, 2000);
+        renderConsolidationResults();
+        renderResults();
+      }, 800);
     } else {
       handleSyncFailure(btnElement);
     }
   };
 
-  var timeoutId = setTimeout(function() {
-    delete window[callbackName];
-    handleSyncFailure(btnElement);
-  }, 15000); 
+  var timeoutId = setTimeout(function() { delete window[callbackName]; handleSyncFailure(btnElement); }, 15000); 
 
   var script = document.createElement("script");
   script.src = GOOGLE_SHEETS_API_URL + 
@@ -1154,36 +1034,85 @@ function pushRowToGoogleSheets(id) {
   document.body.appendChild(script);
 }
 
+// MODULE B: SUBMITS & APPENDS A FRESH DATA ROW TO THE CLOUD DATABASE
+function submitNewPalletEntry() {
+  var part = document.getElementById('newPartNumber').value.trim();
+  var pallet = document.getElementById('newPalletNo').value.trim();
+  var boxes = parseInt(document.getElementById('newBoxes').value, 10) || 0;
+  var total = parseInt(document.getElementById('newTotalQty').value, 10) || 0;
+
+  if (!part || !pallet) { alert("Please complete both Part Number and Pallet No. fields."); return; }
+
+  var callbackName = "jsonp_callback_" + Math.round(Math.random() * 1000000);
+  metaDisplay.textContent = "⏳ Injecting asset entry into spreadsheet rows...";
+
+  window[callbackName] = function(response) {
+    clearTimeout(timeoutId); delete window[callbackName]; document.body.removeChild(script);
+    
+    if (response && response.result === "success") {
+      playBeep('success');
+      alert("Asset appended successfully onto custom pallet row!");
+      
+      // Inject new row entry straight inside your engine runtime to minimize syncing latency
+      var newId = 'fit_' + (fittingsRegistry.length + 1);
+      fittingsRegistry.push({ id: newId, part: part, boxes: boxes, qty: total, sub: pallet, itemNo: '', supplierRef: '', type: 'fittings' });
+      
+      var currentCache = JSON.parse(localStorage.getItem('cached_fittings_json') || '[]');
+      if (currentCache.length > 0) {
+        var headers = currentCache[0].map(h => String(h).trim().toUpperCase());
+        var rowArr = new Array(headers.length).fill("");
+        rowArr[headers.indexOf("PART NUMBER")] = part;
+        rowArr[headers.indexOf("PALLET NO.")] = pallet;
+        rowArr[headers.indexOf("NO. OF BOX")] = boxes;
+        rowArr[headers.indexOf("TOTAL")] = total;
+        currentCache.push(rowArr);
+        localStorage.setItem('cached_fittings_json', JSON.stringify(currentCache));
+      }
+
+      document.getElementById('newPartNumber').value = '';
+      document.getElementById('newPalletNo').value = '';
+      document.getElementById('newBoxes').value = '';
+      document.getElementById('newTotalQty').value = '';
+      
+      updateMetaDisplay();
+      renderConsolidationResults();
+      renderResults();
+    } else {
+      alert("Appended data push rejected by Google cloud environment.");
+      updateMetaDisplay();
+    }
+  };
+
+  var timeoutId = setTimeout(function() { delete window[callbackName]; alert("Cloud synchronization timed out."); updateMetaDisplay(); }, 15000);
+
+  var script = document.createElement("script");
+  script.src = GOOGLE_SHEETS_API_URL + 
+    "?action=addStock" +
+    "&partNumber=" + encodeURIComponent(part) +
+    "&location=" + encodeURIComponent(pallet) +
+    "&boxes=" + boxes +
+    "&totalQty=" + total +
+    "&callback=" + callbackName;
+    
+  document.body.appendChild(script);
+}
+
 function handleSyncFailure(btnElement) {
-  playBeep('fail');
-  btnElement.style.background = "#dc3545";
-  btnElement.innerHTML = "❌";
-  setTimeout(function() {
-    btnElement.innerHTML = "💾";
-    btnElement.style.background = "var(--accent-green)";
-    btnElement.disabled = false;
-  }, 2500);
+  playBeep('fail'); btnElement.style.background = "#dc3545"; btnElement.innerHTML = "❌";
+  setTimeout(function() { btnElement.innerHTML = "💾"; btnElement.style.background = "var(--accent-green)"; btnElement.disabled = false; }, 2500);
 }
 
 function playBeep(type) {
   try {
     var ctx = new (window.AudioContext || window.webkitAudioContext)();
-    var osc = ctx.createOscillator();
-    var gain = ctx.createGain();
-    osc.connect(gain);
-    gain.connect(ctx.destination);
-    
+    var osc = ctx.createOscillator(); var gain = ctx.createGain();
+    osc.connect(gain); gain.connect(ctx.destination);
     if (type === 'success') {
-      osc.frequency.setValueAtTime(880, ctx.currentTime);
-      gain.gain.setValueAtTime(0.1, ctx.currentTime);
-      osc.start();
-      osc.stop(ctx.currentTime + 0.1);
+      osc.frequency.setValueAtTime(880, ctx.currentTime); gain.gain.setValueAtTime(0.1, ctx.currentTime);
+      osc.start(); osc.stop(ctx.currentTime + 0.1);
     } else {
-      osc.type = 'sawtooth';
-      osc.frequency.setValueAtTime(220, ctx.currentTime);
-      gain.gain.setValueAtTime(0.15, ctx.currentTime);
-      osc.start();
-      osc.stop(ctx.currentTime + 0.25);
+      osc.type = 'sawtooth'; osc.frequency.setValueAtTime(220, ctx.currentTime); gain.gain.setValueAtTime(0.15, ctx.currentTime);
+      osc.start(); osc.stop(ctx.currentTime + 0.25);
     }
   } catch(e) {}
 }
@@ -1191,33 +1120,14 @@ function playBeep(type) {
 function onScanSuccess(decodedText) {
   if (isProcessingScan) return;
   var scanned = decodedText.trim();
-  
-  var match = null;
-  for (var i = 0; i < stockRegistry.length; i++) {
-    if (stockRegistry[i].part === scanned || stockRegistry[i].supplierRef === scanned) {
-      match = stockRegistry[i];
-      break;
-    }
-  }
-  if (!match) {
-    for (var j = 0; j < fittingsRegistry.length; j++) {
-      if (fittingsRegistry[j].part === scanned) {
-        match = fittingsRegistry[j];
-        break;
-      }
-    }
-  }
+  var match = stockRegistry.find(r => r.part === scanned || r.supplierRef === scanned) || fittingsRegistry.find(r => r.part === scanned);
   
   if (match) {
-    playBeep('success');
-    isProcessingScan = true;
-    activeScanMatch = match;
-    
+    playBeep('success'); isProcessingScan = true; activeScanMatch = match;
     document.getElementById('targetItemName').textContent = match.part;
     document.getElementById('targetSubLoc').textContent = match.sub;
     document.getElementById('targetSubLoc').className = match.type === 'fittings' ? "count-sub fittings-badge" : "count-sub";
     document.getElementById('targetMappingInfo').textContent = match.type === 'standard' ? "Ref: " + match.supplierRef : "Google Sheets Managed Asset Row";
-    
     document.getElementById('qtyInputField').value = '';
     document.getElementById('countOverlay').style.display = 'block';
   }
@@ -1229,36 +1139,21 @@ function adjustQty(amount) {
   input.value = Math.max(0, val + amount);
 }
 
-function dismissOverlay() {
-  document.getElementById('countOverlay').style.display = 'none';
-  activeScanMatch = null;
-  isProcessingScan = false;
-}
+function dismissOverlay() { document.getElementById('countOverlay').style.display = 'none'; activeScanMatch = null; isProcessingScan = false; }
 
 function commitCount() {
   if (!activeScanMatch) return;
   var val = parseInt(document.getElementById('qtyInputField').value, 10) || 0;
-  
-  countLogSession.unshift({
-    part: activeScanMatch.part,
-    loc: activeScanMatch.sub,
-    qty: val,
-    time: new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})
-  });
-  
+  countLogSession.unshift({ part: activeScanMatch.part, loc: activeScanMatch.sub, qty: val, time: new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) });
   localStorage.setItem('ms_count_session_logs', JSON.stringify(countLogSession));
   document.getElementById('countSession').textContent = "Counts logged: " + countLogSession.length;
-  
-  renderCountLogList();
-  dismissOverlay();
+  renderCountLogList(); dismissOverlay();
 }
 
 function renderCountLogList() {
-  var list = document.getElementById('logRegistryList');
-  list.innerHTML = '';
+  var list = document.getElementById('logRegistryList'); list.innerHTML = '';
   countLogSession.forEach(function(item) {
-    var div = document.createElement('div');
-    div.className = 'log-item';
+    var div = document.createElement('div'); div.className = 'log-item';
     div.innerHTML = `<div><strong>${item.part}</strong> <small style="opacity:0.6;">(${item.loc})</small></div> <div style="font-weight:800; color:var(--accent-green);">Qty: ${item.qty} <span style="font-size:10px; font-weight:normal; color:var(--muted); margin-left:4px;">${item.time}</span></div>`;
     list.appendChild(div);
   });
@@ -1266,63 +1161,38 @@ function renderCountLogList() {
 
 function triggerNewSessionManually() {
   if (confirm("Clear terminal and start fresh warehouse auditing session?")) {
-    countLogSession = [];
-    localStorage.removeItem('ms_count_session_logs');
-    document.getElementById('countSession').textContent = "Counts logged: 0";
-    renderCountLogList();
+    countLogSession = []; localStorage.removeItem('ms_count_session_logs');
+    document.getElementById('countSession').textContent = "Counts logged: 0"; renderCountLogList();
   }
 }
-
-function clearCounts() {
-  triggerNewSessionManually();
-}
+function clearCounts() { triggerNewSessionManually(); }
 
 function exportCountsToCSV() {
-  if (countLogSession.length === 0) {
-    alert("No audit counts available to export.");
-    return;
-  }
+  if (countLogSession.length === 0) { alert("No audit counts available to export."); return; }
   var csvContent = "data:text/csv;charset=utf-8,PART NUMBER,LOCATION/PALLET,AUDITED COUNT,TIMESTAMP\n";
-  countLogSession.forEach(function(r) {
-    csvContent += `"${r.part}","${r.loc}",${r.qty},"${r.time}"\n`;
-  });
-  var encodedUri = encodeURI(csvContent);
-  var link = document.createElement("a");
-  link.setAttribute("href", encodedUri);
-  link.setAttribute("download", "Audit_Counts_" + new Date().toISOString().slice(0,10) + ".csv");
-  document.body.appendChild(link);
-  link.click();
-  document.body.removeChild(link);
+  countLogSession.forEach(r => { csvContent += `"${r.part}","${r.loc}",${r.qty},"${r.time}"\n`; });
+  var encodedUri = encodeURI(csvContent); var link = document.createElement("a");
+  link.setAttribute("href", encodedUri); link.setAttribute("download", "Audit_Counts_" + new Date().toISOString().slice(0,10) + ".csv");
+  document.body.appendChild(link); link.click(); document.body.removeChild(link);
 }
 
-function stopScanner() {
-  if (html5QrcodeScanner) {
-    html5QrcodeScanner.stop().then(function() { html5QrcodeScanner = null; }).catch(function(){});
-  }
-}
+function stopScanner() { if (html5QrcodeScanner) { html5QrcodeScanner.stop().then(function() { html5QrcodeScanner = null; }).catch(function(){}); } }
 
 window.addEventListener('DOMContentLoaded', function() {
   initThemeAndWallpaper();
-  fetchDailyQuote();
-  
   var storedLogs = localStorage.getItem('ms_count_session_logs');
   if (storedLogs) {
-    countLogSession = JSON.parse(storedLogs);
-    renderCountLogList();
+    countLogSession = JSON.parse(storedLogs); renderCountLogList();
     document.getElementById('startupInterceptModal').style.display = 'flex';
   }
-  
-  loadCachedDatabases();
-  fetchInventoryDatabases();
+  loadCachedDatabases(); fetchInventoryDatabases();
 });
 
 function resolveIntercept(choice) {
   document.getElementById('startupInterceptModal').style.display = 'none';
   if (choice === 'purge') {
-    countLogSession = [];
-    localStorage.removeItem('ms_count_session_logs');
-    document.getElementById('countSession').textContent = "Counts logged: 0";
-    renderCountLogList();
+    countLogSession = []; localStorage.removeItem('ms_count_session_logs');
+    document.getElementById('countSession').textContent = "Counts logged: 0"; renderCountLogList();
   }
 }
 </script>
