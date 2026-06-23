@@ -296,9 +296,10 @@
     
     th { background: var(--th-bg); font-weight: 700; color: var(--muted); font-size: 13px; }
     
-    th.col-main, td.col-main { width: 52%; }
-    th.col-qty, td.col-qty { width: 23%; text-align: center; }
-    th.col-sub, td.col-sub { width: 25%; text-align: center; }
+    th.col-main, td.col-main { width: 44%; }
+    th.col-boxes, td.col-boxes { width: 18%; text-align: center; }
+    th.col-total, td.col-total { width: 20%; text-align: center; }
+    th.col-sub, td.col-sub { width: 18%; text-align: center; }
 
     mark.match { background: #ffeb3b; color: #000; padding: 1px 3px; border-radius: 3px; font-weight: bold; }
     [data-theme="dark"] mark.match { background: #f59e0b; }
@@ -322,24 +323,23 @@
       display: flex;
       align-items: center;
       justify-content: center;
-      gap: 6px;
+      gap: 4px;
     }
     .inline-edit-input {
-      width: 55px !important;
-      padding: 4px 2px !important;
-      font-size: 15px !important;
+      width: 100% !important;
+      max-width: 65px !important;
+      padding: 6px 4px !important;
+      font-size: 14px !important;
       font-weight: bold !important;
       text-align: center !important;
       border: 2px solid #8b5cf6 !important;
-      border-radius: 4px !important;
+      border-radius: 6px !important;
+      background: var(--panel) !important;
+      color: var(--text) !important;
+      margin-bottom: 0 !important;
     }
-    .edit-qty-btn {
-      background: none;
-      border: none;
-      color: #8b5cf6;
-      cursor: pointer;
-      font-size: 15px;
-      padding: 2px;
+    [data-theme="dark"] .inline-edit-input {
+      border-color: #3b82f6 !important;
     }
 
     .alertBox { 
@@ -525,8 +525,9 @@
           <thead>
             <tr>
               <th class="col-main">Part Number Map / Cross-Ref</th>
-              <th class="col-qty">Stock</th>
-              <th class="col-sub">SubLocation</th>
+              <th class="col-boxes">Box Count</th>
+              <th class="col-total">Total Qty</th>
+              <th class="col-sub">Pallet/Sub</th>
             </tr>
           </thead>
           <tbody id="tableBody"></tbody>
@@ -912,7 +913,9 @@ function parseCSV(text) {
     if (isNaN(qty)) qty = 0;
     
     rows.push({
+      id: 'std_' + i,
       part: partStr,
+      boxes: 0,
       qty: qty,
       sub: subStr || 'MAIN',
       itemNo: itemNoStr,
@@ -930,19 +933,28 @@ function parseGoogleSheetsJSON(dataMatrix) {
   
   for (var i = 1; i < dataMatrix.length; i++) {
     var cols = dataMatrix[i];
-    if (cols.length < 7) continue; 
+    if (cols.length < 4) continue; 
     
-    var qtyRaw = String(cols[6]) || '0'; 
+    var partStr = String(cols[2] || '').trim();
+    if (!partStr || partStr.toLowerCase() === 'part number') continue;
+
+    var boxesRaw = cols.length >= 6 ? String(cols[5]) : '0';
+    var boxes = parseInt(boxesRaw.replace(/[^0-9.\-]/g, ''), 10);
+    if (isNaN(boxes)) boxes = 0;
+
+    var qtyRaw = cols.length >= 7 ? String(cols[6]) : '0'; 
     var qty = parseInt(qtyRaw.replace(/[^0-9.\-]/g, ''), 10);
     if (isNaN(qty)) qty = 0;
     
     rows.push({
-      part: String(cols[2]).trim(),       
+      id: 'fit_' + i,
+      part: partStr,       
+      boxes: boxes,
       qty: qty,
-      sub: String(cols[3]).trim() || 'MAIN', 
+      sub: String(cols[3] || '').trim() || 'MAIN', 
       itemNo: '',
       supplierRef: '',
-      rawLine: String(cols[2]).toLowerCase(),
+      rawLine: partStr.toLowerCase(),
       type: 'fittings'
     });
   }
@@ -956,6 +968,19 @@ function highlightText(sourceText, query) {
   let idx = txt.toLowerCase().indexOf(q);
   if (idx === -1) return sourceText;
   return txt.substring(0, idx) + "<mark class='match'>" + txt.substring(idx, idx + q.length) + "</mark>" + txt.substring(idx + q.length);
+}
+
+function updateLiveRowValue(type, id, property, newValue) {
+  var intVal = parseInt(newValue, 10);
+  if (isNaN(intVal) || intVal < 0) intVal = 0;
+
+  if (type === 'fittings') {
+    var match = fittingsRegistry.find(r => r.id === id);
+    if (match) match[property] = intVal;
+  } else {
+    var match = stockRegistry.find(r => r.id === id);
+    if (match) match[property] = intVal;
+  }
 }
 
 function renderResults() {
@@ -1006,10 +1031,38 @@ function renderResults() {
                          `<strong>Ref:</strong> ${highlightText(row.supplierRef, q)}`;
     }
     
-    var tdQty = document.createElement('td');
-    tdQty.className = 'col-qty';
-    tdQty.style.textAlign = 'center';
-    tdQty.innerHTML = `<strong>${row.qty}</strong>`;
+    // 6th Column (Box Count) -> Fully Editable Input Element
+    var tdBoxes = document.createElement('td');
+    tdBoxes.className = 'col-boxes';
+    tdBoxes.style.textAlign = 'center';
+    
+    var boxInput = document.createElement('input');
+    boxInput.type = 'number';
+    boxInput.className = 'inline-edit-input';
+    boxInput.value = row.boxes;
+    boxInput.min = 0;
+    boxInput.inputMode = 'numeric';
+    boxInput.addEventListener('input', function() {
+      updateLiveRowValue(row.type, row.id, 'boxes', boxInput.value);
+    });
+    tdBoxes.appendChild(boxInput);
+    
+    // 7th Column (Total Qty) -> Fully Editable Input Element
+    var tdTotal = document.createElement('td');
+    tdTotal.className = 'col-total';
+    tdTotal.style.textAlign = 'center';
+
+    var totalInput = document.createElement('input');
+    totalInput.type = 'number';
+    totalInput.className = 'inline-edit-input';
+    totalInput.value = row.qty;
+    totalInput.min = 0;
+    totalInput.inputMode = 'numeric';
+    totalInput.style.borderColor = 'var(--accent-green)';
+    totalInput.addEventListener('input', function() {
+      updateLiveRowValue(row.type, row.id, 'qty', totalInput.value);
+    });
+    tdTotal.appendChild(totalInput);
     
     var tdSub = document.createElement('td');
     tdSub.className = 'col-sub';
@@ -1021,7 +1074,8 @@ function renderResults() {
     tdSub.appendChild(badge);
     
     tr.appendChild(tdMain);
-    tr.appendChild(tdQty);
+    tr.appendChild(tdBoxes);
+    tr.appendChild(tdTotal);
     tr.appendChild(tdSub);
     tableBody.appendChild(tr);
   });
