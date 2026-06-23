@@ -1384,11 +1384,13 @@ function exportCountsToCSV() {
   document.body.removeChild(downloadLink);
 }
 
-window.onload = () => {
+window.onload = async () => {
   initThemeAndWallpaper();
-  fetchDailyQuote();
-  fetchInventoryDatabases();
   checkUnexportedSessionIntercept();
+  
+  // Siguraduhing TAPOS muna makuha ang bagong quote bago mag-download ng database
+  await fetchDailyQuote(); 
+  await fetchInventoryDatabases();
 };
 </script>
 </body>
