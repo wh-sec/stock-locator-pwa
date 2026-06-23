@@ -741,7 +741,7 @@ async function fetchInventoryDatabases() {
   try {
     const [stockRes, fitRes] = await Promise.all([
       fetch(CSV_URL + '?t=' + Date.now()),
-      fetch(GOOGLE_SHEETS_API_URL)
+      fetch(GOOGLE_SHEETS_API_URL + '?t=' + Date.now())
     ]);
 
     if (!stockRes.ok || !fitRes.ok) throw new Error("Server communication fault");
@@ -1000,7 +1000,7 @@ function updateLiveRowValue(type, id, property, newValue) {
   }
 }
 
-// NEW TRIGGER: Real-time Cloud Push Sync Engine
+// FIX: Dynamic JSONP Engine to dodge network drop issues
 async function pushRowToGoogleSheets(row, btnElement) {
   if (row.type !== 'fittings') {
     alert("Real-time cloud saving is only optimized for the Google Sheets Fittings Database matrix.");
@@ -1008,58 +1008,84 @@ async function pushRowToGoogleSheets(row, btnElement) {
   }
 
   btnElement.disabled = true;
-  var originalHtml = btnElement.innerHTML;
   btnElement.innerHTML = "⏳";
 
+  // Create a unique temporary callback function name
+  const callbackName = 'jsonp_sync_' + Math.round(Math.random() * 1000000);
+  
+  // Set up the timeout fallback structure 
+  const timeoutId = setTimeout(() => {
+    delete window[callbackName];
+    playBeep('fail');
+    alert("Sync Timeout. Check your App Script configuration.");
+    btnElement.innerHTML = "❌";
+    setTimeout(() => { btnElement.innerHTML = "💾"; btnElement.disabled = false; }, 2000);
+  }, 8000);
+
+  // Define the temporary callback handler
+  window[callbackName] = function(response) {
+    clearTimeout(timeoutId);
+    delete window[callbackName];
+    
+    if (response && response.result === 'success') {
+      playBeep('success');
+      btnElement.innerHTML = "=== SUCCESS ===";
+      
+      // Update local storage layout cache state
+      var cachedJson = localStorage.getItem('cached_fittings_json');
+      if (cachedJson) {
+        var parsed = JSON.parse(cachedJson);
+        for (var i = 1; i < parsed.length; i++) {
+          if (String(parsed[i][2]).trim() === row.part && String(parsed[i][3]).trim() === row.sub) {
+            parsed[i][5] = row.boxes; 
+            parsed[i][6] = row.qty;   
+            break;
+          }
+        }
+        localStorage.setItem('cached_fittings_json', JSON.stringify(parsed));
+      }
+      
+      setTimeout(() => { btnElement.innerHTML = "💾"; btnElement.disabled = false; }, 1500);
+    } else {
+      playBeep('fail');
+      alert("Sheet update failed: " + (response ? response.message : 'Unknown Error'));
+      btnElement.innerHTML = "❌";
+      setTimeout(() => { btnElement.innerHTML = "💾"; btnElement.disabled = false; }, 2000);
+    }
+  };
+
   try {
-    // Construct the standard expected payload format matching the Google Apps Script API endpoint specifications
-    var payload = {
+    // Build parameters that perfectly match your Sheet headers ("NO. OF BOX", "TOTAL")
+    const params = new URLSearchParams({
       action: "updateRow",
       partNumber: row.part,
       boxes: row.boxes,
       totalQty: row.qty,
-      location: row.sub
-    };
-
-    // Fire data using fetch API with no-cors or standard settings based on script deployment setup
-    var response = await fetch(GOOGLE_SHEETS_API_URL, {
-      method: "POST",
-      mode: "no-cors", 
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload)
+      location: row.sub,
+      callback: callbackName
     });
 
-    // Since 'no-cors' mode opaque responses won't return details, assume ok if execution context passes
-    playBeep('success');
-    btnElement.innerHTML = "✅";
+    // Inject as a script tag to completely bypass all browser CORS restrictions
+    const script = document.createElement('script');
+    script.src = `${GOOGLE_SHEETS_API_URL}?${params.toString()}`;
+    script.onerror = () => {
+      clearTimeout(timeoutId);
+      delete window[callbackName];
+      playBeep('fail');
+      alert("Network Connection Blocked. Script injection failed.");
+      btnElement.innerHTML = "❌";
+      setTimeout(() => { btnElement.innerHTML = "💾"; btnElement.disabled = false; }, 2000);
+    };
     
-    // Update local cache state memory so updates survive manual page re-indexing loops
-    var cachedJson = localStorage.getItem('cached_fittings_json');
-    if (cachedJson) {
-      var parsed = JSON.parse(cachedJson);
-      for (var i = 1; i < parsed.length; i++) {
-        if (String(parsed[i][2]).trim() === row.part && String(parsed[i][3]).trim() === row.sub) {
-          parsed[i][5] = row.boxes; // update box column 6
-          parsed[i][6] = row.qty;   // update total column 7
-          break;
-        }
-      }
-      localStorage.setItem('cached_fittings_json', JSON.stringify(parsed));
-    }
-
-    setTimeout(() => {
-      btnElement.innerHTML = "💾";
-      btnElement.disabled = false;
-    }, 1500);
+    document.body.appendChild(script);
+    // Clean up the script tag after it runs
+    setTimeout(() => document.body.removeChild(script), 2000);
 
   } catch (err) {
-    playBeep('fail');
-    alert("Cloud Sync Failed. Verify your network connections.");
+    clearTimeout(timeoutId);
+    delete window[callbackName];
     btnElement.innerHTML = "❌";
-    setTimeout(() => {
-      btnElement.innerHTML = "💾";
-      btnElement.disabled = false;
-    }, 2000);
+    btnElement.disabled = false;
   }
 }
 
@@ -1111,7 +1137,6 @@ function renderResults() {
                          `<strong>Ref:</strong> ${highlightText(row.supplierRef, q)}`;
     }
     
-    // 6th Column (Box Count) -> Fully Editable Input Element
     var tdBoxes = document.createElement('td');
     tdBoxes.className = 'col-boxes';
     tdBoxes.style.textAlign = 'center';
@@ -1127,7 +1152,6 @@ function renderResults() {
     });
     tdBoxes.appendChild(boxInput);
     
-    // 7th Column (Total Qty) -> Fully Editable Input Element
     var tdTotal = document.createElement('td');
     tdTotal.className = 'col-total';
     tdTotal.style.textAlign = 'center';
@@ -1144,7 +1168,6 @@ function renderResults() {
     });
     tdTotal.appendChild(totalInput);
 
-    // NEW COLUMN: Save / Sync Cloud Icon Button Column
     var tdSave = document.createElement('td');
     tdSave.className = 'col-save';
     tdSave.style.textAlign = 'center';
@@ -1182,7 +1205,6 @@ function renderResults() {
   });
 }
 
-// Attach Search Event Listeners
 searchBox.addEventListener('input', function() {
   fittingsSearchBox.value = '';
   clearTimeout(searchTimeout);
@@ -1195,7 +1217,6 @@ fittingsSearchBox.addEventListener('input', function() {
   searchTimeout = setTimeout(renderResults, 150);
 });
 
-// Sound Beep Player Utilities
 function playBeep(type) {
   try {
     var ctx = new (window.AudioContext || window.webkitAudioContext)();
@@ -1357,7 +1378,6 @@ function stopScanner() {
   }
 }
 
-// Initial Core Execution Hook
 window.addEventListener('DOMContentLoaded', () => {
   initThemeAndWallpaper();
   fetchDailyQuote();
