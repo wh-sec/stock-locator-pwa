@@ -57,7 +57,6 @@
       letter-spacing: 0.5px;
     }
 
-    /* Tab Controls Layout */
     .tab-bar {
       display: grid;
       grid-template-columns: 1fr 1fr 1fr;
@@ -95,7 +94,6 @@
       color: #fff;
     }
 
-    /* Global Notification Banners */
     .status-banner {
       padding: 10px 12px;
       border-radius: 6px;
@@ -120,16 +118,15 @@
     }
 
     .status-banner.alert-warn {
-      background: #fff8e1;
-      border-color: #ffe082;
-      color: #b78103;
+      background: rgba(240, 180, 41, 0.1);
+      border-color: rgba(240, 180, 41, 0.4);
+      color: var(--warn-yellow);
       font-size: 14px;
       font-weight: 700;
       justify-content: center;
       padding: 16px;
     }
 
-    /* Panels & Input Fields */
     .panel-box {
       background: var(--panel-dark);
       border: 1px solid var(--border-dark);
@@ -175,7 +172,6 @@
       gap: 10px;
     }
 
-    /* Buttons */
     .btn {
       border: none;
       border-radius: 6px;
@@ -193,7 +189,6 @@
     .btn-green { background: var(--accent-green); }
     .btn-grey { background: #30363d; color: var(--text-main); }
 
-    /* Tables */
     .table-wrap {
       border: 1px solid var(--border-dark);
       border-radius: 6px;
@@ -227,7 +222,6 @@
 
     tr:last-child td { border-bottom: none; }
 
-    /* Custom layout styling for items */
     .badge-part {
       background: #f0b429;
       color: #000;
@@ -246,7 +240,7 @@
     }
 
     .qty-box {
-      width: 45px;
+      width: 55px;
       background: #1f242c;
       border: 1px solid var(--accent-blue);
       color: #fff;
@@ -272,6 +266,20 @@
       display: flex;
       justify-content: flex-end;
       padding: 4px 0;
+    }
+    
+    /* Toggle Switch Styles */
+    .switch-label {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      cursor: pointer;
+      font-size: 13px;
+      font-weight: 600;
+    }
+    .switch-input {
+      margin-left: 10px;
+      accent-color: var(--accent-blue);
     }
   </style>
 </head>
@@ -307,8 +315,8 @@
         </div>
 
         <div class="shortcut-row">
-          <button class="btn btn-green">Scan QR Code</button>
-          <button class="btn btn-green">Scan Supplier Ref</button>
+          <button class="btn btn-green" onclick="triggerHardwareScanner('qr')">Scan QR Code</button>
+          <button class="btn btn-green" onclick="triggerHardwareScanner('supplier')">Scan Supplier Ref</button>
         </div>
 
         <button class="btn btn-grey" onclick="clearLookupFields()">Reset Search Fields</button>
@@ -318,7 +326,7 @@
         <table>
           <thead>
             <tr>
-              <th>Part / Location Map</th>
+              <th>Part Number Map / Cross-Ref</th>
               <th>Boxes</th>
               <th>Total Qty</th>
               <th>Loc</th>
@@ -351,7 +359,7 @@
           <table>
             <thead>
               <tr>
-                <th>Part / Cross-Ref</th>
+                <th>Part Number Map / Cross-Ref</th>
                 <th>Boxes</th>
                 <th>Total Qty</th>
                 <th>Sync</th>
@@ -396,11 +404,12 @@
       </div>
     </div>
 
-    <div class="panel-box" style="padding:12px; gap:10px; font-size:12px; font-weight:600;">
-      <label style="display:flex; align-items:center; gap:8px; cursor:pointer;">
-        <input type="checkbox" checked disabled style="accent-color:var(--accent-blue);"> Dark Mode
+    <div class="panel-box" style="padding:16px; gap:12px; font-size:12px; font-weight:600;">
+      <label class="switch-label">
+        <span>Dark Mode Theme</span>
+        <input type="checkbox" id="darkModeToggle" class="switch-input" checked onchange="toggleThemeMode(this.checked)">
       </label>
-      <button class="btn btn-grey" style="padding:6px 10px; font-size:11px; width:fit-content;">🔔 Activate Notifications</button>
+      <button id="notifBtn" class="btn btn-grey" style="padding:8px 12px; font-size:11px; width:fit-content;" onclick="requestNotificationAccess()">🔔 Activate Notifications</button>
     </div>
 
     <div class="utility-footer">
@@ -411,11 +420,12 @@
 
   <script>
     // ⚠️ REPLACE THIS WITH YOUR EXECUTABLE APPS SCRIPT WEB APP URL EVERYTIME YOU RE-DEPLOY!
-    const GOOGLE_SHEETS_API_URL = "https://script.google.com/macros/s/AKfycbxu21SoLE_R2Ou8h_gbprwtQ8-rRM8U9dYGQJqtf5m05P-21zMlIi_pCxCBcJAlHpIklA/exec";
+    const GOOGLE_SHEETS_API_URL = "https://script.google.com/macros/s/AKfycbzLXynnf2mDm9-PhR66fQIfn6we9Oy6v.../exec";
 
     // Application Data Registries
     let fittingsRegistry = [];
     let appActiveTab = "lookup";
+    let pushNotificationsAllowed = false;
 
     // DOM Selections
     const metaDisplay = document.getElementById('metaDisplay');
@@ -503,19 +513,17 @@
       }
     }
 
-    // Corrected Spreadsheet Mapping Rules to Match Your Layout Formats Exactly
+    // Spreadsheet Mapping Rules to Match Your Unique Column Sequences
     function parseGoogleSheetsJSON(dataMatrix) {
       let rows = []; 
       if (!dataMatrix || dataMatrix.length < 2) return [];
       
-      // Target header array string sanitization mapping
       let headers = dataMatrix[0].map(h => String(h).trim().toUpperCase());
       
-      // Adjusted Header Lookups tracking columns
-      let partColIndex = headers.indexOf("CODE");          // Your actual item identity sequence row column
-      let locColIndex = headers.indexOf("PART NUMBER");    // This is where your Pallet No. data is living
-      let boxesColIndex = headers.indexOf("PACK SIZE");     // Matches your Box Counts row column
-      let totalColIndex = headers.indexOf("NO. OF BOX");    // Contains total summation counts values row column
+      let partColIndex = headers.indexOf("CODE");          
+      let locColIndex = headers.indexOf("PART NUMBER");    
+      let boxesColIndex = headers.indexOf("PACK SIZE");     
+      let totalColIndex = headers.indexOf("NO. OF BOX");    
       
       if (partColIndex === -1 || locColIndex === -1 || boxesColIndex === -1 || totalColIndex === -1) {
         return [];
@@ -546,7 +554,7 @@
       return rows;
     }
 
-    // Render Matrix Filter logic for Search lookup screen
+    // Render Logic for Search lookup screen
     function renderResults() {
       const filterGen = generalSearchInput.value.trim().toLowerCase();
       const filterFit = fittingsSearchInput.value.trim().toLowerCase();
@@ -686,7 +694,6 @@
           playBeep('success');
           alert("Item successfully appended and indexed!");
           
-          // Clear form fields
           document.getElementById('newPartNumber').value = '';
           document.getElementById('newPalletNo').value = '';
           document.getElementById('newPackSize').value = '';
@@ -719,6 +726,41 @@
       document.body.appendChild(script);
     }
 
+    // Hardware Scanning Hooks
+    function triggerHardwareScanner(scanType) {
+      alert(`Starting built-in device camera scanner for: ${scanType.toUpperCase()} reference parsing...`);
+      // Hardware camera hooks can be implemented here safely
+    }
+
+    // Theme Management Toggles
+    function toggleThemeMode(isDark) {
+      if (isDark) {
+        document.documentElement.style.setProperty('--bg-dark', '#0d1117');
+        document.documentElement.style.setProperty('--panel-dark', '#161b22');
+        document.documentElement.style.setProperty('--text-main', '#c9d1d9');
+      } else {
+        document.documentElement.style.setProperty('--bg-dark', '#f6f8fa');
+        document.documentElement.style.setProperty('--panel-dark', '#ffffff');
+        document.documentElement.style.setProperty('--text-main', '#24292f');
+      }
+    }
+
+    // Local Web Push Notification Approvals
+    function requestNotificationAccess() {
+      if (!('Notification' in window)) {
+        alert("Web notifications are not supported by this browser interface.");
+        return;
+      }
+      Notification.requestPermission().then(permission => {
+        if (permission === 'granted') {
+          pushNotificationsAllowed = true;
+          document.getElementById('notifBtn').textContent = "🔔 Notifications Activated";
+          document.getElementById('notifBtn').style.background = "var(--accent-green)";
+          alert("Sync and scan notification warnings successfully enabled!");
+        }
+      });
+    }
+
     function clearLookupFields() {
       generalSearchInput.value = '';
       fittingsSearchInput.value = '';
@@ -743,7 +785,7 @@
         gain.connect(ctx.destination);
         
         if (type === 'success') {
-          osc.frequency.setValueAtTime(587.33, ctx.currentTime); // D5
+          osc.frequency.setValueAtTime(587.33, ctx.currentTime);
           gain.gain.setValueAtTime(0.1, ctx.currentTime);
           osc.start();
           osc.stop(ctx.currentTime + 0.12);
