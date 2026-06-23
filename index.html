@@ -930,16 +930,17 @@ function parseGoogleSheetsJSON(dataMatrix) {
   
   for (var i = 1; i < dataMatrix.length; i++) {
     var cols = dataMatrix[i];
-    if (cols.length < 8) continue;
+    // Changed from 8 to 7 to match your 7-column sheet layout (Columns A to G)
+    if (cols.length < 7) continue; 
     
-    var qtyRaw = String(cols[6]) || '0';
+    var qtyRaw = String(cols[6]) || '0'; // TOTAL (Column G, Index 6)
     var qty = parseInt(qtyRaw.replace(/[^0-9.\-]/g, ''), 10);
     if (isNaN(qty)) qty = 0;
     
     rows.push({
-      part: String(cols[2]).trim(),
+      part: String(cols[2]).trim(),       // PART NUMBER (Column C, Index 2)
       qty: qty,
-      sub: String(cols[7]).trim(),
+      sub: String(cols[3]).trim() || 'MAIN', // PALLET NO. (Column D, Index 3) mapped as SubLocation badge
       itemNo: '',
       supplierRef: '',
       rawLine: String(cols[2]).toLowerCase(),
