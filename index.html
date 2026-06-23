@@ -930,17 +930,16 @@ function parseGoogleSheetsJSON(dataMatrix) {
   
   for (var i = 1; i < dataMatrix.length; i++) {
     var cols = dataMatrix[i];
-    // Changed from 8 to 7 to match your 7-column sheet layout (Columns A to G)
     if (cols.length < 7) continue; 
     
-    var qtyRaw = String(cols[6]) || '0'; // TOTAL (Column G, Index 6)
+    var qtyRaw = String(cols[6]) || '0'; 
     var qty = parseInt(qtyRaw.replace(/[^0-9.\-]/g, ''), 10);
     if (isNaN(qty)) qty = 0;
     
     rows.push({
-      part: String(cols[2]).trim(),       // PART NUMBER (Column C, Index 2)
+      part: String(cols[2]).trim(),       
       qty: qty,
-      sub: String(cols[3]).trim() || 'MAIN', // PALLET NO. (Column D, Index 3) mapped as SubLocation badge
+      sub: String(cols[3]).trim() || 'MAIN', 
       itemNo: '',
       supplierRef: '',
       rawLine: String(cols[2]).toLowerCase(),
@@ -952,186 +951,249 @@ function parseGoogleSheetsJSON(dataMatrix) {
 
 function highlightText(sourceText, query) {
   if (!query) return sourceText;
-  let idx = sourceText.toLowerCase().indexOf(query.toLowerCase());
+  let txt = String(sourceText);
+  let q = query.toLowerCase();
+  let idx = txt.toLowerCase().indexOf(q);
   if (idx === -1) return sourceText;
-  return sourceText.substring(0, idx) + 
-         '<mark class="match">' + sourceText.substring(idx, idx + query.length) + '</mark>' + 
-         sourceText.substring(idx + query.length);
-}
-
-async function handleFittingsQtyChange(inputElement, partName) {
-  let nextQty = parseInt(inputElement.value, 10);
-  if (isNaN(nextQty) || nextQty < 0) {
-    alert("Please enter a valid stock value.");
-    inputElement.value = "0";
-    nextQty = 0;
-  }
-
-  let originalIndex = fittingsRegistry.findIndex(r => r.part === partName);
-  if (originalIndex === -1) return;
-
-  let executeDeletion = false;
-  if (nextQty === 0) {
-    let confirmDelete = confirm(`⚠️ The stock will now be zero, delete part number "${partName}" from Google Sheets?`);
-    if (!confirmDelete) {
-      inputElement.value = fittingsRegistry[originalIndex].qty;
-      return;
-    }
-    executeDeletion = true;
-  }
-
-  inputElement.style.borderColor = '#eab308'; 
-
-  try {
-    const response = await fetch(GOOGLE_SHEETS_API_URL, {
-      method: 'POST',
-      mode: 'no-cors', 
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        part: partName,
-        qty: nextQty
-      })
-    });
-
-    if (executeDeletion) {
-      fittingsRegistry.splice(originalIndex, 1);
-    } else {
-      fittingsRegistry[originalIndex].qty = nextQty;
-    }
-
-    renderResults();
-
-  } catch (err) {
-    alert("Network sync fail. Could not update quantity on Google Sheets.");
-    inputElement.value = fittingsRegistry[originalIndex].qty;
-    renderResults();
-  }
+  return txt.substring(0, idx) + "<mark class='match'>" + txt.substring(idx, idx + q.length) + "</mark>" + txt.substring(idx + q.length);
 }
 
 function renderResults() {
-  var query = searchBox.value.trim();
-  var fitQuery = fittingsSearchBox.value.trim();
+  var q = searchBox.value.trim().toLowerCase();
+  var fq = fittingsSearchBox.value.trim().toLowerCase();
   
-  if (!query && !fitQuery) {
-    tableBody.innerHTML = '';
-    tableWrap.style.display = 'block';
+  tableBody.innerHTML = '';
+  
+  if (!q && !fq) {
+    tableWrap.style.display = 'none';
     noResults.style.display = 'none';
-    updateMetaDisplay();
     return;
   }
-
-  var html = '';
-  var displayCount = 0;
-
-  if (query) {
-    var lowerQuery = query.toLowerCase();
-    var activeStock = stockRegistry.filter(r => r.qty > 0);
-    
-    var matches = activeStock.filter(function(row) {
-      return row.part.toLowerCase().indexOf(lowerQuery) !== -1 || 
-             row.itemNo.toLowerCase().indexOf(lowerQuery) !== -1 ||
-             row.supplierRef.toLowerCase().indexOf(lowerQuery) !== -1 ||
-             row.rawLine.indexOf(lowerQuery) !== -1;
+  
+  var filtered = [];
+  
+  if (fq) {
+    filtered = fittingsRegistry.filter(function(row) {
+      return row.rawLine.indexOf(fq) !== -1;
     });
-
-    if (matches.length === 0) {
-      tableBody.innerHTML = '';
-      tableWrap.style.display = 'none';
-      noResults.style.display = 'block';
-      return;
-    }
-
-    tableWrap.style.display = 'block';
-    noResults.style.display = 'none';
-    displayCount = Math.min(matches.length, 60);
-    
-    for (var i = 0; i < displayCount; i++) {
-      var r = matches[i];
-      var displayPart = highlightText(r.part, query);
-      var displayItem = r.itemNo ? highlightText(r.itemNo, query) : '';
-      var displayRef = r.supplierRef ? highlightText(r.supplierRef, query) : '';
-
-      var descriptionHTML = '<div><strong style="font-size:15px; color:var(--text);">' + displayPart + '</strong></div>';
-      if (r.itemNo) descriptionHTML += '<div style="font-size: 11px; color: var(--muted); margin-top: 3px;">Item Number: ' + displayItem + '</div>';
-      if (r.supplierRef) descriptionHTML += '<div style="font-size: 11px; color: var(--muted);">Supplier Ref: ' + displayRef + '</div>';
-      
-      html += '<tr>' +
-                '<td class="col-main">' + descriptionHTML + '</td>' +
-                '<td class="col-qty"><strong style="font-size: 16px; color:var(--text);">' + r.qty + '</strong></td>' +
-                '<td class="col-sub"><span class="location-badge">' + r.sub + '</span></td>' +
-              '</tr>';
-    }
-  } 
-  else if (fitQuery) {
-    var lowerFitQuery = fitQuery.toLowerCase();
-    var fitMatches = fittingsRegistry.filter(function(row) {
-      return row.part.toLowerCase().indexOf(lowerFitQuery) !== -1;
+  } else if (q) {
+    filtered = stockRegistry.filter(function(row) {
+      return row.rawLine.indexOf(q) !== -1 || 
+             row.itemNo.toLowerCase().indexOf(q) !== -1 || 
+             row.supplierRef.toLowerCase().indexOf(q) !== -1;
     });
-
-    if (fitMatches.length === 0) {
-      tableBody.innerHTML = '';
-      tableWrap.style.display = 'none';
-      noResults.style.display = 'block';
-      return;
-    }
-
-    tableWrap.style.display = 'block';
-    noResults.style.display = 'none';
-    displayCount = Math.min(fitMatches.length, 60);
-    
-    for (var j = 0; j < displayCount; j++) {
-      var fr = fitMatches[j];
-      var displayFitPart = highlightText(fr.part, fitQuery);
-      
-      var fitDescriptionHTML = '<div><strong style="font-size:15px; color:var(--text);">' + displayFitPart + '</strong></div>';
-      fitDescriptionHTML += '<div style="font-size: 11px; color: #8b5cf6; font-weight: 600; margin-top: 3px;">Category: Fittings Stock (Google Sheet Sync)</div>';
-
-      var interactiveQtyHTML = `
-        <div class="inline-qty-edit-box">
-          <input type="number" class="inline-edit-input" value="${fr.qty}" min="0" onchange="handleFittingsQtyChange(this, '${fr.part.replace(/'/g, "\\'")}')" />
-          <button class="edit-qty-btn" title="Modify Stock">✏️</button>
-        </div>
-      `;
-
-      html += '<tr>' +
-                '<td class="col-main">' + fitDescriptionHTML + '</td>' +
-                '<td class="col-qty">' + interactiveQtyHTML + '</td>' +
-                '<td class="col-sub"><span class="location-badge fittings-badge">' + fr.sub + '</span></td>' +
-              '</tr>';
-    }
   }
-
-  tableBody.innerHTML = html;
+  
+  if (filtered.length === 0) {
+    tableWrap.style.display = 'none';
+    noResults.style.display = 'block';
+    return;
+  }
+  
+  tableWrap.style.display = 'block';
+  noResults.style.display = 'none';
+  
+  filtered.forEach(function(row) {
+    var tr = document.createElement('tr');
+    
+    var tdMain = document.createElement('td');
+    tdMain.className = 'col-main';
+    if (row.type === 'fittings') {
+      tdMain.innerHTML = `<strong>${highlightText(row.part, fq)}</strong>`;
+    } else {
+      tdMain.innerHTML = `<strong>PN:</strong> ${highlightText(row.part, q)}<br/>` +
+                         `<strong>Item No:</strong> ${highlightText(row.itemNo, q)}<br/>` +
+                         `<strong>Ref:</strong> ${highlightText(row.supplierRef, q)}`;
+    }
+    
+    var tdQty = document.createElement('td');
+    tdQty.className = 'col-qty';
+    tdQty.style.textAlign = 'center';
+    tdQty.innerHTML = `<strong>${row.qty}</strong>`;
+    
+    var tdSub = document.createElement('td');
+    tdSub.className = 'col-sub';
+    tdSub.style.textAlign = 'center';
+    
+    var badge = document.createElement('span');
+    badge.className = 'location-badge' + (row.type === 'fittings' ? ' fittings-badge' : '');
+    badge.textContent = row.sub;
+    tdSub.appendChild(badge);
+    
+    tr.appendChild(tdMain);
+    tr.appendChild(tdQty);
+    tr.appendChild(tdSub);
+    tableBody.appendChild(tr);
+  });
 }
 
+// Attach Search Event Listeners
 searchBox.addEventListener('input', function() {
   fittingsSearchBox.value = '';
   clearTimeout(searchTimeout);
-  searchTimeout = setTimeout(renderResults, 120);
+  searchTimeout = setTimeout(renderResults, 150);
 });
 
 fittingsSearchBox.addEventListener('input', function() {
   searchBox.value = '';
   clearTimeout(searchTimeout);
-  searchTimeout = setTimeout(renderResults, 120);
+  searchTimeout = setTimeout(renderResults, 150);
 });
 
+// Sound Beep Player Utilities
 function playBeep(type) {
   try {
-    let ctx = new (window.AudioContext || window.webkitAudioContext)();
-    let osc = ctx.createOscillator();
-    let gain = ctx.createGain();
-    osc.connect(gain); gain.connect(ctx.destination);
+    var ctx = new (window.AudioContext || window.webkitAudioContext)();
+    var osc = ctx.createOscillator();
+    var gain = ctx.createGain();
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    
     if (type === 'success') {
       osc.frequency.setValueAtTime(880, ctx.currentTime);
-      gain.gain.setValueAtTime(0.08, ctx.currentTime);
-      osc.start(); osc.stop(ctx.currentTime + 0.08);
+      gain.gain.setValueAtTime(0.1, ctx.currentTime);
+      osc.start();
+      osc.stop(ctx.currentTime + 0.1);
     } else {
       osc.frequency.setValueAtTime(220, ctx.currentTime);
-      gain.gain.setValueAtTime(0.15, ctx.currentTime);
-      osc.start(); osc.stop(ctx.currentTime + 0.2);
+      gain.gain.setValueAtTime(0.1, ctx.currentTime);
+      osc.start();
+      osc.stop(ctx.currentTime + 0.25);
     }
-  } catch(e){}
+  } catch(e) {}
+}
+
+function onScanSuccess(decodedText) {
+  if (isProcessingScan) return;
+  var scanned = decodedText.trim();
+  
+  var match = stockRegistry.find(function(row) {
+    return row.part.toLowerCase() === scanned.toLowerCase() || 
+           row.itemNo.toLowerCase() === scanned.toLowerCase() || 
+           row.supplierRef.toLowerCase() === scanned.toLowerCase();
+  });
+  
+  if (!match) {
+    match = fittingsRegistry.find(function(row) {
+      return row.part.toLowerCase() === scanned.toLowerCase();
+    });
+  }
+  
+  if (match) {
+    playBeep('success');
+    isProcessingScan = true;
+    activeScanMatch = match;
+    
+    document.getElementById('targetItemName').textContent = match.part;
+    document.getElementById('targetMappingInfo').textContent = match.itemNo ? `Item No: ${match.itemNo}` : 'Fittings Database Entry';
+    document.getElementById('targetSubLoc').textContent = match.sub;
+    document.getElementById('qtyInputField').value = '';
+    
+    document.getElementById('countOverlay').style.display = 'block';
+  } else {
+    playBeep('fail');
+    alert(`Scanned tag "${scanned}" is not linked to any active record.`);
+  }
+}
+
+function adjustQty(amt) {
+  var el = document.getElementById('qtyInputField');
+  var val = parseInt(el.value || '0', 10);
+  el.value = Math.max(0, val + amt);
+}
+
+function dismissOverlay() {
+  document.getElementById('countOverlay').style.display = 'none';
+  activeScanMatch = null;
+  isProcessingScan = false;
+}
+
+function commitCount() {
+  var el = document.getElementById('qtyInputField');
+  var countVal = parseInt(el.value, 10);
+  if (isNaN(countVal) || countVal < 0) {
+    alert("Please supply a valid quantity amount.");
+    return;
+  }
+  
+  countLogSession.unshift({
+    part: activeScanMatch.part,
+    location: activeScanMatch.sub,
+    qty: countVal,
+    time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+  });
+  
+  localStorage.setItem('ms_unsaved_logs', JSON.stringify(countLogSession));
+  renderLogs();
+  dismissOverlay();
+}
+
+function renderLogs() {
+  var list = document.getElementById('logRegistryList');
+  list.innerHTML = '';
+  document.getElementById('countSession').textContent = `Counts logged: ${countLogSession.length}`;
+  
+  countLogSession.forEach(function(item, index) {
+    var div = document.createElement('div');
+    div.className = 'log-item';
+    div.innerHTML = `<div><strong>${item.part}</strong> <br/><span style='font-size:11px; color:var(--muted);'>Loc: ${item.location} @ ${item.time}</span></div>` +
+                    `<div style='font-weight:bold; font-size:16px; color:var(--accent-green);'>${item.qty} pcs` +
+                    `<button onclick='deleteLog(${index})' style='margin-left:12px; color:#dc3545; background:none; border:none; cursor:pointer; font-weight:bold;'>✕</button></div>`;
+    list.appendChild(div);
+  });
+}
+
+function deleteLog(idx) {
+  countLogSession.splice(idx, 1);
+  localStorage.setItem('ms_unsaved_logs', JSON.stringify(countLogSession));
+  renderLogs();
+}
+
+function clearCounts() {
+  if (confirm("Permanently wipe current session count list?")) {
+    countLogSession = [];
+    localStorage.removeItem('ms_unsaved_logs');
+    renderLogs();
+  }
+}
+
+function triggerNewSessionManually() {
+  if (confirm("Wipe all active log entries to initialize a pristine session? Ensure data is downloaded first.")) {
+    countLogSession = [];
+    localStorage.removeItem('ms_unsaved_logs');
+    renderLogs();
+  }
+}
+
+function resolveIntercept(action) {
+  if (action === 'purge') {
+    countLogSession = [];
+    localStorage.removeItem('ms_unsaved_logs');
+  } else {
+    var saved = localStorage.getItem('ms_unsaved_logs');
+    if (saved) countLogSession = JSON.parse(saved);
+  }
+  document.getElementById('startupInterceptModal').style.display = 'none';
+  renderLogs();
+}
+
+function exportCountsToCSV() {
+  if (countLogSession.length === 0) {
+    alert("No active audit logs available to export.");
+    return;
+  }
+  var csvContent = "data:text/csv;charset=utf-8,PART NUMBER,LOCATION,AUDIT QUANTITY,TIME\n";
+  countLogSession.forEach(function(r) {
+    csvContent += `"${r.part}","${r.location}",${r.qty},"${r.time}"\n`;
+  });
+  
+  var encodedUri = encodeURI(csvContent);
+  var link = document.createElement("a");
+  link.setAttribute("href", encodedUri);
+  link.setAttribute("download", `Inventory_Audit_Counts_${new Date().toISOString().slice(0,10)}.csv`);
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
 }
 
 function stopScanner() {
@@ -1140,259 +1202,17 @@ function stopScanner() {
   }
 }
 
-function onScanSuccess(decodedText) {
-  if (isProcessingScan) return;
-  isProcessingScan = true;
-
-  try { html5QrcodeScanner.pause(true); } catch(e){}
-
-  let scannedQuery = decodedText.trim();
-  
-  if (scannedQuery.startsWith('0') && scannedQuery.length > 1) {
-    scannedQuery = scannedQuery.replace(/^0+/, '');
-  }
-  
-  let scannedQueryLower = scannedQuery.toLowerCase();
-  
-  let match = stockRegistry.find(row => {
-    return row.part.toLowerCase() === scannedQueryLower ||
-           row.itemNo.toLowerCase() === scannedQueryLower ||
-           row.supplierRef.toLowerCase() === scannedQueryLower ||
-           row.rawLine.indexOf(scannedQueryLower) !== -1;
-  });
-
-  if (!match) {
-    match = fittingsRegistry.find(row => {
-      return row.part.toLowerCase() === scannedQueryLower;
-    });
-  }
-
-  let qtyInput = document.getElementById('qtyInputField');
-  qtyInput.value = '';
-
-  if (match) {
-    playBeep('success');
-    activeScanMatch = match;
-    document.getElementById('targetTitleHeader').textContent = match.type === 'fittings' ? "Matched Fittings Database" : "Matched Database Reference";
-    document.getElementById('targetItemName').textContent = match.part;
-    document.getElementById('targetMappingInfo').textContent = match.type === 'fittings' ? `Category: Fittings Stock` : `ID: ${match.itemNo || 'N/A'} | Ref: ${match.supplierRef || 'N/A'}`;
-    document.getElementById('targetSubLoc').textContent = match.sub;
-    document.getElementById('targetSubLoc').className = match.type === 'fittings' ? "count-sub fittings-badge" : "count-sub";
-    
-    document.getElementById('countOverlay').style.display = 'block';
-    setTimeout(() => { qtyInput.focus(); }, 150);
-  } else {
-    playBeep('success'); 
-    activeScanMatch = {
-      part: scannedQuery,
-      itemNo: 'NOT IN MASTERLIST',
-      sub: 'MANUAL ENTRY',
-      supplierRef: 'N/A',
-      rawLine: scannedQueryLower,
-      type: 'standard'
-    };
-    
-    document.getElementById('targetTitleHeader').textContent = "⚠️ Unlisted Code Detected";
-    document.getElementById('targetItemName').textContent = scannedQuery;
-    document.getElementById('targetMappingInfo').textContent = "Tag missing from current CSV databases. Counting as manual entry.";
-    document.getElementById('targetSubLoc').textContent = "MANUAL ENTRY";
-    document.getElementById('targetSubLoc').className = "count-sub";
-    
-    document.getElementById('countOverlay').style.display = 'block';
-    setTimeout(() => { qtyInput.focus(); }, 150);
-  }
-}
-
-function adjustQty(amount) {
-  let field = document.getElementById('qtyInputField');
-  let val = parseInt(field.value, 10) || 0;
-  field.value = Math.max(0, val + amount);
-}
-
-function dismissOverlay() {
-  document.getElementById('countOverlay').style.display = 'none';
-  activeScanMatch = null;
-  resumeScanningEngine();
-}
-
-function resumeScanningEngine() {
-  isProcessingScan = false;
-  if (html5QrcodeScanner) {
-    try { html5QrcodeScanner.resume(); } catch(e){}
-  }
-}
-
-function commitCount() {
-  let qtyField = document.getElementById('qtyInputField');
-  let enteredQty = parseInt(qtyField.value, 10);
-
-  if (isNaN(enteredQty) || enteredQty < 0) {
-    alert("Please assign a valid quantity count.");
-    return;
-  }
-
-  const targetPart = activeScanMatch.part;
-  const targetSub = activeScanMatch.sub;
-
-  const existingLogIndex = countLogSession.findIndex(log => log.part === targetPart && log.location === targetSub);
-
-  if (existingLogIndex !== -1) {
-    countLogSession[existingLogIndex].counted += enteredQty;
-    countLogSession[existingLogIndex].time = new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
-  } else {
-    const newLog = {
-      date: new Date().toLocaleDateString(),
-      time: new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}),
-      part: targetPart,
-      itemNo: activeScanMatch.itemNo || 'FITTINGS',
-      location: targetSub,
-      counted: enteredQty
-    };
-    countLogSession.unshift(newLog);
-  }
-
-  saveLogsToCache();
-  renderLogTable();
-
-  document.getElementById('countSession').textContent = `Counts logged: ${countLogSession.length}`;
-  document.getElementById('countOverlay').style.display = 'none';
-  
-  activeScanMatch = null;
-  resumeScanningEngine();
-}
-
-function renderLogTable() {
-  const container = document.getElementById('logRegistryList');
-  if (countLogSession.length === 0) {
-    container.innerHTML = '<div style="text-align:center; padding:20px; font-size:13px; color:var(--muted);">No counts recorded in this terminal session yet.</div>';
-    return;
-  }
-
-  let html = '';
-  countLogSession.forEach((log, index) => {
-    html += `
-      <div class="log-item">
-        <div>
-          <div style="font-weight:700; font-size:14px;">${log.part}</div>
-          <div style="font-size:11px; color:var(--muted); margin-top:2px;">
-            Loc: <strong>${log.location}</strong> | Item: ${log.itemNo} | Time: ${log.time}
-          </div>
-        </div>
-        <div style="text-align:right;">
-          <span style="font-size:18px; font-weight:800; color:var(--accent-green); margin-right:12px;">${log.counted}</span>
-          <span style="color:#dc3545; font-weight:bold; cursor:pointer; font-size:13px;" onclick="deleteLogItem(${index})">✕</span>
-        </div>
-      </div>
-    `;
-  });
-  container.innerHTML = html;
-}
-
-function deleteLogItem(index) {
-  if(confirm("Remove this specific count record line?")) {
-    countLogSession.splice(index, 1);
-    saveLogsToCache();
-    renderLogTable();
-    document.getElementById('countSession').textContent = `Counts logged: ${countLogSession.length}`;
-  }
-}
-
-function clearCounts() {
-  if (confirm("Are you sure you want to clear current logs?")) {
-    countLogSession = [];
-    saveLogsToCache();
-    renderLogTable();
-    document.getElementById('countSession').textContent = `Counts logged: 0`;
-  }
-}
-
-function triggerNewSessionManually() {
-  if (confirm("This will wipe all existing unexported terminal count data lines to open a fresh sheet. Proceed?")) {
-    countLogSession = [];
-    localStorage.removeItem('ms_terminal_unexported_counts');
-    localStorage.removeItem('ms_terminal_session_date');
-    renderLogTable();
-    document.getElementById('countSession').textContent = `Counts logged: 0`;
-    alert("New session cleared and optimized!");
-  }
-}
-
-function saveLogsToCache() {
-  localStorage.setItem('ms_terminal_unexported_counts', JSON.stringify(countLogSession));
-}
-
-function checkUnexportedSessionIntercept() {
-  const cachedLogs = localStorage.getItem('ms_terminal_unexported_counts');
-  const savedDate = localStorage.getItem('ms_terminal_session_date');
-  const currentDateString = new Date().toLocaleDateString();
-
-  if (cachedLogs) {
-    const parsed = JSON.parse(cachedLogs);
-    if (parsed.length > 0) {
-      countLogSession = parsed;
-      if (savedDate && savedDate !== currentDateString) {
-        document.getElementById('interceptMessage').textContent = `You have remaining records (${parsed.length} items) saved in this mobile terminal from an earlier shift date (${savedDate}).`;
-        document.getElementById('startupInterceptModal').style.display = 'flex';
-      } else {
-        localStorage.setItem('ms_terminal_session_date', currentDateString);
-        renderLogTable();
-      }
-    }
-  } else {
-    localStorage.setItem('ms_terminal_session_date', currentDateString);
-  }
-}
-
-function resolveIntercept(choice) {
-  document.getElementById('startupInterceptModal').style.display = 'none';
-  const currentDateString = new Date().toLocaleDateString();
-  
-  if (choice === 'purge') {
-    countLogSession = [];
-    localStorage.removeItem('ms_terminal_unexported_counts');
-    alert("Prior work wiped cleanly.");
-  } else {
-    alert("Resuming prior terminal ledger.");
-  }
-  
-  localStorage.setItem('ms_terminal_session_date', currentDateString);
-  renderLogTable();
-  document.getElementById('countSession').textContent = `Counts logged: ${countLogSession.length}`;
-}
-
-function exportCountsToCSV() {
-  if (countLogSession.length === 0) {
-    alert("No logged count data to construct spreadsheet rows.");
-    return;
-  }
-
-  let csvContent = "data:text/csv;charset=utf-8,";
-  csvContent += "Date,Time Logged,Part Number,Item Number,SubLocation Shelf,Physical Counted Qty\r\n";
-
-  countLogSession.forEach(row => {
-    csvContent += `"${row.date}","${row.time}","${row.part}","${row.itemNo}","${row.location}",${row.counted}\r\n`;
-  });
-
-  const encodedUri = encodeURI(csvContent);
-  const downloadLink = document.createElement("a");
-  const currentFmtDate = new Date().toISOString().slice(0,10);
-  
-  downloadLink.setAttribute("href", encodedUri);
-  downloadLink.setAttribute("download", `AUDIT_COUNT_${currentFmtDate}.csv`);
-  document.body.appendChild(downloadLink);
-  
-  downloadLink.click();
-  document.body.removeChild(downloadLink);
-}
-
-window.onload = async () => {
+// Initial Core Execution Hook
+window.addEventListener('DOMContentLoaded', () => {
   initThemeAndWallpaper();
-  checkUnexportedSessionIntercept();
+  fetchDailyQuote();
+  fetchInventoryDatabases();
   
-  // Siguraduhing TAPOS muna makuha ang bagong quote bago mag-download ng database
-  await fetchDailyQuote(); 
-  await fetchInventoryDatabases();
-};
+  var savedLogs = localStorage.getItem('ms_unsaved_logs');
+  if (savedLogs && JSON.parse(savedLogs).length > 0) {
+    document.getElementById('startupInterceptModal').style.display = 'flex';
+  }
+});
 </script>
 </body>
 </html>
