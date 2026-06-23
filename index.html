@@ -291,15 +291,16 @@
       backdrop-filter: var(--glass-blur);
     }
     table { width: 100%; border-collapse: collapse; text-align: left; table-layout: fixed; }
-    th, td { padding: 12px 10px; border-bottom: 1px solid var(--border); border-right: 1px solid var(--border); vertical-align: middle; word-wrap: break-word; }
+    th, td { padding: 12px 6px; border-bottom: 1px solid var(--border); border-right: 1px solid var(--border); vertical-align: middle; word-wrap: break-word; }
     th:last-child, td:last-child { border-right: none; }
     
     th { background: var(--th-bg); font-weight: 700; color: var(--muted); font-size: 13px; }
     
-    th.col-main, td.col-main { width: 44%; }
+    th.col-main, td.col-main { width: 40%; }
     th.col-boxes, td.col-boxes { width: 18%; text-align: center; }
-    th.col-total, td.col-total { width: 20%; text-align: center; }
-    th.col-sub, td.col-sub { width: 18%; text-align: center; }
+    th.col-total, td.col-total { width: 18%; text-align: center; }
+    th.col-save, td.col-save { width: 11%; text-align: center; }
+    th.col-sub, td.col-sub { width: 13%; text-align: center; }
 
     mark.match { background: #ffeb3b; color: #000; padding: 1px 3px; border-radius: 3px; font-weight: bold; }
     [data-theme="dark"] mark.match { background: #f59e0b; }
@@ -307,10 +308,10 @@
     .location-badge { 
       background: #10b981; 
       color: white; 
-      padding: 6px 8px; 
+      padding: 6px 4px; 
       border-radius: 6px; 
       font-weight: 700; 
-      font-size: 12px; 
+      font-size: 11px; 
       display: inline-block; 
       text-align: center;
       max-width: 100%;
@@ -319,17 +320,11 @@
       background: #8b5cf6; 
     }
 
-    .inline-qty-edit-box {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 4px;
-    }
     .inline-edit-input {
       width: 100% !important;
-      max-width: 65px !important;
-      padding: 6px 4px !important;
-      font-size: 14px !important;
+      max-width: 60px !important;
+      padding: 6px 2px !important;
+      font-size: 13px !important;
       font-weight: bold !important;
       text-align: center !important;
       border: 2px solid #8b5cf6 !important;
@@ -340,6 +335,27 @@
     }
     [data-theme="dark"] .inline-edit-input {
       border-color: #3b82f6 !important;
+    }
+
+    .row-save-btn {
+      background: var(--accent-green);
+      color: white;
+      border: none;
+      padding: 6px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 14px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 32px;
+      height: 32px;
+      transition: opacity 0.2s;
+    }
+    .row-save-btn:disabled {
+      background: #a0aec0;
+      opacity: 0.5;
+      cursor: not-allowed;
     }
 
     .alertBox { 
@@ -525,9 +541,10 @@
           <thead>
             <tr>
               <th class="col-main">Part Number Map / Cross-Ref</th>
-              <th class="col-boxes">Box Count</th>
+              <th class="col-boxes">Boxes</th>
               <th class="col-total">Total Qty</th>
-              <th class="col-sub">Pallet/Sub</th>
+              <th class="col-save">Sync</th>
+              <th class="col-sub">Loc</th>
             </tr>
           </thead>
           <tbody id="tableBody"></tbody>
@@ -983,6 +1000,69 @@ function updateLiveRowValue(type, id, property, newValue) {
   }
 }
 
+// NEW TRIGGER: Real-time Cloud Push Sync Engine
+async function pushRowToGoogleSheets(row, btnElement) {
+  if (row.type !== 'fittings') {
+    alert("Real-time cloud saving is only optimized for the Google Sheets Fittings Database matrix.");
+    return;
+  }
+
+  btnElement.disabled = true;
+  var originalHtml = btnElement.innerHTML;
+  btnElement.innerHTML = "⏳";
+
+  try {
+    // Construct the standard expected payload format matching the Google Apps Script API endpoint specifications
+    var payload = {
+      action: "updateRow",
+      partNumber: row.part,
+      boxes: row.boxes,
+      totalQty: row.qty,
+      location: row.sub
+    };
+
+    // Fire data using fetch API with no-cors or standard settings based on script deployment setup
+    var response = await fetch(GOOGLE_SHEETS_API_URL, {
+      method: "POST",
+      mode: "no-cors", 
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload)
+    });
+
+    // Since 'no-cors' mode opaque responses won't return details, assume ok if execution context passes
+    playBeep('success');
+    btnElement.innerHTML = "✅";
+    
+    // Update local cache state memory so updates survive manual page re-indexing loops
+    var cachedJson = localStorage.getItem('cached_fittings_json');
+    if (cachedJson) {
+      var parsed = JSON.parse(cachedJson);
+      for (var i = 1; i < parsed.length; i++) {
+        if (String(parsed[i][2]).trim() === row.part && String(parsed[i][3]).trim() === row.sub) {
+          parsed[i][5] = row.boxes; // update box column 6
+          parsed[i][6] = row.qty;   // update total column 7
+          break;
+        }
+      }
+      localStorage.setItem('cached_fittings_json', JSON.stringify(parsed));
+    }
+
+    setTimeout(() => {
+      btnElement.innerHTML = "💾";
+      btnElement.disabled = false;
+    }, 1500);
+
+  } catch (err) {
+    playBeep('fail');
+    alert("Cloud Sync Failed. Verify your network connections.");
+    btnElement.innerHTML = "❌";
+    setTimeout(() => {
+      btnElement.innerHTML = "💾";
+      btnElement.disabled = false;
+    }, 2000);
+  }
+}
+
 function renderResults() {
   var q = searchBox.value.trim().toLowerCase();
   var fq = fittingsSearchBox.value.trim().toLowerCase();
@@ -1063,6 +1143,26 @@ function renderResults() {
       updateLiveRowValue(row.type, row.id, 'qty', totalInput.value);
     });
     tdTotal.appendChild(totalInput);
+
+    // NEW COLUMN: Save / Sync Cloud Icon Button Column
+    var tdSave = document.createElement('td');
+    tdSave.className = 'col-save';
+    tdSave.style.textAlign = 'center';
+    
+    var saveBtn = document.createElement('button');
+    saveBtn.className = 'row-save-btn';
+    saveBtn.innerHTML = '💾';
+    saveBtn.title = 'Save modifications directly to Google Sheets database';
+    
+    if (row.type !== 'fittings') {
+      saveBtn.disabled = true; 
+      saveBtn.style.background = '#cbd5e1';
+    } else {
+      saveBtn.addEventListener('click', function() {
+        pushRowToGoogleSheets(row, saveBtn);
+      });
+    }
+    tdSave.appendChild(saveBtn);
     
     var tdSub = document.createElement('td');
     tdSub.className = 'col-sub';
@@ -1076,6 +1176,7 @@ function renderResults() {
     tr.appendChild(tdMain);
     tr.appendChild(tdBoxes);
     tr.appendChild(tdTotal);
+    tr.appendChild(tdSave);
     tr.appendChild(tdSub);
     tableBody.appendChild(tr);
   });
