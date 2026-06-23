@@ -3,20 +3,10 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>STOCK LOCATOR+ (TEST)</title>
+  <title>STOCK LOCATOR+ (TEST LAYOUT)</title>
 
   <link rel="manifest" href="manifest.json">
-
   <link rel="icon" type="image/png" sizes="192x192" href="./wh_icon.png">
-  <link rel="icon" type="image/png" sizes="512x512" href="./wh_icon.png">
-  <link rel="apple-touch-icon" sizes="180x180" href="./wh_icon.png">
-  <link rel="icon" type="image/png" sizes="32x32" href="./wh_icon.png">
-
-  <meta name="mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-title" content="STOCK LOCATOR+">
-  <meta name="theme-color" content="#0056b3">
-
   <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
 
   <style>
@@ -29,7 +19,6 @@
       --border: rgba(219, 226, 239, 0.7);
       --th-bg: rgba(241, 245, 249, 0.9);
       --accent-green: #10b981;
-      --accent-purple: #8b5cf6;
       --glass-blur: blur(12px);
       --bg-overlay: rgba(244, 246, 249, 0.4);
     }
@@ -44,23 +33,17 @@
       --bg-overlay: rgba(15, 17, 21, 0.75);
     }
     * { box-sizing: border-box; margin: 0; padding: 0; }
-    
-    html, body { min-height: 100vh; }
-    
     body { 
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; 
       background-color: var(--bg);
       background-position: center;
       background-size: cover;
       background-attachment: fixed;
-      background-repeat: no-repeat;
       color: var(--text); 
       padding: 12px; 
       padding-bottom: 90px; 
-      transition: background-color 0.2s ease;
       position: relative;
     }
-
     body::before {
       content: "";
       position: fixed;
@@ -68,849 +51,505 @@
       background: var(--bg-overlay);
       z-index: -1;
       pointer-events: none;
-      transition: background 0.2s ease;
     }
-
     .app-container { max-width: 750px; margin: 0 auto; position: relative; z-index: 1; }
-
-    .app-header {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      gap: 6px;
-      margin-bottom: 14px;
-      padding: 10px;
-    }
-    .header-main-row {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 12px;
-    }
-    .app-logo {
-      height: 38px;
-      width: auto;
-      object-fit: contain;
-    }
-    .app-title {
-      font-size: 24px;
-      font-weight: 800;
-      letter-spacing: -0.5px;
-      color: var(--text);
-      text-transform: uppercase;
-    }
-
-    .tabs-bar { 
-      display: flex; 
-      background: var(--panel); 
-      border: 1px solid var(--border); 
-      border-radius: 12px; 
-      padding: 5px; 
-      margin-bottom: 14px; 
-      box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); 
-      backdrop-filter: var(--glass-blur);
-      gap: 4px;
-    }
-    .tab-btn { 
-      flex: 1; 
-      padding: 12px 6px; 
-      text-align: center; 
-      font-size: 13px; 
-      font-weight: 700; 
-      border: none; 
-      background: transparent; 
-      color: var(--muted); 
-      cursor: pointer; 
-      border-radius: 8px; 
-      transition: all 0.2s ease; 
-    }
+    .app-header { display: flex; flex-direction: column; align-items: center; justify-content: center; margin-bottom: 14px; padding: 10px; }
+    .app-title { font-size: 24px; font-weight: 800; text-transform: uppercase; letter-spacing: -0.5px; cursor: pointer; }
     
+    .tabs-bar { display: flex; background: var(--panel); border: 1px solid var(--border); border-radius: 12px; padding: 5px; margin-bottom: 14px; backdrop-filter: var(--glass-blur); }
+    .tab-btn { flex: 1; padding: 14px; text-align: center; font-size: 15px; font-weight: 700; border: none; background: transparent; color: var(--muted); cursor: pointer; border-radius: 8px; }
     #finderTab.active { background: #0056b3; color: white; }
     #counterTab.active { background: var(--accent-green); color: white; }
-    #breakTab.active { background: var(--accent-purple); color: white; }
 
-    .app-screen { 
-      display: none; 
-    }
-    .app-screen.active { 
-      display: block; 
-    }
-
-    .panel-box { 
-      background: var(--panel); 
-      padding: 20px; 
-      border-radius: 12px; 
-      border: 1px solid var(--border); 
-      box-shadow: 0 4px 10px rgba(0,0,0,0.04); 
-      margin-bottom: 16px; 
-      backdrop-filter: var(--glass-blur);
-    }
-
-    .input-group {
-      margin-bottom: 14px;
-    }
-
-    label { 
-      font-weight: 700; 
-      font-size: 12px; 
-      color: var(--text); 
-      display: block; 
-      margin-bottom: 6px; 
-      text-transform: uppercase; 
-      letter-spacing: 0.5px;
-      opacity: 0.9;
-    }
+    .app-screen { display: none; }
+    .app-screen.active { display: block; }
+    .panel-box { background: var(--panel); padding: 20px; border-radius: 12px; border: 1px solid var(--border); margin-bottom: 16px; backdrop-filter: var(--glass-blur); }
     
-    input[type="text"], input[type="number"] { 
-      width: 100%; 
-      padding: 14px; 
-      font-size: 16px; 
-      border: 2px solid var(--border); 
-      border-radius: 8px; 
-      background: var(--panel); 
-      color: var(--text);
-      transition: border-color 0.2s;
-    }
-    input:focus { outline: none; border-color: var(--primary-accent); }
-
-    .shortcut-row { 
-      display: grid; 
-      grid-template-columns: 1fr 1fr; 
-      gap: 10px; 
-      margin-top: 14px; 
-    }
-    .action-sub-btn { 
-      padding: 12px; 
-      font-size: 14px; 
-      font-weight: 600; 
-      color: white; 
-      background: #198754; 
-      border: none; 
-      border-radius: 6px; 
-      cursor: pointer; 
-      text-align: center;
-    }
-    .action-sub-btn.reset { background: #4a5568; }
-    .shortcut-row .reset { grid-column: span 2; }
-
-    .inline-scanner-box {
-      display: none;
-      background: #000;
-      border-radius: 8px;
-      overflow: hidden;
-      margin-bottom: 14px;
-      position: relative;
-    }
-    .close-scan-btn {
-      position: absolute;
-      top: 10px;
-      right: 10px;
-      background: rgba(0,0,0,0.7);
-      color: white;
-      border: 1px solid #fff;
-      padding: 6px 12px;
-      border-radius: 4px;
-      cursor: pointer;
-      z-index: 10;
-      font-size: 12px;
-      font-weight: bold;
-    }
-
-    .preferences-container {
-      margin-top: 16px;
-      padding-top: 14px;
-      border-top: 1px dashed var(--border);
-      display: flex;
-      flex-direction: column;
-      gap: 12px;
-    }
-    .pref-row {
-      display: flex;
-      align-items: center;
-      justify-content: flex-start;
-      gap: 10px;
-      width: 100%;
-      flex-wrap: wrap;
-    }
-    .custom-file-upload {
-      display: inline-block;
-      padding: 8px 12px;
-      cursor: pointer;
-      background: var(--th-bg);
-      border: 1px solid var(--border);
-      border-radius: 6px;
-      font-size: 12px;
-      font-weight: bold;
-      color: var(--text);
-    }
-    .reset-bg-link {
-      font-size: 12px;
-      color: #dc3545;
-      text-decoration: none;
-      cursor: pointer;
-      font-weight: bold;
-      background: rgba(220, 53, 69, 0.1);
-      padding: 8px 12px;
-      border-radius: 6px;
-      border: 1px solid rgba(220, 53, 69, 0.2);
-      display: inline-block;
-      height: auto;
-      line-height: normal;
-    }
-
-    .table-wrap { 
-      overflow-x: auto; 
-      background: var(--panel); 
-      border-radius: 12px; 
-      border: 1px solid var(--border); 
-      box-shadow: 0 4px 6px -1px rgba(0,0,0,0.02);
-      backdrop-filter: var(--glass-blur);
-    }
-    table { width: 100%; border-collapse: collapse; text-align: left; table-layout: fixed; }
-    th, td { padding: 12px 10px; border-bottom: 1px solid var(--border); border-right: 1px solid var(--border); vertical-align: middle; word-wrap: break-word; }
-    th:last-child, td:last-child { border-right: none; }
+    label { font-weight: 700; font-size: 12px; display: block; margin-bottom: 6px; text-transform: uppercase; }
+    input[type="text"], input[type="number"] { width: 100%; padding: 14px; font-size: 16px; border: 2px solid var(--border); border-radius: 8px; background: var(--panel); color: var(--text); margin-bottom: 14px; }
     
-    th { background: var(--th-bg); font-weight: 700; color: var(--muted); font-size: 13px; }
-    th.col-main, td.col-main { width: 52%; }
-    th.col-qty, td.col-qty { width: 23%; text-align: center; }
-    th.col-sub, td.col-sub { width: 25%; text-align: center; }
+    .shortcut-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    .action-sub-btn { padding: 12px; font-size: 14px; font-weight: 600; color: white; background: #198754; border: none; border-radius: 6px; cursor: pointer; }
+    .action-sub-btn.reset { background: #4a5568; grid-column: span 2; }
 
-    mark.match { background: #ffeb3b; color: #000; padding: 1px 3px; border-radius: 3px; font-weight: bold; }
+    .table-wrap { display: none; background: var(--panel); border-radius: 12px; border: 1px solid var(--border); overflow-x: auto; }
+    table { width: 100%; border-collapse: collapse; }
+    th, td { padding: 12px 10px; border-bottom: 1px solid var(--border); text-align: left; }
+    th { background: var(--th-bg); font-size: 13px; color: var(--muted); }
+    mark.match { background: #ffeb3b; color: #000; font-weight: bold; }
     [data-theme="dark"] mark.match { background: #f59e0b; }
-    
-    .location-badge { 
-      background: #10b981; 
-      color: white; 
-      padding: 6px 8px; 
-      border-radius: 6px; 
-      font-weight: 700; 
-      font-size: 12px; 
-      display: inline-block; 
+
+    /* --- Easter Egg Breakroom Dashboard Panel --- */
+    #breakroomZone {
+      display: none;
+      background: rgba(15, 23, 42, 0.95);
+      color: #0f0;
+      font-family: 'Courier New', Courier, monospace;
+      padding: 20px;
+      border-radius: 12px;
+      border: 2px dashed #0f0;
+      margin-top: 20px;
     }
-    .location-badge.fittings-badge { background: var(--accent-purple); }
-
-    .inline-qty-edit-box { display: flex; align-items: center; justify-content: center; gap: 6px; }
-    .inline-edit-input { width: 55px !important; padding: 4px 2px !important; font-size: 15px !important; font-weight: bold !important; text-align: center !important; border: 2px solid var(--accent-purple) !important; border-radius: 4px !important; }
-    .edit-qty-btn { background: none; border: none; color: var(--accent-purple); cursor: pointer; font-size: 15px; }
-
-    .alertBox { display: none; background: #fff3cd; color: #856404; padding: 16px; border-radius: 8px; text-align: center; font-weight: bold; margin-top: 12px; border: 1px solid #ffeeba; }
-    #reader { width: 100%; background: #000; border-radius: 8px; overflow: hidden; }
+    .game-menu { display: flex; gap: 10px; margin-bottom: 15px; flex-wrap: wrap; }
+    .game-btn { background: #1e293b; color: #0f0; border: 1px solid #0f0; padding: 8px 16px; cursor: pointer; font-weight: bold; border-radius: 4px; }
+    .game-btn:hover, .game-btn.active { background: #0f0; color: #000; }
+    .game-stage { display: flex; flex-direction: column; align-items: center; margin-top: 10px; }
+    canvas { background: #000; border: 2px solid #334155; max-width: 100%; }
     
-    .count-overlay { display: none; background: var(--panel); border: 2px solid var(--accent-green); border-radius: 12px; padding: 16px; margin-bottom: 12px; position: relative; backdrop-filter: var(--glass-blur); }
-    .count-title { font-size: 12px; font-weight: bold; color: var(--muted); text-transform: uppercase; }
-    .count-item-name { font-size: 19px; font-weight: 800; margin: 4px 0; }
-    .count-sub { display: inline-block; background: #e0f2fe; color: #0369a1; font-weight: bold; padding: 4px 8px; border-radius: 4px; font-size: 12px; margin-bottom: 12px; }
+    /* Tic Tac Toe Grid UI */
+    .ttt-board { display: grid; grid-template-columns: repeat(3, 80px); gap: 5px; margin-top: 10px; }
+    .ttt-cell { width: 80px; height: 80px; background: #1e293b; border: 1px solid #0f0; display: flex; align-items: center; justify-content: center; font-size: 2rem; font-weight: bold; color: #0f0; cursor: pointer; }
+    .ttt-cell:hover { background: rgba(0,255,0,0.1); }
     
-    .input-row { display: flex; gap: 6px; align-items: center; margin-bottom: 12px; }
-    .qty-input { flex: 1; font-size: 22px; font-weight: bold; text-align: center; }
-    .mod-btn { padding: 12px; font-size: 15px; font-weight: bold; border: 1px solid var(--border); background: var(--th-bg); color: var(--text); border-radius: 6px; cursor: pointer; }
-
-    .action-row { display: flex; gap: 6px; }
-    .btn { flex: 1; padding: 12px; font-size: 14px; font-weight: bold; border: none; border-radius: 6px; cursor: pointer; }
-    .btn-save { background: var(--accent-green); color: white; }
-    .btn-cancel { background: #dc3545; color: white; }
-
-    .log-item { background: var(--panel); padding: 12px; border-radius: 8px; border: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; backdrop-filter: var(--glass-blur); }
-    .session-actions-strip { display: flex; justify-content: space-between; align-items: center; margin: 14px 0 8px 0; }
-    .new-session-btn { background: #4a5568; color: white; border: none; padding: 6px 12px; font-size: 12px; font-weight: 700; border-radius: 6px; cursor: pointer; }
-    .clear-btn { background: none; border: none; color: #dc3545; cursor: pointer; font-weight: 600; padding: 4px; font-size: 12px; }
-
-    .intercept-modal-overlay { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0, 0, 0, 0.7); backdrop-filter: blur(4px); z-index: 99999; justify-content: center; align-items: center; padding: 20px; }
-    .intercept-box { background: var(--panel); border: 2px solid var(--primary-accent); padding: 24px; border-radius: 16px; max-width: 460px; width: 100%; box-shadow: 0 10px 25px rgba(0,0,0,0.3); text-align: center; backdrop-filter: var(--glass-blur); }
-    .intercept-btns { display: flex; flex-direction: column; gap: 10px; margin-top: 15px; }
-
-    .footer-bar { position: fixed; bottom: 0; left: 0; right: 0; height: 70px; background: var(--panel); border-top: 1px solid var(--border); display: flex; align-items: center; justify-content: center; padding: 0 12px; z-index: 1000; backdrop-filter: var(--glass-blur); }
-    .export-btn { width: 100%; max-width: 726px; background: var(--primary-accent); color: white; border: none; padding: 14px; font-size: 15px; font-weight: 700; border-radius: 8px; cursor: pointer; }
-
-    /* ==========================================================================
-       🆕 BREAK CORNER (THE PITSTOP) SPECIFIC STYLES
-       ========================================================================== */
-    .break-grid { display: grid; grid-template-columns: 1fr; gap: 14px; }
-    .break-card { background: var(--panel); border: 1px solid var(--border); border-radius: 12px; padding: 16px; text-align: center; }
-    .break-btn { background: var(--accent-purple); color: white; border: none; padding: 10px 16px; font-size: 14px; font-weight: bold; border-radius: 6px; cursor: pointer; margin-top: 10px; width: 100%; }
-    
-    /* 1. Quotes Box */
-    #pitstopQuoteDisplay { font-style: italic; font-size: 15px; min-height: 40px; display: flex; align-items: center; justify-content: center; margin-bottom: 8px; color: var(--text); }
-    
-    /* 2. Retro Snake Game Arena Layout */
-    .game-container { display: flex; flex-direction: column; align-items: center; gap: 8px; margin-top: 10px; }
-    #snakeCanvas { background: #111827; border: 2px solid var(--border); border-radius: 6px; display: block; max-width: 100%; }
-    .game-controls { display: grid; grid-template-columns: repeat(3, 1fr); width: 160px; gap: 6px; margin: 0 auto; }
-    .game-ctrl-btn { background: var(--th-bg); border: 1px solid var(--border); border-radius: 6px; padding: 12px; color: var(--text); font-weight: bold; cursor: pointer; font-size: 16px; }
-
-    /* 3. Breathing Exercise Circle */
-    .breathing-box { display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 20px 0; }
-    .breath-circle { width: 80px; height: 80px; background: rgba(139, 92, 246, 0.4); border: 2px solid var(--accent-purple); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 14px; color: var(--text); animation: breathCycle 8s infinite ease-in-out; }
-    @keyframes breathCycle {
-      0%, 100% { transform: scale(1); background: rgba(139, 92, 246, 0.3); }
-      50% { transform: scale(1.8); background: rgba(16, 185, 129, 0.5); border-color: var(--accent-green); }
-    }
+    .game-controls { margin-top: 12px; display: flex; gap: 10px; }
+    .ctrl-btn { background: #334155; color: #fff; border: none; padding: 6px 12px; cursor: pointer; border-radius: 4px; }
   </style>
 </head>
 <body>
 
-<div id="startupInterceptModal" class="intercept-modal-overlay">
-  <div class="intercept-box">
-    <h3 style="color: var(--text);">Unexported Counts Detected! ⏳</h3>
-    <p id="interceptMessage">Remaining logs saved from an earlier shift date.</p>
-    <div class="intercept-btns">
-      <button class="btn-choice continue" style="background:var(--primary-accent); color:white; padding:12px; border:none; border-radius:6px;" onclick="resolveIntercept('continue')">🔄 Continue Session</button>
-      <button class="btn-choice purge" style="background:#dc3545; color:white; padding:12px; border:none; border-radius:6px;" onclick="resolveIntercept('purge')">🧹 Wipe Data</button>
-    </div>
-  </div>
-</div>
-
 <div class="app-container">
-  
   <div class="app-header">
-    <div class="header-main-row">
-      <h1 class="app-title">STOCK LOCATOR+ <span style="font-size:12px; color:var(--accent-purple);">[TEST LAB]</span></h1>
-    </div>
+    <h1 class="app-title" id="secretHeaderTrigger">STOCK LOCATOR+ 🛠️</h1>
   </div>
-  
+
   <div class="tabs-bar">
     <button id="finderTab" class="tab-btn active" onclick="switchMode('finder')">🔍 Lookup</button>
-    <button id="counterTab" class="tab-btn" onclick="switchMode('counter')">📋 Audit</button>
-    <button id="breakTab" class="tab-btn" onclick="switchMode('break')">☕ Pitstop</button>
+    <button id="counterTab" class="tab-btn" onclick="switchMode('counter')">📋 Audit Scanner</button>
   </div>
 
-  <div style="display: flex; justify-content: space-between; font-size: 12px; color: var(--text); font-weight: 600; margin-bottom: 8px; padding: 0 4px; opacity:0.85;">
-    <div id="metaDisplay">Initializing layout files...</div>
-    <div id="countSession" style="display:none;">Counts logged: 0</div>
-  </div>
-
-  <!-- FINDER TAB SCREEN -->
   <div id="finderScreen" class="app-screen active">
     <div class="panel-box">
-      <div id="inlineScannerBox" class="inline-scanner-box">
-        <button class="close-scan-btn" onclick="stopInlineScanner()">✕ Close Camera</button>
-        <div id="finderReader" style="width:100%;"></div>
-      </div>
-      <div class="input-group">
-        <label for="searchBox">Search Part Number / Item No. / Supplier Reference</label>
-        <input id="searchBox" type="text" placeholder="DGN 3102C..." autofocus autocomplete="off"/>
-      </div>
-      <div class="input-group">
-        <label for="fittingsSearchBox" style="color: var(--accent-purple);">Search Part Number (For Fittings Stock)</label>
-        <input id="fittingsSearchBox" type="text" placeholder="15612-16-16N..." autocomplete="off"/>
-      </div>
-      <div class="shortcut-row">
-        <button class="action-sub-btn" onclick="startInlineScanner('qr')">Scan QR Code</button>
-        <button class="action-sub-btn" onclick="startInlineScanner('supplier')">Scan Supplier Ref</button>
-        <button class="action-sub-btn reset" onclick="resetSearchFields()">Reset Search Fields</button>
-      </div>
-      <div class="preferences-container">
-        <div class="pref-row">
-          <label class="custom-file-upload">
-            <input type="file" id="bgUploader" accept="image/*" style="display: none;" onchange="handleWallpaperUpload(event)" />
-            🖼️ Upload Custom Theme Image
-          </label>
-          <span id="resetBgBtn" class="reset-bg-link" style="display: none;" onclick="clearWallpaperTheme()">✕ Reset</span>
-        </div>
-        <div class="pref-row">
-          <input id="themeToggle" type="checkbox" style="width:18px; height:18px;" />
-          <label for="themeToggle" style="display:inline; text-transform:none;">Dark Mode</label>
-        </div>
-        <div class="sync-status-row">
-          <button class="clear-cache-link" onclick="clearAppCache()">♻️ Clear App Cache</button>
-        </div>
-      </div>
-    </div>
-    <div class="results-container" id="resultsContainerLocationAnchor">
-      <div class="table-wrap" id="tableWrap">
-        <table>
-          <thead>
-            <tr>
-              <th class="col-main">Part Number Map / Cross-Ref</th>
-              <th class="col-qty">Stock</th>
-              <th class="col-sub">SubLocation</th>
-            </tr>
-          </thead>
-          <tbody id="tableBody"></tbody>
-        </table>
-      </div>
-      <div id="noResults" class="alertBox">❌ No matching inventory items found.</div>
-    </div>
-  </div>
-
-  <!-- COUNTER TAB SCREEN -->
-  <div id="counterScreen" class="app-screen">
-    <div class="panel-box" style="padding:8px; margin-bottom:12px;">
-      <div id="reader"></div>
-    </div>
-    <div id="countOverlay" class="count-overlay">
-      <div id="targetTitleHeader" class="count-title">Matched Database Reference</div>
-      <div id="targetItemName" class="count-item-name">---</div>
-      <div id="targetMappingInfo" style="font-size:12px; color:var(--muted); margin-bottom:8px;">---</div>
-      <div id="targetSubLoc" class="count-sub">---</div>
-      <div class="input-row">
-        <button class="mod-btn" onclick="adjustQty(-1)">-1</button>
-        <input id="qtyInputField" type="number" class="qty-input" placeholder="0" min="0" inputmode="numeric"/>
-        <button class="mod-btn" onclick="adjustQty(1)">+1</button>
-        <button class="mod-btn" onclick="adjustQty(10)">+10</button>
-      </div>
-      <div class="action-row">
-        <button class="btn btn-cancel" onclick="dismissOverlay()">Cancel</button>
-        <button class="btn btn-save" onclick="commitCount()">Save Count</button>
-      </div>
-    </div>
-    <div class="session-actions-strip">
-      <button class="new-session-btn" onclick="triggerNewSessionManually()">🧹 Fresh Sheet</button>
-      <button class="clear-btn" onclick="clearCounts()">Clear Current Logs</button>
-    </div>
-    <div id="logRegistryList"></div>
-  </div>
-
-  <!-- 🆕 BREAK CORNER (THE PITSTOP) SCREEN -->
-  <div id="breakScreen" class="app-screen">
-    <div class="break-grid">
+      <label for="searchBox">Item Search</label>
+      <input id="searchBox" type="text" placeholder="Scan or Type Part Reference..." autocomplete="off"/>
       
-      <!-- 1. Spark Corner Card -->
-      <div class="break-card">
-        <label style="color: var(--accent-purple);">☕ The Quick Spark</label>
-        <div id="pitstopQuoteDisplay">Click below to load a mental spark or warehouse dynamic logic quote...</div>
-        <button class="break-btn" onclick="rollPitstopQuote()">Roll Quote ⚡</button>
+      <div class="shortcut-row">
+        <button class="action-sub-btn">Scan QR Code</button>
+        <button class="action-sub-btn">Scan Supplier Ref</button>
+        <button class="action-sub-btn reset" onclick="document.getElementById('searchBox').value=''; renderResults();">Reset</button>
       </div>
+    </div>
 
-      <!-- 2. Retro Snake Mini Game Card -->
-      <div class="break-card" style="padding: 12px;">
-        <label style="color: var(--accent-purple);">🎮 2-Minute Reset (Snake)</label>
-        <div class="game-container">
-          <div style="font-size: 13px; font-weight: bold;">Score: <span id="gameScore">0</span></div>
-          <canvas id="snakeCanvas" width="240" height="180"></canvas>
-          
-          <!-- Virtual D-Pad Mobile Control Keys -->
-          <div class="game-controls">
-            <div></div>
-            <button class="game-ctrl-btn" onclick="changeSnakeDir('UP')">▲</button>
-            <div></div>
-            <button class="game-ctrl-btn" onclick="changeSnakeDir('LEFT')">◀</button>
-            <button class="game-ctrl-btn" onclick="toggleSnakeGame()">⏯️</button>
-            <button class="game-ctrl-btn" onclick="changeSnakeDir('RIGHT')">▶</button>
-            <div></div>
-            <button class="game-ctrl-btn" onclick="changeSnakeDir('DOWN')">▼</button>
-            <div></div>
-          </div>
-        </div>
-      </div>
-
-      <!-- 3. Decompress Deep Breathe Loop Card -->
-      <div class="break-card">
-        <label style="color: var(--accent-purple);">🧘 Deep Breathing Reset</label>
-        <p style="font-size: 12px; color: var(--muted); margin-bottom: 12px;">Match your breath with the expanding layout sphere to calm down stress.</p>
-        <div class="breathing-box">
-          <div class="breath-circle" id="breathIndicator">Inhale</div>
-        </div>
-      </div>
-
+    <div class="table-wrap" id="tableWrap">
+      <table>
+        <thead><tr><th>Part Details</th><th>Qty</th><th>SubLocation</th></tr></thead>
+        <tbody id="tableBody"></tbody>
+      </table>
     </div>
   </div>
 
-</div>
+  <div id="counterScreen" class="app-screen">
+    <div class="panel-box">
+      <p style="text-align: center; color: var(--muted);">Audit interface active. Use terminal scanning configurations.</p>
+    </div>
+  </div>
 
-<div id="footerBar" class="footer-bar" style="display: none;">
-  <button class="export-btn" onclick="exportCountsToCSV()">📊 Download Counts Spreadsheet (.CSV)</button>
+  <div id="breakroomZone">
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; border-bottom:1px solid #0f0; padding-bottom:5px;">
+      <span>🕹️ SYSTEM BREAKROOM TERMINAL v3.1</span>
+      <button onclick="toggleBreakroom()" style="background:none; border:none; color:#f00; cursor:pointer; font-weight:bold;">[X] CLOSE</button>
+    </div>
+    
+    <div class="game-menu">
+      <button class="game-btn active" id="btn-snake" onclick="launchGame('snake')">🐍 Snake</button>
+      <button class="game-btn" id="btn-tetris" onclick="launchGame('tetris')">🧱 Tetris</button>
+      <button class="game-btn" id="btn-ttt" onclick="launchGame('ttt')">❌ Tic-Tac-Toe</button>
+    </div>
+
+    <div id="gameViewport" class="game-stage">
+      </div>
+  </div>
 </div>
 
 <script>
-const CSV_URL = 'https://raw.githubusercontent.com/wh-sec/stock-locator-pwa/main/stocks.csv';
-const GOOGLE_SHEETS_API_URL = 'https://script.google.com/macros/s/AKfycbxB9UGRO6c2xPzS5lQGY69J6drPa67sAWvut_XCQDzg9Tfth_OkdBLeSgZpau5oZxy3dQ/exec';
-
-var stockRegistry = [];
-var fittingsRegistry = [];
-var countLogSession = [];
-var activeScanMatch = null;
-var html5QrcodeScanner = null;
-var inlineFinderScanner = null;
-var currentScanTargetField = 'qr'; 
-var isProcessingScan = false; 
-
-var searchBox = document.getElementById('searchBox');
-var fittingsSearchBox = document.getElementById('fittingsSearchBox');
-var tableBody = document.getElementById('tableBody');
-var tableWrap = document.getElementById('tableWrap');
-var noResults = document.getElementById('noResults');
-var metaDisplay = document.getElementById('metaDisplay');
-var themeToggle = document.getElementById('themeToggle');
-var searchTimeout = null;
-
-var currentQuote = "Quality means doing it right when no one is looking.";
-var currentAuthor = "Henry Ford";
-
-const customBreakQuotes = [
-  { q: "Measure twice, cut once—especially on high-pressure lines.", a: "Warehouse Wisdom" },
-  { q: "An organized floor minimizes stress and maximizes accuracy.", a: "Logistics Pro" },
-  { q: "Take a deep breath. A clear mind catches unlisted part numbers immediately.", a: "Audit Lead" },
-  { q: "Efficiency is smart work, not rushing work.", a: "Peter Drucker" },
-  { q: "Great teams look out for each other on the floor. Safety first.", a: "Operations" }
-];
-
-function rollPitstopQuote() {
-  const rand = customBreakQuotes[Math.floor(Math.random() * customBreakQuotes.length)];
-  document.getElementById('pitstopQuoteDisplay').innerHTML = `"${rand.q}" <br><span style="font-size:11px; font-weight:bold; color:var(--accent-purple);">— ${rand.a}</span>`;
-}
-
-function initThemeAndWallpaper() {
-  const activeTheme = localStorage.getItem('ms_theme') || 'dark';
-  document.documentElement.setAttribute('data-theme', activeTheme);
-  themeToggle.checked = (activeTheme === 'dark');
-  const savedBg = localStorage.getItem('ms_custom_bg');
-  if (savedBg) applyActiveWallpaper(savedBg);
-}
-
-themeToggle.addEventListener('change', function() {
-  const nextTheme = themeToggle.checked ? 'dark' : 'light';
-  document.documentElement.setAttribute('data-theme', nextTheme);
-  localStorage.setItem('ms_theme', nextTheme);
-});
-
-function handleWallpaperUpload(event) {
-  const file = event.target.files[0];
-  if (!file) return;
-  const reader = new FileReader();
-  reader.onload = function(e) {
-    localStorage.setItem('ms_custom_bg', e.target.result);
-    applyActiveWallpaper(e.target.result);
-  };
-  reader.readAsDataURL(file);
-}
-
-function applyActiveWallpaper(base64Data) {
-  if (base64Data) {
-    document.body.style.backgroundImage = `url('${base64Data}')`;
-    document.getElementById('resetBgBtn').style.display = 'inline-block';
-  } else {
-    document.body.style.backgroundImage = 'none';
-    document.getElementById('resetBgBtn').style.display = 'none';
-  }
-}
-
-function clearWallpaperTheme() {
-  localStorage.removeItem('ms_custom_bg');
-  applyActiveWallpaper(null);
-  document.getElementById('bgUploader').value = '';
-}
-
-function resetSearchFields() {
-  searchBox.value = '';
-  fittingsSearchBox.value = '';
-  renderResults();
-  stopInlineScanner();
-  searchBox.focus();
-  fireStockUpdateNotification(); 
-}
-
-function fireStockUpdateNotification() {
-  if ("Notification" in window && Notification.permission === "granted") {
-    new Notification("📦 System Action Dynamic Signal", {
-      body: `Fields Reset. "${currentQuote}" — ${currentAuthor}`
-    });
-  }
-}
-
-async function fetchInventoryDatabases() {
-  try {
-    const [stockRes, fitRes] = await Promise.all([
-      fetch(CSV_URL + '?t=' + Date.now()),
-      fetch(GOOGLE_SHEETS_API_URL)
-    ]);
-    if (!stockRes.ok || !fitRes.ok) throw new Error("Fault");
-    const stockText = await stockRes.text();
-    const fittingsJson = await fitRes.json();
-    stockRegistry = parseCSV(stockText);
-    fittingsRegistry = parseGoogleSheetsJSON(fittingsJson);
-    localStorage.setItem('cached_stocks', stockText);
-    localStorage.setItem('cached_fittings_json', JSON.stringify(fittingsJson));
-    localStorage.setItem('cached_sync_time', new Date().toLocaleString());
-    updateMetaDisplay();
-  } catch (err) {
-    loadCachedDatabases();
-  }
-}
-
-function loadCachedDatabases() {
-  const cStocks = localStorage.getItem('cached_stocks');
-  const cFittingsJson = localStorage.getItem('cached_fittings_json');
-  const cTime = localStorage.getItem('cached_sync_time') || 'Never';
-  if (cStocks && cFittingsJson) {
-    stockRegistry = parseCSV(cStocks);
-    fittingsRegistry = parseGoogleSheetsJSON(JSON.parse(cFittingsJson));
-    updateMetaDisplay(cTime);
-  } else {
-    metaDisplay.textContent = '❌ Offline mode. Missing cache files.';
-  }
-}
-
-function clearAppCache() {
-  if (confirm("Clear terminal localized files?")) { localStorage.clear(); location.reload(); }
-}
-
-function switchMode(mode) {
-  document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
-  document.querySelectorAll('.app-screen').forEach(scr => scr.classList.remove('active'));
-  
-  stopScanner();
-  stopInlineScanner();
-  stopSnakeEngine(); 
-
-  if (mode === 'finder') {
-    document.getElementById('finderTab').classList.add('active');
-    document.getElementById('finderScreen').classList.add('active');
-    document.getElementById('footerBar').style.display = 'none';
-    document.getElementById('countSession').style.display = 'none';
-    updateMetaDisplay();
-    setTimeout(() => { searchBox.focus(); }, 100);
-  } else if (mode === 'counter') {
-    document.getElementById('counterTab').classList.add('active');
-    document.getElementById('counterScreen').classList.add('active');
-    document.getElementById('footerBar').style.display = 'flex';
-    document.getElementById('countSession').style.display = 'block';
-    startScanner();
-  } else if (mode === 'break') {
-    document.getElementById('breakTab').classList.add('active');
-    document.getElementById('breakScreen').classList.add('active');
-    document.getElementById('footerBar').style.display = 'none';
-    document.getElementById('countSession').style.display = 'none';
-    metaDisplay.textContent = "☕ Break Room Terminal Active";
-    rollPitstopQuote();
-    initBreathingTextController();
-  }
-}
-
-function updateMetaDisplay(customTime) {
-  const useTime = customTime || localStorage.getItem('cached_sync_time') || new Date().toLocaleString();
-  metaDisplay.textContent = `✅ Database Active (Synced: ${useTime})`;
-}
-
-function parseCSV(text) {
-  var lines = text.split(/\r?\n/);
-  var rows = [];
-  if (lines.length < 2) return [];
-  for (var i = 1; i < lines.length; i++) {
-    var line = lines[i].trim();
-    if (!line) continue;
-    var cols = line.split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/);
-    if (cols.length < 4) continue; 
-    rows.push({
-      part: (cols[3] || '').replace(/"/g, '').trim(),
-      qty: parseInt(cols[4] || '0', 10) || 0,
-      sub: (cols[5] || '').replace(/"/g, '').trim() || 'MAIN',
-      itemNo: (cols[6] || '').replace(/"/g, '').trim(),
-      supplierRef: (cols[1] || '').replace(/"/g, '').trim(),
-      rawLine: line.toLowerCase(), 
-      type: 'standard'
-    });
-  }
-  return rows;
-}
-
-function parseGoogleSheetsJSON(dataMatrix) {
-  var rows = [];
-  if (!dataMatrix || dataMatrix.length < 2) return [];
-  for (var i = 1; i < dataMatrix.length; i++) {
-    var cols = dataMatrix[i];
-    if (cols.length < 8) continue;
-    rows.push({
-      part: String(cols[2]).trim(),
-      qty: parseInt(String(cols[6]), 10) || 0,
-      sub: String(cols[7]).trim(),
-      itemNo: '', supplierRef: '', rawLine: String(cols[2]).toLowerCase(), type: 'fittings'
-    });
-  }
-  return rows;
-}
-
-function highlightText(sourceText, query) {
-  if (!query) return sourceText;
-  let idx = sourceText.toLowerCase().indexOf(query.toLowerCase());
-  if (idx === -1) return sourceText;
-  return sourceText.substring(0, idx) + '<mark class="match">' + sourceText.substring(idx, idx + query.length) + '</mark>' + sourceText.substring(idx + query.length);
-}
-
-function renderResults() {
-  var query = searchBox.value.trim();
-  var fitQuery = fittingsSearchBox.value.trim();
-  if (!query && !fitQuery) { tableBody.innerHTML = ''; tableWrap.style.display = 'block'; noResults.style.display = 'none'; return; }
-  var html = '';
-  if (query) {
-    var matches = stockRegistry.filter(r => r.qty > 0 && (r.part.toLowerCase().includes(query.toLowerCase()) || r.itemNo.toLowerCase().includes(query.toLowerCase())));
-    if (matches.length === 0) { tableBody.innerHTML = ''; tableWrap.style.display = 'none'; noResults.style.display = 'block'; return; }
-    tableWrap.style.display = 'block'; noResults.style.display = 'none';
-    matches.slice(0,40).forEach(r => {
-      html += `<tr><td><div><strong>${highlightText(r.part, query)}</strong></div></td><td>${r.qty}</td><td><span class="location-badge">${r.sub}</span></td></tr>`;
-    });
-  } else if (fitQuery) {
-    var fitMatches = fittingsRegistry.filter(r => r.part.toLowerCase().includes(fitQuery.toLowerCase()));
-    if (fitMatches.length === 0) { tableBody.innerHTML = ''; tableWrap.style.display = 'none'; noResults.style.display = 'block'; return; }
-    tableWrap.style.display = 'block'; noResults.style.display = 'none';
-    fitMatches.slice(0,40).forEach(fr => {
-      html += `<tr><td><div><strong>${highlightText(fr.part, fitQuery)}</strong></div></td><td>${fr.qty}</td><td><span class="location-badge fittings-badge">${fr.sub}</span></td></tr>`;
-    });
-  }
-  tableBody.innerHTML = html;
-}
-
-searchBox.addEventListener('input', () => { fittingsSearchBox.value = ''; clearTimeout(searchTimeout); searchTimeout = setTimeout(renderResults, 120); });
-fittingsSearchBox.addEventListener('input', () => { searchBox.value = ''; clearTimeout(searchTimeout); searchTimeout = setTimeout(renderResults, 120); });
-
-function startScanner() {
-  if (html5QrcodeScanner) return;
-  isProcessingScan = false;
-  html5QrcodeScanner = new Html5Qrcode("reader");
-  html5QrcodeScanner.start({ facingMode: "environment" }, { fps: 30, qrbox: { width: 200, height: 100 } }, onScanSuccess).catch(()=>{});
-}
-function stopScanner() { if (html5QrcodeScanner) { html5QrcodeScanner.stop().then(() => { html5QrcodeScanner = null; }).catch(()=>{}); } }
-function startInlineScanner(targetType) { stopScanner(); currentScanTargetField = targetType; document.getElementById('inlineScannerBox').style.display = 'block'; inlineFinderScanner = new Html5Qrcode("finderReader"); inlineFinderScanner.start({ facingMode: "environment" }, { fps: 25 }, onInlineScanSuccess).catch(()=>{}); }
-function stopInlineScanner() { if (inlineFinderScanner) { inlineFinderScanner.stop().then(() => { inlineFinderScanner = null; }).catch(()=>{}); } document.getElementById('inlineScannerBox').style.display = 'none'; }
-
-function onInlineScanSuccess(decodedText) { stopInlineScanner(); searchBox.value = decodedText.trim(); renderResults(); }
-function onScanSuccess(decodedText) {
-  let scanned = decodedText.trim();
-  activeScanMatch = { part: scanned, itemNo: 'Manual', sub: 'FLOOR', type: 'standard' };
-  document.getElementById('targetItemName').textContent = scanned;
-  document.getElementById('countOverlay').style.display = 'block';
-}
-function adjustQty(amt) { let f = document.getElementById('qtyInputField'); f.value = Math.max(0, (parseInt(f.value,10)||0)+amt); }
-defineBreathingTextController=()=>{}
-function dismissOverlay() { document.getElementById('countOverlay').style.display = 'none'; if(html5QrcodeScanner) html5QrcodeScanner.resume(); }
-function commitCount() {
-  let qty = parseInt(document.getElementById('qtyInputField').value, 10) || 0;
-  countLogSession.unshift({ date: new Date().toLocaleDateString(), time: new Date().toLocaleTimeString(), part: activeScanMatch.part, itemNo: activeScanMatch.itemNo, location: activeScanMatch.sub, counted: qty });
-  localStorage.setItem('ms_terminal_unexported_counts', JSON.stringify(countLogSession));
-  document.getElementById('countOverlay').style.display = 'none';
-  document.getElementById('countSession').textContent = `Counts logged: ${countLogSession.length}`;
-  if(html5QrcodeScanner) html5QrcodeScanner.resume();
-}
-function triggerNewSessionManually() { countLogSession = []; localStorage.removeItem('ms_terminal_unexported_counts'); document.getElementById('countSession').textContent = "Counts logged: 0"; }
-function clearCounts() { countLogSession = []; document.getElementById('countSession').textContent = "Counts logged: 0"; }
-function resolveIntercept(c) { document.getElementById('startupInterceptModal').style.display='none'; if(c==='purge') triggerNewSessionManually(); }
-
-/* ==========================================================================
-   🆕 SCRIPTING LOGIC FOR RETRO SNAKE GAME PIPELINE
-   ========================================================================== */
-var canvas = document.getElementById("snakeCanvas");
-var ctx = canvas.getContext("2d");
-var gameInterval = null;
-var snake = [];
-var food = {};
-var dx = 10, dy = 0;
-var currentScore = 0;
-var isGameActive = false;
-
-function toggleSnakeGame() {
-  if (isGameActive) {
-    stopSnakeEngine();
-  } else {
-    startSnakeEngine();
-  }
-}
-
-function startSnakeEngine() {
-  snake = [{x: 60, y: 60}, {x: 50, y: 60}, {x: 40, y: 60}];
-  dx = 10; dy = 0;
-  currentScore = 0;
-  document.getElementById("gameScore").textContent = currentScore;
-  generateFoodCoordinates();
-  clearInterval(gameInterval);
-  gameInterval = setInterval(runSnakeCycle, 110); 
-  isGameActive = true;
-}
-
-function stopSnakeEngine() {
-  clearInterval(gameInterval);
-  isGameActive = false;
-  ctx.fillStyle = "rgba(0,0,0,0.5)";
-  ctx.fillRect(0, 0, canvas.width, canvas.height);
-  ctx.fillStyle = "#fff";
-  ctx.font = "14px sans-serif";
-  ctx.fillText("PAUSED / GAME OVER", 50, 95);
-}
-
-function runSnakeCycle() {
-  if (hasGameEnded()) {
-    stopSnakeEngine();
-    return;
-  }
-  clearCanvasContainer();
-  drawFoodNode();
-  moveSnakeVector();
-  drawSnakeBody();
-}
-
-function clearCanvasContainer() {
-  ctx.fillStyle = "#111827";
-  ctx.fillRect(0, 0, canvas.width, canvas.height);
-}
-
-function drawSnakeBody() {
-  snake.forEach((part, index) => {
-    ctx.fillStyle = index === 0 ? "#8b5cf6" : "#a78bfa"; 
-    ctx.fillRect(part.x, part.y, 9, 9);
-  });
-}
-
-function moveSnakeVector() {
-  const head = {x: snake[0].x + dx, y: snake[0].y + dy};
-  snake.unshift(head);
-  if (snake[0].x === food.x && snake[0].y === food.y) {
-    currentScore += 10;
-    document.getElementById("gameScore").textContent = currentScore;
-    generateFoodCoordinates();
-  } else {
-    snake.pop();
-  }
-}
-
-function changeSnakeDir(dir) {
-  if (dir === 'LEFT' && dx === 0)  { dx = -10; dy = 0; }
-  if (dir === 'RIGHT' && dx === 0) { dx = 10;  dy = 0; }
-  if (dir === 'UP' && dy === 0)    { dx = 0;   dy = -10; }
-  if (dir === 'DOWN' && dy === 0)  { dx = 0;   dy = 10; }
-}
-
-function generateFoodCoordinates() {
-  food.x = Math.floor(Math.random() * (canvas.width / 10)) * 10;
-  food.y = Math.floor(Math.random() * (canvas.height / 10)) * 10;
-}
-
-function drawFoodNode() {
-  ctx.fillStyle = "#10b981"; 
-  ctx.fillRect(food.x, food.y, 9, 9);
-}
-
-function hasGameEnded() {
-  for (let i = 4; i < snake.length; i++) {
-    if (snake[i].x === snake[0].x && snake[i].y === snake[0].y) return true;
-  }
-  return snake[0].x < 0 || snake[0].x >= canvas.width || snake[0].y < 0 || snake[0].y >= canvas.height;
-}
-
-/* ==========================================================================
-   🆕 SCRIPTING LOGIC FOR ANIMATED BREATHING EXERCISE TEXTS
-   ========================================================================== */
-var breatheInterval = null;
-function initBreathingTextController() {
-  const label = document.getElementById("breathIndicator");
-  if(!label) return;
-  label.textContent = "Inhale";
-  clearInterval(breatheInterval);
-  
-  breatheInterval = setInterval(() => {
-    if(label.textContent === "Inhale") {
-      label.textContent = "Hold";
-      setTimeout(() => { if(label) label.textContent = "Exhale"; }, 2000);
-    } else {
-      label.textContent = "Inhale";
+  // --- Standard UI System Setup Logic ---
+  var clickCount = 0;
+  document.getElementById('secretHeaderTrigger').addEventListener('click', function() {
+    clickCount++;
+    if (clickCount >= 5) {
+      toggleBreakroom();
+      clickCount = 0;
     }
-  }, 4000);
-}
+  });
 
-window.onload = () => {
-  initThemeAndWallpaper();
-  fetchInventoryDatabases();
-  clearCanvasContainer();
-};
+  function toggleBreakroom() {
+    var zone = document.getElementById('breakroomZone');
+    var isOpen = zone.style.display === 'block';
+    zone.style.display = isOpen ? 'none' : 'block';
+    if (!isOpen) launchGame('snake'); 
+    else stopActiveGameLoops();
+  }
+
+  function switchMode(mode) {
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('.app-screen').forEach(s => s.classList.remove('active'));
+    if(mode === 'finder') {
+      document.getElementById('finderTab').classList.add('active');
+      document.getElementById('finderScreen').classList.add('active');
+    } else {
+      document.getElementById('counterTab').classList.add('active');
+      document.getElementById('counterScreen').classList.add('active');
+    }
+  }
+
+  // --- Core Game Engine Control Core ---
+  var activeGameType = null;
+  var gameIntervalLoop = null;
+  var currentScore = 0;
+
+  function stopActiveGameLoops() {
+    if (gameIntervalLoop) clearInterval(gameIntervalLoop);
+    window.removeEventListener('keydown', handleSnakeControls);
+    window.removeEventListener('keydown', handleTetrisControls);
+    document.getElementById('gameViewport').innerHTML = '';
+  }
+
+  function launchGame(gameType) {
+    stopActiveGameLoops();
+    activeGameType = gameType;
+    
+    document.querySelectorAll('.game-btn').forEach(b => b.classList.remove('active'));
+    var targetBtn = document.getElementById('btn-' + gameType);
+    if(targetBtn) targetBtn.classList.add('active');
+
+    if (gameType === 'snake') {
+      initSnakeGame();
+    } else if (gameType === 'tetris') {
+      initTetrisGame();
+    } else if (gameType === 'ttt') {
+      initTicTacToeGame();
+    }
+  }
+
+  // =========================================================================
+  // 🐍 GAME 1: COMPACT PROTOTYPE SNAKE LOGIC ENGINE
+  // =========================================================================
+  var snake, snakeDir, snakeFood, canvasSize = 300, gridStep = 15;
+  
+  function initSnakeGame() {
+    var vp = document.getElementById('gameViewport');
+    vp.innerHTML = `
+      <div style="margin-bottom:8px;">Score: <span id="snakeScore">0</span></div>
+      <canvas id="snakeCanvas" width="300" height="300"></canvas>
+      <div class="game-controls">
+        <button class="ctrl-btn" onclick="setSnakeDir('LEFT')">◀</button>
+        <div style="display:flex; flex-direction:column; gap:4px;">
+          <button class="ctrl-btn" onclick="setSnakeDir('UP')">▲</button>
+          <button class="ctrl-btn" onclick="setSnakeDir('DOWN')">▼</button>
+        </div>
+        <button class="ctrl-btn" onclick="setSnakeDir('RIGHT')">▶</button>
+      </div>
+    `;
+
+    snake = [{x: 150, y: 150}, {x: 135, y: 150}, {x: 120, y: 150}];
+    snakeDir = 'RIGHT';
+    currentScore = 0;
+    generateSnakeFood();
+
+    window.addEventListener('keydown', handleSnakeControls);
+    gameIntervalLoop = setInterval(updateSnakeTick, 120);
+  }
+
+  function generateSnakeFood() {
+    snakeFood = {
+      x: Math.floor(Math.random() * (canvasSize / gridStep)) * gridStep,
+      y: Math.floor(Math.random() * (canvasSize / gridStep)) * gridStep
+    };
+  }
+
+  function handleSnakeControls(e) {
+    if (e.key === 'ArrowUp' && snakeDir !== 'DOWN') snakeDir = 'UP';
+    if (e.key === 'ArrowDown' && snakeDir !== 'UP') snakeDir = 'DOWN';
+    if (e.key === 'ArrowLeft' && snakeDir !== 'RIGHT') snakeDir = 'LEFT';
+    if (e.key === 'ArrowRight' && snakeDir !== 'LEFT') snakeDir = 'RIGHT';
+  }
+
+  function setSnakeDir(dir) {
+    if (dir === 'UP' && snakeDir !== 'DOWN') snakeDir = 'UP';
+    if (dir === 'DOWN' && snakeDir !== 'UP') snakeDir = 'DOWN';
+    if (dir === 'LEFT' && snakeDir !== 'RIGHT') snakeDir = 'LEFT';
+    if (dir === 'RIGHT' && snakeDir !== 'LEFT') snakeDir = 'RIGHT';
+  }
+
+  function updateSnakeTick() {
+    var head = {x: snake[0].x, y: snake[0].y};
+    if (snakeDir === 'UP') head.y -= gridStep;
+    if (snakeDir === 'DOWN') head.y += gridStep;
+    if (snakeDir === 'LEFT') head.x -= gridStep;
+    if (snakeDir === 'RIGHT') head.x += gridStep;
+
+    // Boundary/Self collision processing
+    if (head.x < 0 || head.x >= canvasSize || head.y < 0 || head.y >= canvasSize || snake.some(seg => seg.x === head.x && seg.y === head.y)) {
+      clearInterval(gameIntervalLoop);
+      alert("💥 Snake Collision! Final Score: " + currentScore);
+      initSnakeGame();
+      return;
+    }
+
+    snake.unshift(head);
+
+    if (head.x === snakeFood.x && head.y === snakeFood.y) {
+      currentScore += 10;
+      document.getElementById('snakeScore').textContent = currentScore;
+      generateSnakeFood();
+    } else {
+      snake.pop();
+    }
+
+    var canvas = document.getElementById('snakeCanvas');
+    if(!canvas) return;
+    var ctx = canvas.getContext('2d');
+    ctx.clearRect(0, 0, canvasSize, canvasSize);
+
+    // Draw snake body items
+    ctx.fillStyle = '#0f0';
+    snake.forEach((seg, i) => {
+      ctx.fillStyle = i === 0 ? '#22c55e' : '#16a34a';
+      ctx.fillRect(seg.x, seg.y, gridStep - 1, gridStep - 1);
+    });
+
+    // Draw localized item targets
+    ctx.fillStyle = '#ef4444';
+    ctx.fillRect(snakeFood.x, snakeFood.y, gridStep - 1, gridStep - 1);
+  }
+
+  // =========================================================================
+  // 🧱 GAME 2: MINIMALIST TETRIS LOGIC ENGINE
+  // =========================================================================
+  var tetrisRows = 16, tetrisCols = 10, tetrisSize = 18;
+  var tetrisGrid, activePiece, pieceX, pieceY;
+  
+  const SHAPES = [
+    [[1,1,1,1]], [[1,1,1],[0,1,0]], [[1,1,0],[0,1,1]], [[0,1,1],[1,1,0]], [[1,1],[1,1]]
+  ];
+
+  function initTetrisGame() {
+    var vp = document.getElementById('gameViewport');
+    vp.innerHTML = `
+      <div style="margin-bottom:8px;">Score: <span id="tetrisScore">0</span></div>
+      <canvas id="tetrisCanvas" width="180" height="288"></canvas>
+      <div class="game-controls">
+        <button class="ctrl-btn" onclick="moveTetris(-1)">◀</button>
+        <button class="ctrl-btn" onclick="rotateTetris()">🔄</button>
+        <button class="ctrl-btn" onclick="moveTetris(1)">▶</button>
+        <button class="ctrl-btn" onclick="dropTetris()">▼</button>
+      </div>
+    `;
+
+    tetrisGrid = Array.from({length: tetrisRows}, () => Array(tetrisCols).fill(0));
+    currentScore = 0;
+    spawnTetrisPiece();
+
+    window.addEventListener('keydown', handleTetrisControls);
+    gameIntervalLoop = setInterval(updateTetrisTick, 500);
+    drawTetris();
+  }
+
+  function spawnTetrisPiece() {
+    activePiece = SHAPES[Math.floor(Math.random() * SHAPES.length)];
+    pieceX = Math.floor((tetrisCols - activePiece[0].length) / 2);
+    pieceY = 0;
+
+    if (checkTetrisCollision(pieceX, pieceY, activePiece)) {
+      clearInterval(gameIntervalLoop);
+      alert("💥 Game Over! Grid Overrun. Score: " + currentScore);
+      initTetrisGame();
+    }
+  }
+
+  function checkTetrisCollision(px, py, pce) {
+    for (let r = 0; r < pce.length; r++) {
+      for (let c = 0; c < pce[r].length; c++) {
+        if (pce[r][c]) {
+          let nextX = px + c;
+          let nextY = py + r;
+          if (nextX < 0 || nextX >= tetrisCols || nextY >= tetrisRows) return true;
+          if (nextY >= 0 && tetrisGrid[nextY][nextX]) return true;
+        }
+      }
+    }
+    return false;
+  }
+
+  function handleTetrisControls(e) {
+    if (e.key === 'ArrowLeft') moveTetris(-1);
+    if (e.key === 'ArrowRight') moveTetris(1);
+    if (e.key === 'ArrowDown') dropTetris();
+    if (e.key === 'ArrowUp') rotateTetris();
+  }
+
+  function moveTetris(dir) {
+    if (!checkTetrisCollision(pieceX + dir, pieceY, activePiece)) {
+      pieceX += dir;
+      drawTetris();
+    }
+  }
+
+  function rotateTetris() {
+    let rotated = activePiece[0].map((_, i) => activePiece.map(row => row[i]).reverse());
+    if (!checkTetrisCollision(pieceX, pieceY, rotated)) {
+      activePiece = rotated;
+      drawTetris();
+    }
+  }
+
+  function dropTetris() {
+    if (!checkTetrisCollision(pieceX, pieceY + 1, activePiece)) {
+      pieceY++;
+    } else {
+      lockTetrisPiece();
+    }
+    drawTetris();
+  }
+
+  function updateTetrisTick() {
+    dropTetris();
+  }
+
+  function lockTetrisPiece() {
+    for (let r = 0; r < activePiece.length; r++) {
+      for (let c = 0; c < activePiece[r].length; c++) {
+        if (activePiece[r][c]) {
+          if(pieceY + r >= 0) tetrisGrid[pieceY + r][pieceX + c] = 1;
+        }
+      }
+    }
+    
+    // Line Clear Check
+    for (let r = tetrisRows - 1; r >= 0; r--) {
+      if (tetrisGrid[r].every(val => val === 1)) {
+        tetrisGrid.splice(r, 1);
+        tetrisGrid.unshift(Array(tetrisCols).fill(0));
+        currentScore += 100;
+        document.getElementById('tetrisScore').textContent = currentScore;
+        r++; 
+      }
+    }
+    spawnTetrisPiece();
+  }
+
+  function drawTetris() {
+    var canvas = document.getElementById('tetrisCanvas');
+    if (!canvas) return;
+    var ctx = canvas.getContext('2d');
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    // Render Matrix Grid
+    for (let r = 0; r < tetrisRows; r++) {
+      for (let c = 0; c < tetrisCols; c++) {
+        if (tetrisGrid[r][c]) {
+          ctx.fillStyle = '#0f8';
+          ctx.fillRect(c * tetrisSize, r * tetrisSize, tetrisSize - 1, tetrisSize - 1);
+        }
+      }
+    }
+
+    // Render Active Drop Item Block
+    if (activePiece) {
+      ctx.fillStyle = '#38bdf8';
+      for (let r = 0; r < activePiece.length; r++) {
+        for (let c = 0; c < activePiece[r].length; c++) {
+          if (activePiece[r][c]) {
+            ctx.fillRect((pieceX + c) * tetrisSize, (pieceY + r) * tetrisSize, tetrisSize - 1, tetrisSize - 1);
+          }
+        }
+      }
+    }
+  }
+
+  // =========================================================================
+  // ❌ GAME 3: TIC-TAC-TOE VS TERMINAL AI
+  // =========================================================================
+  var tttState = ["", "", "", "", "", "", "", "", ""];
+  var isGameActive = true;
+
+  function initTicTacToeGame() {
+    var vp = document.getElementById('gameViewport');
+    vp.innerHTML = `
+      <div id="tttStatus" style="margin-bottom:8px; font-weight:bold;">Your Turn (X)</div>
+      <div class="ttt-board">
+        <div class="ttt-cell" onclick="playerMove(0)"></div>
+        <div class="ttt-cell" onclick="playerMove(1)"></div>
+        <div class="ttt-cell" onclick="playerMove(2)"></div>
+        <div class="ttt-cell" onclick="playerMove(3)"></div>
+        <div class="ttt-cell" onclick="playerMove(4)"></div>
+        <div class="ttt-cell" onclick="playerMove(5)"></div>
+        <div class="ttt-cell" onclick="playerMove(6)"></div>
+        <div class="ttt-cell" onclick="playerMove(7)"></div>
+        <div class="ttt-cell" onclick="playerMove(8)"></div>
+      </div>
+      <button class="ctrl-btn" style="margin-top:14px;" onclick="initTicTacToeGame()">Restart Match</button>
+    `;
+    tttState = ["", "", "", "", "", "", "", "", ""];
+    isGameActive = true;
+  }
+
+  function playerMove(idx) {
+    if (tttState[idx] !== "" || !isGameActive) return;
+    
+    tttState[idx] = "X";
+    updateTTTUI();
+    
+    if (checkTTTWin("X")) {
+      document.getElementById('tttStatus').textContent = "🎉 You Win!";
+      isGameActive = false;
+      return;
+    }
+    
+    if (tttState.every(cell => cell !== "")) {
+      document.getElementById('tttStatus').textContent = "🤝 Draw Match!";
+      isGameActive = false;
+      return;
+    }
+
+    document.getElementById('tttStatus').textContent = "AI calculation...";
+    setTimeout(aiMove, 400);
+  }
+
+  function aiMove() {
+    if (!isGameActive) return;
+
+    // Simple AI: Picks first empty spot
+    let available = tttState.map((val, idx) => val === "" ? idx : null).filter(val => val !== null);
+    if (available.length > 0) {
+      let randomPick = available[Math.floor(Math.random() * available.length)];
+      tttState[randomPick] = "O";
+      updateTTTUI();
+
+      if (checkTTTWin("O")) {
+        document.getElementById('tttStatus').textContent = "🤖 Terminal Wins!";
+        isGameActive = false;
+        return;
+      }
+
+      if (tttState.every(cell => cell !== "")) {
+        document.getElementById('tttStatus').textContent = "🤝 Draw Match!";
+        isGameActive = false;
+        return;
+      }
+
+      document.getElementById('tttStatus').textContent = "Your Turn (X)";
+    }
+  }
+
+  function checkTTTWin(player) {
+    const wins = [
+      [0,1,2], [3,4,5], [6,7,8], 
+      [0,3,6], [1,4,7], [2,5,8], 
+      [0,4,8], [2,4,6]
+    ];
+    return wins.some(comb => comb.every(idx => tttState[idx] === player));
+  }
+
+  function updateTTTUI() {
+    let cells = document.querySelectorAll('.ttt-cell');
+    cells.forEach((cell, idx) => {
+      cell.textContent = tttState[idx];
+    });
+  }
+
+  function renderResults() {
+    // Empty search table handler mock to meet template parameters if required
+  }
 </script>
 </body>
 </html>
