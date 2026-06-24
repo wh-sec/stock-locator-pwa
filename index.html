@@ -38,7 +38,6 @@
     .app-header { position: relative; text-align: center; margin-bottom: 20px; padding: 10px 40px; display: flex; align-items: center; justify-content: center; gap: 10px; }
     .app-header h1 { font-size: 24px; font-weight: 800; letter-spacing: -0.5px; }
     .settings-gear-btn { position: absolute; right: 5px; top: 50%; transform: translateY(-50%); border: none; background: transparent; font-size: 24px; cursor: pointer; padding: 8px; border-radius: 50%; display: flex; align-items: center; justify-content: center; transition: background 0.2s; color: var(--text-main); }
-    .settings-gear-btn:hidden { display: none; }
 
     .nav-tabs { display: flex; background: var(--bg-card); border-radius: 12px; padding: 6px; margin-bottom: 20px; border: 1px solid var(--border-color); }
     .tab-btn { flex: 1; border: none; background: transparent; color: var(--text-muted); padding: 12px; font-size: 14px; font-weight: 600; cursor: pointer; border-radius: 8px; transition: all 0.2s; display: flex; align-items: center; justify-content: center; gap: 8px; }
@@ -96,7 +95,6 @@
     .inline-edit-input { padding: 6px 8px; text-align: center; font-family: monospace; font-weight: 700; max-width: 75px; }
     .row-save-btn { border: none; background: none; font-size: 18px; cursor: pointer; padding: 4px; }
     
-    /* Hidden file element */
     #themeFileInput { display: none; }
   </style>
 </head>
@@ -111,13 +109,13 @@
   <nav class="nav-tabs">
     <button class="tab-btn active" id="finderTab" onclick="switchMode('finder')">🔍 Stock Lookup</button>
     <button class="tab-btn" id="counterTab" onclick="switchMode('counter')">📋 Audit Scanner</button>
-    <button class="tab-btn" id="consolidationTab" onclick="switchMode('consolidation')">📦 Consolidation</button>
+    <button class="tab-btn" id="consolidationTab" onclick="switchMode('consolidation')">📦 Fittings Consolidation</button>
   </nav>
 
   <main id="finderScreen" class="app-screen active">
     <div class="card">
       <div class="form-group">
-        <label for="searchBox">Search Part Number / Item No. / Supplier Reference</label>
+        <label for="searchBox">Search Main Inventory (stocks.csv) or Fittings</label>
         <input type="text" id="searchBox" class="search-input" placeholder="Type part or click scan inputs below..." oninput="renderResults()">
       </div>
       <div class="btn-grid">
@@ -156,18 +154,18 @@
 
   <main id="consolidationScreen" class="app-screen">
     <div class="card">
-      <h3 style="font-size:15px; font-weight:800; margin-bottom:4px;">Module A: Direct Ledger Synchronization</h3>
-      <p style="font-size:12px; color:var(--text-muted); margin-bottom:15px;">Search entries down from your Google Sheets registry matrix below to edit and save variables instantly.</p>
+      <h3 style="font-size:15px; font-weight:800; margin-bottom:4px;">Module A: Fittings Ledger Sync</h3>
+      <p style="font-size:12px; color:var(--text-muted); margin-bottom:15px;">Search and modify entries hosted live on your Google Sheets fittings layout matrix.</p>
       
       <div class="form-group">
-        <input type="text" id="conSearchBox" class="search-input" placeholder="Type part number reference..." oninput="renderConsolidationRows()">
+        <input type="text" id="conSearchBox" class="search-input" placeholder="Type fittings part reference..." oninput="renderConsolidationRows()">
       </div>
 
       <div class="table-responsive" id="conTableWrap" style="display:none;">
         <table style="min-width:400px;">
           <thead>
             <tr>
-              <th>Part Number Reference</th>
+              <th>Fittings Part Reference</th>
               <th style="text-align:center;">Pack Size</th>
               <th style="text-align:center;">Boxes</th>
               <th style="text-align:center;">Total</th>
@@ -181,11 +179,11 @@
     </div>
 
     <div class="card">
-      <h3 style="font-size:15px; font-weight:800; margin-bottom:15px;">Module B: Add Dynamic Stock Reference Record</h3>
+      <h3 style="font-size:15px; font-weight:800; margin-bottom:15px;">Module B: Add Dynamic Fittings Reference</h3>
       
       <div class="form-group">
-        <label>Part Number Target</label>
-        <input type="text" id="newPartNo" class="search-input" placeholder="e.g. DGN 3102C">
+        <label>Fittings Part Target</label>
+        <input type="text" id="newPartNo" class="search-input" placeholder="e.g. FITTING-3102C">
       </div>
       <div class="form-group">
         <label>Pallet Location Assigned Row</label>
@@ -229,7 +227,6 @@
       </div>
 
       <button class="action-btn btn-muted" style="background:#475569; margin-bottom:15px;" onclick="clearAppCache()">♻️ Purge Manifest Cache (Reload Databases)</button>
-
       <button class="action-btn btn-muted" style="width:100%;" onclick="closeSettingsModal()">Close Preferences</button>
     </div>
   </div>
@@ -253,18 +250,6 @@
       <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-top:20px;">
         <button class="action-btn btn-green" onclick="commitCount()">💾 Log Entry</button>
         <button class="action-btn btn-muted" onclick="dismissOverlay()">Cancel</button>
-      </div>
-    </div>
-  </div>
-
-  <div class="modal-overlay" id="startupInterceptModal" style="display:none; padding:15px;">
-    <div class="modal-content" style="text-align:center;">
-      <span style="font-size:40px;">⚠️</span>
-      <h3 style="font-size:18px; font-weight:bold; margin-top:10px; margin-bottom:10px;">Unsaved Workflow Session Found</h3>
-      <p id="interceptMessage" style="font-size:13px; color:var(--text-muted); margin-bottom:20px;"></p>
-      <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
-        <button class="action-btn btn-blue" onclick="resolveIntercept('restore')">Restore Run</button>
-        <button class="action-btn btn-muted" style="background:var(--danger-red);" onclick="resolveIntercept('purge')">Wipe Logs</button>
       </div>
     </div>
   </div>
@@ -299,16 +284,10 @@
     window.addEventListener('DOMContentLoaded', function() {
       loadSystemStatePreference();
       fetchInventoryDatabases();
-      checkUnexportedSessionLogs();
     });
 
-    /* PREFERENCE WINDOW HANDLERS */
-    function openSettingsModal() {
-      document.getElementById('settingsOverlay').style.display = 'flex';
-    }
-    function closeSettingsModal() {
-      document.getElementById('settingsOverlay').style.display = 'none';
-    }
+    function openSettingsModal() { document.getElementById('settingsOverlay').style.display = 'flex'; }
+    function closeSettingsModal() { document.getElementById('settingsOverlay').style.display = 'none'; }
 
     function loadSystemStatePreference() {
       var isDark = localStorage.getItem('ms_dark_mode') === 'true';
@@ -350,39 +329,41 @@
     }
 
     function fetchInventoryDatabases() {
-      metaDisplay.textContent = "Loading database files...";
+      metaDisplay.textContent = "Loading warehouse indexes...";
       metaStatusDot.className = "status-dot";
 
+      // Pull primary Excel lookup file from GitHub
       fetch(REPO_STOCKS_CSV_URL)
         .then(function(res) {
-          if (!res.ok) throw new Error("Stocks repository data stream dropped.");
+          if (!res.ok) throw new Error("Stocks repository dropped.");
           return res.text();
         })
         .then(function(rawCsvText) {
           stockRegistry = parseSanitizedCSV(rawCsvText);
+          // Pull Fittings layout workspace from Google Sheets
           return fetch(GOOGLE_SHEETS_API_URL + "?action=readDatabase");
         })
         .then(function(sheetRes) {
-          if (!sheetRes.ok) throw new Error("Spreadsheet endpoint interface rejected parsing.");
+          if (!sheetRes.ok) throw new Error("Sheets connection dropped.");
           return sheetRes.json();
         })
         .then(function(sheetData) {
           fittingsRegistry = sheetData.records || [];
           localStorage.setItem('cached_stocks', JSON.stringify(stockRegistry));
           localStorage.setItem('cached_fittings', JSON.stringify(fittingsRegistry));
-          metaDisplay.textContent = "Local Database Ready";
+          metaDisplay.textContent = "Local Matrix Operational";
           metaStatusDot.className = "status-dot ready";
         })
         .catch(function(err) {
-          console.warn("Live pull failed. Attempting offline fallback parameters...", err);
+          console.warn("Offline environment detected. Invoking cache arrays...", err);
           stockRegistry = JSON.parse(localStorage.getItem('cached_stocks') || "[]");
           fittingsRegistry = JSON.parse(localStorage.getItem('cached_fittings') || "[]");
           
           if (stockRegistry.length > 0) {
-            metaDisplay.textContent = "Cached Database Ready (Offline)";
+            metaDisplay.textContent = "Offline Mode Active (Cached)";
             metaStatusDot.className = "status-dot ready";
           } else {
-            metaDisplay.textContent = "No database files found. Connect to office Wi-Fi.";
+            metaDisplay.textContent = "Storage empty. Run connection scan on network.";
             metaStatusDot.className = "status-dot";
           }
         });
@@ -402,16 +383,13 @@
         
         for (var j = 0; j < lines[i].length; j++) {
           var char = lines[i][j];
-          if (char === '"') {
-            insideQuote = !insideQuote;
-          } else if (char === ',' && !insideQuote) {
-            row.push(rowSanitizeClean(entry));
+          if (char === '"') { insideQuote = !insideQuote; }
+          else if (char === ',' && !insideQuote) {
+            row.push(entry.trim().replace(/^"|"$/g, ''));
             entry = "";
-          } else {
-            entry += char;
-          }
+          } else { entry += char; }
         }
-        row.push(rowSanitizeClean(entry));
+        row.push(entry.trim().replace(/^"|"$/g, ''));
 
         if (row.length >= 7) {
           items.push({
@@ -429,10 +407,6 @@
       return items;
     }
 
-    function rowSanitizeClean(val) {
-      return val.trim().replace(/^"|"$/g, '');
-    }
-
     function highlightText(text, query) {
       if (!query) return text;
       var idx = text.toLowerCase().indexOf(query);
@@ -445,12 +419,14 @@
       var area = document.getElementById('searchResultsArea');
       if (!query) { area.innerHTML = ''; return; }
 
+      // Look up main stocks data from stocks.csv
       var resultsA = stockRegistry.filter(function(i) {
         return i.part.toLowerCase().indexOf(query) !== -1 || 
                i.itemNo.toLowerCase().indexOf(query) !== -1 || 
                i.supplierRef.toLowerCase().indexOf(query) !== -1;
       });
 
+      // Cross-reference lookup from Fittings Google Sheets dataset
       var resultsB = fittingsRegistry.filter(function(i) {
         return i.part.toLowerCase().indexOf(query) !== -1 || 
                i.location.toLowerCase().indexOf(query) !== -1;
@@ -463,7 +439,7 @@
       var compiled = resultsA.concat(resultsB).slice(0, 25);
 
       if (compiled.length === 0) {
-        area.innerHTML = '<div class="card" style="text-align:center; color:var(--text-muted);;">No records match your active parameters.</div>';
+        area.innerHTML = '<div class="card" style="text-align:center; color:var(--text-muted);">No matching part entries located.</div>';
         return;
       }
 
@@ -472,26 +448,20 @@
         var item = compiled[k];
         var borderStyle = item.isFitting ? 'var(--accent-purple)' : 'var(--accent-blue)';
         var badgeBg = item.isFitting ? 'var(--accent-purple)' : 'var(--accent-green)';
-        var subTitle = item.isFitting ? 'Google Sheets Registry' : ((item.dept || 'STK') + ' &bull; Ref: ' + highlightText(item.supplierRef, query));
+        var subTitle = item.isFitting ? 'Google Sheets Fittings Registry' : ('Main Catalog &bull; Ref: ' + highlightText(item.supplierRef, query));
         var itemNumberText = item.isFitting ? 'N/A' : highlightText(item.itemNo, query);
 
         html += '<div class="card" style="border-left: 5px solid ' + borderStyle + ';">' +
                   '<div style="display:flex; justify-content:space-between; align-items:start; margin-bottom:8px;">' +
                     '<div>' +
                       '<div style="font-size:11px; text-transform:uppercase; font-weight:700; color:var(--text-muted); margin-bottom:2px;">' + subTitle + '</div>' +
-                      '<h4 style="font-size:18px; font-weight:800; font-family:monospace; letter-spacing:-0.5px;">' + highlightText(item.part, query) + '</h4>' +
+                      '<h4 style="font-size:18px; font-weight:800; font-family:monospace;">' + highlightText(item.part, query) + '</h4>' +
                     '</div>' +
                     '<span class="location-badge" style="background:' + badgeBg + '">' + highlightText(item.location, query) + '</span>' +
                   '</div>' +
                   '<div style="display:flex; justify-content:space-between; align-items:center; margin-top:12px; background:var(--bg-primary); padding:10px; border-radius:8px; font-size:13px;">' +
-                    '<div>' +
-                      '<span style="color:var(--text-muted);">Item No:</span> ' +
-                      '<strong style="font-family:monospace;">' + itemNumberText + '</strong>' +
-                    '</div>' +
-                    '<div>' +
-                      '<span style="color:var(--text-muted);">In-Stock:</span> ' +
-                      '<strong style="color:var(--accent-blue); font-size:15px; font-family:monospace;">' + item.totalQty + ' pcs</strong>' +
-                    '</div>' +
+                    '<div><span style="color:var(--text-muted);">Item No:</span> <strong style="font-family:monospace;">' + itemNumberText + '</strong></div>' +
+                    '<div><span style="color:var(--text-muted);">In-Stock:</span> <strong style="color:var(--accent-blue); font-size:15px; font-family:monospace;">' + item.totalQty + ' pcs</strong></div>' +
                   '</div>' +
                 '</div>';
       }
@@ -509,19 +479,13 @@
       var conTableWrap = document.getElementById('conTableWrap');
       var conTableBody = document.getElementById('conTableBody');
 
-      if (!query) {
-        conTableWrap.style.display = 'none';
-        return;
-      }
+      if (!query) { conTableWrap.style.display = 'none'; return; }
 
       var matches = fittingsRegistry.filter(function(i) {
         return i.part.toLowerCase().indexOf(query) !== -1;
       }).slice(0, 10);
 
-      if (matches.length === 0) {
-        conTableWrap.style.display = 'none';
-        return;
-      }
+      if (matches.length === 0) { conTableWrap.style.display = 'none'; return; }
 
       conTableWrap.style.display = 'block';
       var html = '';
@@ -531,19 +495,11 @@
         var rowId = 'conRow_' + i;
         html += '<tr>' +
           '<td style="font-weight:700; font-family:monospace; font-size:13px;">' + item.part + '</td>' +
-          '<td style="text-align:center;">' +
-            '<input type="number" id="' + rowId + '_pack" value="' + (item.packSize || 1) + '" class="inline-edit-input" oninput="calculateInlineTotal(\'' + rowId + '\')"/>' +
-          '</td>' +
-          '<td style="text-align:center;">' +
-            '<input type="number" id="' + rowId + '_boxes" value="' + (item.boxes || 0) + '" class="inline-edit-input" oninput="calculateInlineTotal(\'' + rowId + '\')"/>' +
-          '</td>' +
-          '<td id="' + rowId + '_total" style="text-align:center; font-weight:bold; font-family:monospace; color:var(--accent-purple); font-size:13px;">' + item.totalQty + '</td>' +
-          '<td style="text-align:center;">' +
-            '<button class="row-save-btn" onclick="syncInlineModification(\'' + item.part + '\', \'' + item.location + '\', \'' + rowId + '\')">💾</button>' +
-          '</td>' +
-          '<td style="text-align:center;">' +
-            '<span class="location-badge" style="background:var(--accent-purple); font-size:11px; padding:4px 8px;">' + item.location + '</span>' +
-          '</td>' +
+          '<td style="text-align:center;"><input type="number" id="' + rowId + '_pack" value="' + (item.packSize || 1) + '" class="inline-edit-input" oninput="calculateInlineTotal(\'' + rowId + '\')"/></td>' +
+          '<td style="text-align:center;"><input type="number" id="' + rowId + '_boxes" value="' + (item.boxes || 0) + '" class="inline-edit-input" oninput="calculateInlineTotal(\'' + rowId + '\')"/></td>' +
+          '<td id="' + rowId + '_total" style="text-align:center; font-weight:bold; font-family:monospace; color:var(--accent-purple);">' + item.totalQty + '</td>' +
+          '<td style="text-align:center;"><button class="row-save-btn" onclick="syncInlineModification(\'' + item.part + '\', \'' + item.location + '\', \'' + rowId + '\')">💾</button></td>' +
+          '<td style="text-align:center;"><span class="location-badge" style="background:var(--accent-purple); font-size:11px; padding:4px 8px;">' + item.location + '</span></td>' +
         '</tr>';
       }
       conTableBody.innerHTML = html;
@@ -560,21 +516,25 @@
       var boxes = parseInt(document.getElementById(rowId + '_boxes').value, 10) || 0;
       var totalQty = packSize * boxes;
 
-      metaDisplay.textContent = "Updating entry...";
-      
+      metaDisplay.textContent = "Updating Fittings sheet ledger...";
       var targetUrl = GOOGLE_SHEETS_API_URL + "?action=updateRow&partNumber=" + encodeURIComponent(partNumber) + "&location=" + encodeURIComponent(location) + "&packSize=" + packSize + "&boxes=" + boxes + "&totalQty=" + totalQty;
 
       fetch(targetUrl)
         .then(function(res) { return res.json(); })
         .then(function(data) {
           if (data.result === 'success') {
-            alert("Successfully synchronized changes for " + partNumber);
+            alert("Fittings spreadsheet record saved!");
+            var matchedIdx = fittingsRegistry.findIndex(function(x) { return x.part === partNumber && x.location === location; });
+            if (matchedIdx !== -1) {
+              fittingsRegistry[matchedIdx].packSize = packSize;
+              fittingsRegistry[matchedIdx].boxes = boxes;
+              fittingsRegistry[matchedIdx].totalQty = totalQty;
+              localStorage.setItem('cached_fittings', JSON.stringify(fittingsRegistry));
+            }
             fetchInventoryDatabases();
-          } else {
-            alert("Server failed to log update: " + data.message);
-          }
+          } else { alert("Error logged: " + data.message); }
         })
-        .catch(function() { alert("Network exception occurred during synchronization layout processing."); });
+        .catch(function() { alert("Network exception processing sheet sync."); });
     }
 
     function calculateModuleBTotal() {
@@ -590,12 +550,8 @@
       var boxes = parseInt(document.getElementById('newBoxes').value, 10) || 0;
       var totalQty = packSize * boxes;
 
-      if (!partNumber || !location) {
-        alert("Part Number and Pallet No. are strictly required parameters.");
-        return;
-      }
-
-      metaDisplay.textContent = "Saving new item pallet record...";
+      if (!partNumber || !location) { alert("Part number and location parameters required."); return; }
+      metaDisplay.textContent = "Appending Fittings record...";
 
       var targetUrl = GOOGLE_SHEETS_API_URL + "?action=addStock&partNumber=" + encodeURIComponent(partNumber) + "&location=" + encodeURIComponent(location) + "&packSize=" + packSize + "&boxes=" + boxes + "&totalQty=" + totalQty;
 
@@ -603,85 +559,64 @@
         .then(function(res) { return res.json(); })
         .then(function(data) {
           if (data.result === 'success') {
-            alert("Entry written successfully to master sheet ledger!");
+            alert("Fittings pallet logged to Google Sheets!");
+            fittingsRegistry.unshift({ part: partNumber, location: location, packSize: packSize, boxes: boxes, totalQty: totalQty });
+            localStorage.setItem('cached_fittings', JSON.stringify(fittingsRegistry));
+
             document.getElementById('newPartNo').value = '';
             document.getElementById('newPalletNo').value = '';
             document.getElementById('newPackSize').value = '';
             document.getElementById('newBoxes').value = '';
             document.getElementById('newTotalQty').value = '0';
             fetchInventoryDatabases();
-          } else {
-            alert("Transmission logged an error outcome: " + data.message);
-          }
+          } else { alert("Error: " + data.message); }
         })
-        .catch(function() { alert("CRITICAL: Server timeout exception. Verify Deployment configuration link properties."); });
+        .catch(function() { alert("Server timeout configuration link exception."); });
     }
 
+    /* ENFORCED REAR LENS HARDWARE INITS */
     function startScanner() {
       if (html5QrcodeScanner) return;
       isProcessingScan = false;
       html5QrcodeScanner = new Html5Qrcode("reader");
       html5QrcodeScanner.start(
-        { facingMode: "environment" },
-        { 
-          fps: 30, 
-          videoConstraints: { width: { ideal: 1920 }, height: { ideal: 1080 }, aspectRatio: { ideal: 1.7777777778 } },
-          formatsToSupport: [
-            Html5QrcodeSupportedFormats.CODE_128, 
-            Html5QrcodeSupportedFormats.CODE_39, 
-            Html5QrcodeSupportedFormats.EAN_13, 
-            Html5QrcodeSupportedFormats.EAN_8, 
-            Html5QrcodeSupportedFormats.QR_CODE
-          ] 
-        },
+        { facingMode: { exact: "environment" } },
+        { fps: 30, videoConstraints: { width: { min: 1280, ideal: 1920 }, height: { min: 720, ideal: 1080 } },
+          formatsToSupport: [Html5QrcodeSupportedFormats.CODE_128, Html5QrcodeSupportedFormats.CODE_39, Html5QrcodeSupportedFormats.EAN_13, Html5QrcodeSupportedFormats.QR_CODE] },
         onScanSuccess
-      ).catch(function() { metaDisplay.textContent = "Camera configuration failed."; });
+      ).catch(function() {
+         html5QrcodeScanner.start({ facingMode: "environment" }, { fps: 30 }, onScanSuccess).catch(function(){
+            metaDisplay.textContent = "Scanner hardware mapping offline.";
+         });
+      });
     }
 
-    function stopScanner() {
-      if (html5QrcodeScanner) {
-        html5QrcodeScanner.stop().then(function() { html5QrcodeScanner = null; }).catch(function(){});
-      }
-    }
+    function stopScanner() { if (html5QrcodeScanner) { html5QrcodeScanner.stop().then(function() { html5QrcodeScanner = null; }).catch(function(){}); } }
 
     function startInlineScanner(targetType) {
-      stopScanner(); 
-      stopInlineScanner(); 
+      stopScanner(); stopInlineScanner(); 
       currentScanTargetField = targetType;
       document.getElementById('inlineScannerBox').style.display = 'block';
       inlineFinderScanner = new Html5Qrcode("finderReader");
       inlineFinderScanner.start(
-        { facingMode: "environment" },
-        { 
-          fps: 25, 
-          videoConstraints: { width: { ideal: 1920 }, height: { ideal: 1080 } },
-          formatsToSupport: [
-            Html5QrcodeSupportedFormats.CODE_128, 
-            Html5QrcodeSupportedFormats.CODE_39, 
-            Html5QrcodeSupportedFormats.EAN_13, 
-            Html5QrcodeSupportedFormats.QR_CODE
-          ] 
-        },
+        { facingMode: { exact: "environment" } },
+        { fps: 25, videoConstraints: { width: { min: 1280, ideal: 1920 }, height: { min: 720, ideal: 1080 } },
+          formatsToSupport: [Html5QrcodeSupportedFormats.CODE_128, Html5QrcodeSupportedFormats.CODE_39, Html5QrcodeSupportedFormats.EAN_13, Html5QrcodeSupportedFormats.QR_CODE] },
         onInlineScanSuccess
-      ).catch(function() { alert("Could not access camera for target layout processing."); });
+      ).catch(function() {
+         inlineFinderScanner.start({ facingMode: "environment" }, { fps: 25 }, onInlineScanSuccess).catch(function(){
+            alert("Camera device inaccessible.");
+         });
+      });
     }
 
-    function stopInlineScanner() {
-      if (inlineFinderScanner) {
-        inlineFinderScanner.stop().then(function() { inlineFinderScanner = null; }).catch(function(){});
-      }
-      document.getElementById('inlineScannerBox').style.display = 'none';
-    }
+    function stopInlineScanner() { if (inlineFinderScanner) { inlineFinderScanner.stop().then(function() { inlineFinderScanner = null; }).catch(function(){}); } document.getElementById('inlineScannerBox').style.display = 'none'; }
 
     function onInlineScanSuccess(decodedText) {
       var scannedText = decodedText.trim();
       stopInlineScanner();
-      
-      if (currentScanTargetField === 'qr') {
-        searchBox.value = scannedText;
-      } else {
-        searchBox.value = (scannedText.startsWith('0') && scannedText.length > 1) ? scannedText.replace(/^0+/, '') : scannedText;
-      }
+      if (currentScanTargetField === 'qr') { searchBox.value = scannedText; } 
+      else { searchBox.value = (scannedText.startsWith('0') && scannedText.length > 1) ? scannedText.replace(/^0+/, '') : scannedText; }
       renderResults();
       setTimeout(function() {
         var anchor = document.getElementById('resultsContainerLocationAnchor');
@@ -693,40 +628,21 @@
       if (isProcessingScan) return;
       var term = decodedText.trim().toLowerCase();
       
-      var matchedItem = stockRegistry.find(function(i) {
-        return i.part.toLowerCase() === term || i.itemNo.toLowerCase() === term || i.supplierRef.toLowerCase() === term;
-      }) || fittingsRegistry.find(function(i) {
-        return i.part.toLowerCase() === term;
-      });
+      var matchedItem = stockRegistry.find(function(i) { return i.part.toLowerCase() === term || i.itemNo.toLowerCase() === term || i.supplierRef.toLowerCase() === term; }) ||
+                        fittingsRegistry.find(function(i) { return i.part.toLowerCase() === term; });
                         
-      if (matchedItem) {
-        isProcessingScan = true;
-        showOverlay(matchedItem);
-      } else {
-        isProcessingScan = true;
-        stopScanner();
-        
-        var simulatedItem = {
-          part: decodedText.trim(),
-          itemNo: decodedText.trim(),
-          supplierRef: 'MANUAL COUNTER INJECTION',
-          packSize: '1',
-          boxes: '0',
-          totalQty: '0',
-          location: 'PENDING ASSIGNMENT',
-          isFitting: false
-        };
-        
-        document.getElementById('targetTitleHeader').innerHTML = '<span style="color:var(--danger-red);">⚠️ NOT FOUND IN SYSTEM STOCKS</span>';
-        showOverlay(simulatedItem);
+      if (matchedItem) { isProcessingScan = true; showOverlay(matchedItem); } 
+      else {
+        isProcessingScan = true; stopScanner();
+        showOverlay({ part: decodedText.trim(), itemNo: decodedText.trim(), supplierRef: 'UNREGISTERED ITEM', totalQty: 0, location: 'UNKNOWN ROW', isFitting: false });
       }
     }
 
     function showOverlay(item) {
       activeScanMatch = item;
       document.getElementById('targetItemName').innerText = item.part;
-      document.getElementById('targetMappingInfo').innerText = item.isFitting ? 'Google Sheets Database Profile' : ('Item No: ' + item.itemNo + ' | Ref: ' + item.supplierRef);
-      document.getElementById('targetSubLoc').innerText = 'Location Row: ' + item.location;
+      document.getElementById('targetMappingInfo').innerText = item.isFitting ? 'Google Sheets Fittings Profile' : ('Item No: ' + item.itemNo + ' | Ref: ' + item.supplierRef);
+      document.getElementById('targetSubLoc').innerText = 'Location: ' + item.location;
       document.getElementById('qtyInputField').value = '';
       document.getElementById('countOverlay').style.display = 'flex';
     }
@@ -740,26 +656,15 @@
 
     function dismissOverlay() {
       document.getElementById('countOverlay').style.display = 'none';
-      document.getElementById('targetTitleHeader').innerText = "Matched Database Reference";
-      activeScanMatch = null;
-      isProcessingScan = false;
-      
-      if (document.getElementById('counterScreen').classList.contains('active')) {
-        startScanner();
-      }
+      activeScanMatch = null; isProcessingScan = false;
+      if (document.getElementById('counterScreen').classList.contains('active')) { startScanner(); }
     }
 
     function commitCount() {
       var countVal = parseInt(document.getElementById('qtyInputField').value, 10);
-      if (isNaN(countVal) || countVal < 0) { alert("Provide a valid matching count metric index baseline."); return; }
+      if (isNaN(countVal) || countVal < 0) { alert("Invalid count baseline value."); return; }
       
-      countLogSession.unshift({
-        part: activeScanMatch.part,
-        location: activeScanMatch.location,
-        qty: countVal,
-        time: new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})
-      });
-
+      countLogSession.unshift({ part: activeScanMatch.part, location: activeScanMatch.location, qty: countVal, time: new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) });
       localStorage.setItem('ms_saved_logs', JSON.stringify(countLogSession));
       localStorage.setItem('ms_saved_date', new Date().toDateString());
       
@@ -776,45 +681,15 @@
       for (var i = 0; i < countLogSession.length; i++) {
         var log = countLogSession[i];
         html += '<div class="log-item">' +
-          '<div>' +
-            '<div style="font-weight:bold; font-family:monospace; font-size:15px;">' + log.part + '</div>' +
-            '<div style="font-size:11px; color:var(--text-muted); margin-top:2px;">Scanned at ' + log.time + ' in Loc: ' + log.location + '</div>' +
-          '</div>' +
-          '<div style="font-size:18px; font-weight:800; color:var(--accent-green); font-family:monospace;">' + log.qty + ' pcs</div>' +
+          '<div><strong>' + log.part + '</strong><div style="font-size:11px; color:var(--text-muted);">Loc: ' + log.location + ' @ ' + log.time + '</div></div>' +
+          '<div style="font-size:18px; font-weight:800; color:var(--accent-green);">' + log.qty + ' pcs</div>' +
         '</div>';
       }
       list.innerHTML = html;
     }
 
-    function checkUnexportedSessionLogs() {
-      var savedDate = localStorage.getItem('ms_saved_date');
-      var savedLogs = localStorage.getItem('ms_saved_logs');
-      if (savedLogs && JSON.parse(savedLogs).length > 0) {
-        if (savedDate !== new Date().toDateString()) {
-          document.getElementById('interceptMessage').innerText = "Found unexported count data from terminal session date: " + (savedDate || 'Unknown') + ".";
-          document.getElementById('startupInterceptModal').style.display = 'flex';
-        } else {
-          countLogSession = JSON.parse(savedLogs);
-          renderLogRegistryDisplay();
-        }
-      }
-    }
-
-    function resolveIntercept(strategy) {
-      if (strategy === 'purge') {
-        countLogSession = [];
-        localStorage.removeItem('ms_saved_logs');
-        localStorage.removeItem('ms_saved_date');
-        renderLogRegistryDisplay();
-      } else {
-        countLogSession = JSON.parse(localStorage.getItem('ms_saved_logs') || '[]');
-        renderLogRegistryDisplay();
-      }
-      document.getElementById('startupInterceptModal').style.display = 'none';
-    }
-
     function triggerNewSessionManually() {
-      if (confirm("End current workflow session parameters? Make sure you downloaded your spreadsheet compilation reports beforehand.")) {
+      if (confirm("Clear active running audit logs? Download your CSV baseline before erasing execution state traces.")) {
         countLogSession = [];
         localStorage.removeItem('ms_saved_logs');
         localStorage.removeItem('ms_saved_date');
@@ -823,26 +698,19 @@
     }
 
     function exportCountsToCSV() {
-      if (countLogSession.length === 0) { alert("Nothing found to generate reports from."); return; }
+      if (countLogSession.length === 0) { alert("No count log data available to export."); return; }
       let header = "PART NUMBER,LOCATION,COUNT QTY,TIMESTAMP\n";
-      let content = countLogSession.map(function(l) {
-        return '"' + l.part + '","' + l.location + '",' + l.qty + ',"' + l.time + '"';
-      }).join("\n");
+      let content = countLogSession.map(function(l) { return '"' + l.part + '","' + l.location + '",' + l.qty + ',"' + l.time + '"'; }).join("\n");
       let blob = new Blob([header + content], { type: 'text/csv;charset=utf-8;' });
       let link = document.createElement("a");
       link.href = URL.createObjectURL(blob);
-      link.setAttribute("download", "Physical_Inventory_Audit_Report_" + new Date().toISOString().slice(0,10) + ".csv");
+      link.setAttribute("download", "Inventory_Audit_" + new Date().toISOString().slice(0,10) + ".csv");
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
     }
 
-    function clearAppCache() {
-      if (confirm("Force system to invalidate locally preserved manifest records? Run this if items show stale metadata positions.")) {
-        localStorage.clear();
-        location.reload();
-      }
-    }
+    function clearAppCache() { if (confirm("Invalidate local inventory cache matrix data maps? App will force a full refresh sequence.")) { localStorage.clear(); location.reload(); } }
 
     function switchMode(mode) {
       document.querySelectorAll('.tab-btn').forEach(function(btn) { btn.classList.remove('active'); });
