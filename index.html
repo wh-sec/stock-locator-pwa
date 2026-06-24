@@ -694,20 +694,32 @@ function resetSearchFields() {
 async function fetchInventoryDatabases() {
   try {
     const [stockRes, fitRes] = await Promise.all([
-      fetch(CSV_URL + '?t=' + Date.now()),
-      fetch(GOOGLE_SHEETS_API_URL + '?action=getData&t=' + Date.now())
+      fetch(CSV_URL + '?t=' + Date.now()).catch(e => null),
+      fetch(GOOGLE_SHEETS_API_URL + '?action=getData&t=' + Date.now()).catch(e => null)
     ]);
-    if (!stockRes.ok || !fitRes.ok) throw new Error("Connection fault");
-    const stockText = await stockRes.text();
-    const fittingsJson = await fitRes.json();
 
-    stockRegistry = parseCSV(stockText);
-    fittingsRegistry = parseGoogleSheetsJSON(fittingsJson);
+    let loadedAny = false;
 
-    localStorage.setItem('cached_stocks', stockText);
-    localStorage.setItem('cached_fittings_json', JSON.stringify(fittingsJson));
-    localStorage.setItem('cached_sync_time', new Date().toLocaleString());
-    updateMetaDisplay();
+    if (stockRes && stockRes.ok) {
+      const stockText = await stockRes.text();
+      stockRegistry = parseCSV(stockText);
+      localStorage.setItem('cached_stocks', stockText);
+      loadedAny = true;
+    }
+    
+    if (fitRes && fitRes.ok) {
+      const fittingsJson = await fitRes.json();
+      fittingsRegistry = parseGoogleSheetsJSON(fittingsJson);
+      localStorage.setItem('cached_fittings_json', JSON.stringify(fittingsJson));
+      loadedAny = true;
+    }
+
+    if (loadedAny) {
+      localStorage.setItem('cached_sync_time', new Date().toLocaleString());
+      updateMetaDisplay();
+    } else {
+      loadCachedDatabases();
+    }
     
     if (searchBox.value) renderResults();
     if (conSearchBox.value) renderConsolidationRows();
@@ -720,18 +732,20 @@ function loadCachedDatabases() {
   const cStocks = localStorage.getItem('cached_stocks');
   const cFittingsJson = localStorage.getItem('cached_fittings_json');
   const cTime = localStorage.getItem('cached_sync_time') || 'Never';
-  if (cStocks && cFittingsJson) {
-    stockRegistry = parseCSV(cStocks);
-    fittingsRegistry = parseGoogleSheetsJSON(JSON.parse(cFittingsJson));
-    updateMetaDisplay(cTime);
+  
+  if (cStocks) stockRegistry = parseCSV(cStocks);
+  if (cFittingsJson) fittingsRegistry = parseGoogleSheetsJSON(JSON.parse(cFittingsJson));
+
+  if (cStocks || cFittingsJson) {
+    updateMetaDisplay(cTime + " (Cached offline)");
   } else {
-    metaDisplay.textContent = '❌ No database files found. Connect to office Wi-Fi.';
+    metaDisplay.innerHTML = '<span style="color:#dc3545;">❌ No database files found. Connect to office Wi-Fi.</span>';
   }
 }
 
 function updateMetaDisplay(customTime) {
   const useTime = customTime || localStorage.getItem('cached_sync_time') || new Date().toLocaleString();
-  metaDisplay.textContent = `✅ Local Database Ready (Last Sync: ${useTime})`;
+  metaDisplay.innerHTML = `<span style="color:#10b981;">✅ Local Database Ready</span> (Last Sync: ${useTime})`;
 }
 
 function parseCSV(text) {
@@ -1071,8 +1085,12 @@ function startInlineScanner(mode) {
 
   inlineFinderScanner = new Html5Qrcode("finderReader");
   inlineFinderScanner.start(
-    { facingMode: "environment" },
-    { fps: 10, qrbox: { width: 260, height: 150 } },
+    { 
+      facingMode: "environment",
+      width: { ideal: 1280 },
+      height: { ideal: 720 }
+    },
+    { fps: 15, qrbox: { width: 260, height: 150 } },
     onInlineScanSuccess,
     onInlineScanError
   ).catch(err => {
@@ -1130,8 +1148,12 @@ function startCounterScanner() {
   }
   html5QrcodeScanner = new Html5Qrcode("reader");
   html5QrcodeScanner.start(
-    { facingMode: "environment" },
-    { fps: 12, qrbox: { width: 260, height: 160 } },
+    { 
+      facingMode: "environment",
+      width: { ideal: 1280 },
+      height: { ideal: 720 }
+    },
+    { fps: 15, qrbox: { width: 260, height: 160 } },
     onCounterScanSuccess,
     onCounterScanError
   ).catch(err => {
