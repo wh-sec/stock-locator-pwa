@@ -258,32 +258,32 @@
   </footer>
 
   <script>
-    const GOOGLE_SHEETS_API_URL = "https://script.google.com/macros/s/AKfycbzQ_W1D99_8u572x-rA/exec"; 
-    const REPO_STOCKS_CSV_URL = "https://wh-sec.github.io/stocks.csv"; 
+    var GOOGLE_SHEETS_API_URL = "https://script.google.com/macros/s/AKfycbzQ_W1D99_8u572x-rA/exec"; 
+    var REPO_STOCKS_CSV_URL = "https://wh-sec.github.io/stocks.csv"; 
 
-    let stockRegistry = [];
-    let fittingsRegistry = [];
-    let countLogSession = [];
+    var stockRegistry = [];
+    var fittingsRegistry = [];
+    var countLogSession = [];
 
-    let html5QrcodeScanner = null;
-    let inlineFinderScanner = null;
-    let currentScanTargetField = null;
-    let activeScanMatch = null;
-    let isProcessingScan = false;
+    var html5QrcodeScanner = null;
+    var inlineFinderScanner = null;
+    var currentScanTargetField = null;
+    var activeScanMatch = null;
+    var isProcessingScan = false;
 
-    const searchBox = document.getElementById('searchBox');
-    const conSearchBox = document.getElementById('conSearchBox');
-    const metaDisplay = document.getElementById('metaDisplay');
-    const metaStatusDot = document.getElementById('metaStatusDot');
+    var searchBox = document.getElementById('searchBox');
+    var conSearchBox = document.getElementById('conSearchBox');
+    var metaDisplay = document.getElementById('metaDisplay');
+    var metaStatusDot = document.getElementById('metaStatusDot');
 
-    window.addEventListener('DOMContentLoaded', () => {
+    window.addEventListener('DOMContentLoaded', function() {
       loadSystemStatePreference();
       fetchInventoryDatabases();
       checkUnexportedSessionLogs();
     });
 
     function loadSystemStatePreference() {
-      const isDark = localStorage.getItem('ms_dark_mode') === 'true';
+      var isDark = localStorage.getItem('ms_dark_mode') === 'true';
       document.getElementById('darkModeToggle').checked = isDark;
       toggleSystemThemeMode(isDark);
     }
@@ -293,55 +293,59 @@
       localStorage.setItem('ms_dark_mode', isDark);
     }
 
-    async function fetchInventoryDatabases() {
+    function fetchInventoryDatabases() {
       metaDisplay.textContent = "Loading database files...";
       metaStatusDot.className = "status-dot";
 
-      try {
-        let localRes = await fetch(REPO_STOCKS_CSV_URL);
-        if (!localRes.ok) throw new Error("Stocks repository data stream dropped.");
-        let rawCsvText = await localRes.text();
-        stockRegistry = parseSanitizedCSV(rawCsvText);
-
-        let sheetRes = await fetch(`${GOOGLE_SHEETS_API_URL}?action=readDatabase`);
-        if (!sheetRes.ok) throw new Error("Spreadsheet endpoint interface rejected parsing.");
-        let sheetData = await sheetRes.json();
-        fittingsRegistry = sheetData.records || [];
-
-        localStorage.setItem('cached_stocks', JSON.stringify(stockRegistry));
-        localStorage.setItem('cached_fittings', JSON.stringify(fittingsRegistry));
-
-        metaDisplay.textContent = "Local Database Ready";
-        metaStatusDot.className = "status-dot ready";
-      } catch (err) {
-        console.warn("Live pull failed. Attempting offline fallback parameters...", err);
-        stockRegistry = JSON.parse(localStorage.getItem('cached_stocks') || "[]");
-        fittingsRegistry = JSON.parse(localStorage.getItem('cached_fittings') || "[]");
-        
-        if (stockRegistry.length > 0) {
-          metaDisplay.textContent = "Cached Database Ready (Offline)";
+      fetch(REPO_STOCKS_CSV_URL)
+        .then(function(res) {
+          if (!res.ok) throw new Error("Stocks repository data stream dropped.");
+          return res.text();
+        })
+        .then(function(rawCsvText) {
+          stockRegistry = parseSanitizedCSV(rawCsvText);
+          return fetch(GOOGLE_SHEETS_API_URL + "?action=readDatabase");
+        })
+        .then(function(sheetRes) {
+          if (!sheetRes.ok) throw new Error("Spreadsheet endpoint interface rejected parsing.");
+          return sheetRes.json();
+        })
+        .then(function(sheetData) {
+          fittingsRegistry = sheetData.records || [];
+          localStorage.setItem('cached_stocks', JSON.stringify(stockRegistry));
+          localStorage.setItem('cached_fittings', JSON.stringify(fittingsRegistry));
+          metaDisplay.textContent = "Local Database Ready";
           metaStatusDot.className = "status-dot ready";
-        } else {
-          metaDisplay.textContent = "No database files found. Connect to office Wi-Fi.";
-          metaStatusDot.className = "status-dot";
-        }
-      }
+        })
+        .catch(function(err) {
+          console.warn("Live pull failed. Attempting offline fallback parameters...", err);
+          stockRegistry = JSON.parse(localStorage.getItem('cached_stocks') || "[]");
+          fittingsRegistry = JSON.parse(localStorage.getItem('cached_fittings') || "[]");
+          
+          if (stockRegistry.length > 0) {
+            metaDisplay.textContent = "Cached Database Ready (Offline)";
+            metaStatusDot.className = "status-dot ready";
+          } else {
+            metaDisplay.textContent = "No database files found. Connect to office Wi-Fi.";
+            metaStatusDot.className = "status-dot";
+          }
+        });
     }
 
     function parseSanitizedCSV(text) {
-      let lines = text.split(/\r?\n/);
+      var lines = text.split(/\r?\n/);
       if (lines.length < 2) return [];
-      let items = [];
+      var items = [];
 
-      for (let i = 1; i < lines.length; i++) {
+      for (var i = 1; i < lines.length; i++) {
         if (!lines[i].trim()) continue;
         
-        let row = [];
-        let insideQuote = false;
-        let entry = "";
+        var row = [];
+        var insideQuote = false;
+        var entry = "";
         
-        for (let j = 0; j < lines[i].length; j++) {
-          let char = lines[i][j];
+        for (var j = 0; j < lines[i].length; j++) {
+          var char = lines[i][j];
           if (char === '"') {
             insideQuote = !insideQuote;
           } else if (char === ',' && !insideQuote) {
@@ -373,60 +377,69 @@
       return val.trim().replace(/^"|"$/g, '');
     }
 
+    function highlightText(text, query) {
+      if (!query) return text;
+      var idx = text.toLowerCase().indexOf(query);
+      if (idx === -1) return text;
+      return text.substring(0, idx) + '<mark class="match">' + text.substring(idx, idx + query.length) + '</mark>' + text.substring(idx + query.length);
+    }
+
     function renderResults() {
-      let query = searchBox.value.trim().toLowerCase();
-      let area = document.getElementById('searchResultsArea');
+      var query = searchBox.value.trim().toLowerCase();
+      var area = document.getElementById('searchResultsArea');
       if (!query) { area.innerHTML = ''; return; }
 
-      let resultsA = stockRegistry.filter(i => 
-        i.part.toLowerCase().includes(query) || 
-        i.itemNo.toLowerCase().includes(query) || 
-        i.supplierRef.toLowerCase().includes(query)
-      );
+      var resultsA = stockRegistry.filter(function(i) {
+        return i.part.toLowerCase().indexOf(query) !== -1 || 
+               i.itemNo.toLowerCase().indexOf(query) !== -1 || 
+               i.supplierRef.toLowerCase().indexOf(query) !== -1;
+      });
 
-      let resultsB = fittingsRegistry.filter(i => 
-        i.part.toLowerCase().includes(query) || 
-        i.location.toLowerCase().includes(query)
-      ).map(i => ({...i, isFitting: true}));
+      var resultsB = fittingsRegistry.filter(function(i) {
+        return i.part.toLowerCase().indexOf(query) !== -1 || 
+               i.location.toLowerCase().indexOf(query) !== -1;
+      }).map(function(i) {
+        var copy = Object.assign({}, i);
+        copy.isFitting = true;
+        return copy;
+      });
 
-      let compiled = [...resultsA, ...resultsB].slice(0, 25);
+      var compiled = resultsA.concat(resultsB).slice(0, 25);
 
       if (compiled.length === 0) {
-        area.innerHTML = `<div class="card" style="text-align:center; color:var(--text-muted);">No records match your active parameters.</div>`;
+        area.innerHTML = '<div class="card" style="text-align:center; color:var(--text-muted);">No records match your active parameters.</div>';
         return;
       }
 
-      area.innerHTML = compiled.map(item => `
-        <div class="card" style="border-left: 5px solid ${item.isFitting ? 'var(--accent-purple)' : 'var(--accent-blue)'};">
-          <div style="display:flex; justify-content:space-between; align-items:start; margin-bottom:8px;">
-            <div>
-              <div style="font-size:11px; text-transform:uppercase; font-weight:700; color:var(--text-muted); margin-bottom:2px;">
-                ${item.isFitting ? 'Google Sheets Registry' : `${item.dept || 'STK'} &bull; Ref: ${highlightText(item.supplierRef, query)}`}
-              </div>
-              <h4 style="font-size:18px; font-weight:800; font-family:monospace; letter-spacing:-0.5px;">${highlightText(item.part, query)}</h4>
-            </div>
-            <span class="location-badge" style="background:${item.isFitting ? 'var(--accent-purple)' : 'var(--accent-green)'}">${highlightText(item.location, query)}</span>
-          </div>
-          
-          <div style="display:flex; justify-content:space-between; align-items:center; margin-top:12px; background:var(--bg-primary); padding:10px; border-radius:8px; font-size:13px;">
-            <div>
-              <span style="color:var(--text-muted);">Item No:</span> 
-              <strong style="font-family:monospace;">${item.isFitting ? 'N/A' : highlightText(item.itemNo, query)}</strong>
-            </div>
-            <div>
-              <span style="color:var(--text-muted);">In-Stock:</span> 
-              <strong style="color:var(--accent-blue); font-size:15px; font-family:monospace;">${item.totalQty} pcs</strong>
-            </div>
-          </div>
-        </div>
-      `).join('');
-    }
+      var html = '';
+      for (var k = 0; k < compiled.length; k++) {
+        var item = compiled[k];
+        var borderStyle = item.isFitting ? 'var(--accent-purple)' : 'var(--accent-blue)';
+        var badgeBg = item.isFitting ? 'var(--accent-purple)' : 'var(--accent-green)';
+        var subTitle = item.isFitting ? 'Google Sheets Registry' : ((item.dept || 'STK') + ' &bull; Ref: ' + highlightText(item.supplierRef, query));
+        var itemNumberText = item.isFitting ? 'N/A' : highlightText(item.itemNo, query);
 
-    function highlightText(text, query) {
-      if (!query) return text;
-      let idx = text.toLowerCase().indexOf(query);
-      if (idx === -1) return text;
-      return text.substring(0, idx) + '<mark class="match">' + text.substring(idx, idx + query.length) + '</mark>' + text.substring(idx + query.length);
+        html += '<div class="card" style="border-left: 5px solid ' + borderStyle + ';">' +
+                  '<div style="display:flex; justify-content:space-between; align-items:start; margin-bottom:8px;">' +
+                    '<div>' +
+                      '<div style="font-size:11px; text-transform:uppercase; font-weight:700; color:var(--text-muted); margin-bottom:2px;">' + subTitle + '</div>' +
+                      '<h4 style="font-size:18px; font-weight:800; font-family:monospace; letter-spacing:-0.5px;">' + highlightText(item.part, query) + '</h4>' +
+                    '</div>' +
+                    '<span class="location-badge" style="background:' + badgeBg + '">' + highlightText(item.location, query) + '</span>' +
+                  '</div>' +
+                  '<div style="display:flex; justify-content:space-between; align-items:center; margin-top:12px; background:var(--bg-primary); padding:10px; border-radius:8px; font-size:13px;">' +
+                    '<div>' +
+                      '<span style="color:var(--text-muted);">Item No:</span> ' +
+                      '<strong style="font-family:monospace;">' + itemNumberText + '</strong>' +
+                    '</div>' +
+                    '<div>' +
+                      '<span style="color:var(--text-muted);">In-Stock:</span> ' +
+                      '<strong style="color:var(--accent-blue); font-size:15px; font-family:monospace;">' + item.totalQty + ' pcs</strong>' +
+                    '</div>' +
+                  '</div>' +
+                '</div>';
+      }
+      area.innerHTML = html;
     }
 
     function resetSearchLayout() {
@@ -436,16 +449,18 @@
     }
 
     function renderConsolidationRows() {
-      let query = conSearchBox.value.trim().toLowerCase();
-      let conTableWrap = document.getElementById('conTableWrap');
-      let conTableBody = document.getElementById('conTableBody');
+      var query = conSearchBox.value.trim().toLowerCase();
+      var conTableWrap = document.getElementById('conTableWrap');
+      var conTableBody = document.getElementById('conTableBody');
 
       if (!query) {
         conTableWrap.style.display = 'none';
         return;
       }
 
-      let matches = fittingsRegistry.filter(i => i.part.toLowerCase().includes(query)).slice(0, 10);
+      var matches = fittingsRegistry.filter(function(i) {
+        return i.part.toLowerCase().indexOf(query) !== -1;
+      }).slice(0, 10);
 
       if (matches.length === 0) {
         conTableWrap.style.display = 'none';
@@ -453,62 +468,62 @@
       }
 
       conTableWrap.style.display = 'block';
-      let html = '';
+      var html = '';
 
-      for (let i = 0; i < matches.length; i++) {
-        let item = matches[i];
-        let rowId = `conRow_${i}`;
-        html += `<tr>
-          <td style="font-weight:700; font-family:monospace; font-size:13px;">${item.part}</td>
-          <td style="text-align:center;">
-            <input type="number" id="${rowId}_pack" value="${item.packSize || 1}" class="inline-edit-input" oninput="calculateInlineTotal('${rowId}')"/>
-          </td>
-          <td style="text-align:center;">
-            <input type="number" id="${rowId}_boxes" value="${item.boxes || 0}" class="inline-edit-input" oninput="calculateInlineTotal('${rowId}')"/>
-          </td>
-          <td id="${rowId}_total" style="text-align:center; font-weight:bold; font-family:monospace; color:var(--accent-purple); font-size:13px;">${item.totalQty}</td>
-          <td style="text-align:center;">
-            <button class="row-save-btn" onclick="syncInlineModification('${item.part}', '${item.location}', '${rowId}')">💾</button>
-          </td>
-          <td style="text-align:center;">
-            <span class="location-badge" style="background:var(--accent-purple); font-size:11px; padding:4px 8px;">${item.location}</span>
-          </td>
-        </tr>`;
+      for (var i = 0; i < matches.length; i++) {
+        var item = matches[i];
+        var rowId = 'conRow_' + i;
+        html += '<tr>' +
+          '<td style="font-weight:700; font-family:monospace; font-size:13px;">' + item.part + '</td>' +
+          '<td style="text-align:center;">' +
+            '<input type="number" id="' + rowId + '_pack" value="' + (item.packSize || 1) + '" class="inline-edit-input" oninput="calculateInlineTotal(\'' + rowId + '\')"/>' +
+          '</td>' +
+          '<td style="text-align:center;">' +
+            '<input type="number" id="' + rowId + '_boxes" value="' + (item.boxes || 0) + '" class="inline-edit-input" oninput="calculateInlineTotal(\'' + rowId + '\')"/>' +
+          '</td>' +
+          '<td id="' + rowId + '_total" style="text-align:center; font-weight:bold; font-family:monospace; color:var(--accent-purple); font-size:13px;">' + item.totalQty + '</td>' +
+          '<td style="text-align:center;">' +
+            '<button class="row-save-btn" onclick="syncInlineModification(\'' + item.part + '\', \'' + item.location + '\', \'' + rowId + '\')">💾</button>' +
+          '</td>' +
+          '<td style="text-align:center;">' +
+            '<span class="location-badge" style="background:var(--accent-purple); font-size:11px; padding:4px 8px;">' + item.location + '</span>' +
+          '</td>' +
+        '</tr>';
       }
       conTableBody.innerHTML = html;
     }
 
     function calculateInlineTotal(rowId) {
-      let p = parseInt(document.getElementById(`${rowId}_pack`).value, 10) || 0;
-      let b = parseInt(document.getElementById(`${rowId}_boxes`).value, 10) || 0;
-      document.getElementById(`${rowId}_total`).innerText = p * b;
+      var p = parseInt(document.getElementById(rowId + '_pack').value, 10) || 0;
+      var b = parseInt(document.getElementById(rowId + '_boxes').value, 10) || 0;
+      document.getElementById(rowId + '_total').innerText = p * b;
     }
 
     function syncInlineModification(partNumber, location, rowId) {
-      let packSize = parseInt(document.getElementById(`${rowId}_pack`).value, 10) || 0;
-      let boxes = parseInt(document.getElementById(`${rowId}_boxes`).value, 10) || 0;
-      let totalQty = packSize * boxes;
+      var packSize = parseInt(document.getElementById(rowId + '_pack').value, 10) || 0;
+      var boxes = parseInt(document.getElementById(rowId + '_boxes').value, 10) || 0;
+      var totalQty = packSize * boxes;
 
       metaDisplay.textContent = "Updating entry...";
       
-      let targetUrl = `${GOOGLE_SHEETS_API_URL}?action=updateRow&partNumber=${encodeURIComponent(partNumber)}&location=${encodeURIComponent(location)}&packSize=${packSize}&boxes=${boxes}&totalQty=${totalQty}`;
+      var targetUrl = GOOGLE_SHEETS_API_URL + "?action=updateRow&partNumber=" + encodeURIComponent(partNumber) + "&location=" + encodeURIComponent(location) + "&packSize=" + packSize + "&boxes=" + boxes + "&totalQty=" + totalQty;
 
       fetch(targetUrl)
-        .then(res => res.json())
-        .then(data => {
+        .then(function(res) { return res.json(); })
+        .then(function(data) {
           if (data.result === 'success') {
-            alert(`Successfully synchronized changes for ${partNumber}`);
+            alert("Successfully synchronized changes for " + partNumber);
             fetchInventoryDatabases();
           } else {
             alert("Server failed to log update: " + data.message);
           }
         })
-        .catch(() => alert("Network exception occurred during synchronization layout processing."));
+        .catch(function() { alert("Network exception occurred during synchronization layout processing."); });
     }
 
     function calculateModuleBTotal() {
-      let p = parseInt(document.getElementById('newPackSize').value, 10) || 0;
-      let b = parseInt(document.getElementById('newBoxes').value, 10) || 0;
+      var p = parseInt(document.getElementById('newPackSize').value, 10) || 0;
+      var b = parseInt(document.getElementById('newBoxes').value, 10) || 0;
       document.getElementById('newTotalQty').value = p * b;
     }
 
@@ -526,11 +541,11 @@
 
       metaDisplay.textContent = "Saving new item pallet record...";
 
-      var targetUrl = `${GOOGLE_SHEETS_API_URL}?action=addStock&partNumber=${encodeURIComponent(partNumber)}&location=${encodeURIComponent(location)}&packSize=${packSize}&boxes=${boxes}&totalQty=${totalQty}`;
+      var targetUrl = GOOGLE_SHEETS_API_URL + "?action=addStock&partNumber=" + encodeURIComponent(partNumber) + "&location=" + encodeURIComponent(location) + "&packSize=" + packSize + "&boxes=" + boxes + "&totalQty=" + totalQty;
 
       fetch(targetUrl)
-        .then(res => res.json())
-        .then(data => {
+        .then(function(res) { return res.json(); })
+        .then(function(data) {
           if (data.result === 'success') {
             alert("Entry written successfully to master sheet ledger!");
             document.getElementById('newPartNo').value = '';
@@ -543,7 +558,7 @@
             alert("Transmission logged an error outcome: " + data.message);
           }
         })
-        .catch(() => alert("CRITICAL: Server timeout exception. Verify Deployment configuration link properties."));
+        .catch(function() { alert("CRITICAL: Server timeout exception. Verify Deployment configuration link properties."); });
     }
 
     function startScanner() {
@@ -564,12 +579,12 @@
           ] 
         },
         onScanSuccess
-      ).catch(() => { metaDisplay.textContent = "Camera configuration failed."; });
+      ).catch(function() { metaDisplay.textContent = "Camera configuration failed."; });
     }
 
     function stopScanner() {
       if (html5QrcodeScanner) {
-        html5QrcodeScanner.stop().then(() => { html5QrcodeScanner = null; }).catch(()=>{});
+        html5QrcodeScanner.stop().then(function() { html5QrcodeScanner = null; }).catch(function(){});
       }
     }
 
@@ -592,18 +607,18 @@
           ] 
         },
         onInlineScanSuccess
-      ).catch(() => { alert("Could not access camera for target layout processing."); });
+      ).catch(function() { alert("Could not access camera for target layout processing."); });
     }
 
     function stopInlineScanner() {
       if (inlineFinderScanner) {
-        inlineFinderScanner.stop().then(() => { inlineFinderScanner = null; }).catch(()=>{});
+        inlineFinderScanner.stop().then(function() { inlineFinderScanner = null; }).catch(function(){});
       }
       document.getElementById('inlineScannerBox').style.display = 'none';
     }
 
     function onInlineScanSuccess(decodedText) {
-      let scannedText = decodedText.trim();
+      var scannedText = decodedText.trim();
       stopInlineScanner();
       
       if (currentScanTargetField === 'qr') {
@@ -612,17 +627,21 @@
         searchBox.value = (scannedText.startsWith('0') && scannedText.length > 1) ? scannedText.replace(/^0+/, '') : scannedText;
       }
       renderResults();
-      setTimeout(() => {
-        document.getElementById('resultsContainerLocationAnchor')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      setTimeout(function() {
+        var anchor = document.getElementById('resultsContainerLocationAnchor');
+        if (anchor) anchor.scrollIntoView({ behavior: 'smooth', block: 'start' });
       }, 100);
     }
 
     function onScanSuccess(decodedText) {
       if (isProcessingScan) return;
-      let term = decodedText.trim().toLowerCase();
+      var term = decodedText.trim().toLowerCase();
       
-      let matchedItem = stockRegistry.find(i => i.part.toLowerCase() === term || i.itemNo.toLowerCase() === term || i.supplierRef.toLowerCase() === term) ||
-                        fittingsRegistry.find(i => i.part.toLowerCase() === term);
+      var matchedItem = stockRegistry.find(function(i) {
+        return i.part.toLowerCase() === term || i.itemNo.toLowerCase() === term || i.supplierRef.toLowerCase() === term;
+      }) || fittingsRegistry.find(function(i) {
+        return i.part.toLowerCase() === term;
+      });
                         
       if (matchedItem) {
         isProcessingScan = true;
@@ -631,7 +650,7 @@
         isProcessingScan = true;
         stopScanner();
         
-        let simulatedItem = {
+        var simulatedItem = {
           part: decodedText.trim(),
           itemNo: decodedText.trim(),
           supplierRef: 'MANUAL COUNTER INJECTION',
@@ -642,7 +661,7 @@
           isFitting: false
         };
         
-        document.getElementById('targetTitleHeader').innerHTML = `<span style="color:var(--danger-red);">⚠️ NOT FOUND IN SYSTEM STOCKS</span>`;
+        document.getElementById('targetTitleHeader').innerHTML = '<span style="color:var(--danger-red);">⚠️ NOT FOUND IN SYSTEM STOCKS</span>';
         showOverlay(simulatedItem);
       }
     }
@@ -650,8 +669,8 @@
     function showOverlay(item) {
       activeScanMatch = item;
       document.getElementById('targetItemName').innerText = item.part;
-      document.getElementById('targetMappingInfo').innerText = item.isFitting ? 'Google Sheets Database Profile' : `Item No: ${item.itemNo} | Ref: ${item.supplierRef}`;
-      document.getElementById('targetSubLoc').innerText = `Location Row: ${item.location}`;
+      document.getElementById('targetMappingInfo').innerText = item.isFitting ? 'Google Sheets Database Profile' : ('Item No: ' + item.itemNo + ' | Ref: ' + item.supplierRef);
+      document.getElementById('targetSubLoc').innerText = 'Location Row: ' + item.location;
       document.getElementById('qtyInputField').value = '';
       document.getElementById('countOverlay').style.display = 'flex';
     }
@@ -694,18 +713,21 @@
 
     function renderLogRegistryDisplay() {
       var list = document.getElementById('logRegistryList');
-      document.getElementById('countSession').innerText = `Counts logged: ${countLogSession.length}`;
+      document.getElementById('countSession').innerText = 'Counts logged: ' + countLogSession.length;
       if (countLogSession.length === 0) { list.innerHTML = ''; return; }
       
-      list.innerHTML = countLogSession.map(log => `
-        <div class="log-item">
-          <div>
-            <div style="font-weight:bold; font-family:monospace; font-size:15px;">${log.part}</div>
-            <div style="font-size:11px; color:var(--text-muted); margin-top:2px;">Scanned at ${log.time} in Loc: ${log.location}</div>
-          </div>
-          <div style="font-size:18px; font-weight:800; color:var(--accent-green); font-family:monospace;">${log.qty} pcs</div>
-        </div>
-      `).join('');
+      var html = '';
+      for (var i = 0; i < countLogSession.length; i++) {
+        var log = countLogSession[i];
+        html += '<div class="log-item">' +
+          '<div>' +
+            '<div style="font-weight:bold; font-family:monospace; font-size:15px;">' + log.part + '</div>' +
+            '<div style="font-size:11px; color:var(--text-muted); margin-top:2px;">Scanned at ' + log.time + ' in Loc: ' + log.location + '</div>' +
+          '</div>' +
+          '<div style="font-size:18px; font-weight:800; color:var(--accent-green); font-family:monospace;">' + log.qty + ' pcs</div>' +
+        '</div>';
+      }
+      list.innerHTML = html;
     }
 
     function checkUnexportedSessionLogs() {
@@ -713,7 +735,7 @@
       var savedLogs = localStorage.getItem('ms_saved_logs');
       if (savedLogs && JSON.parse(savedLogs).length > 0) {
         if (savedDate !== new Date().toDateString()) {
-          document.getElementById('interceptMessage').innerText = `Found unexported count data from terminal session date: ${savedDate || 'Unknown'}.`;
+          document.getElementById('interceptMessage').innerText = "Found unexported count data from terminal session date: " + (savedDate || 'Unknown') + ".";
           document.getElementById('startupInterceptModal').style.display = 'flex';
         } else {
           countLogSession = JSON.parse(savedLogs);
@@ -747,17 +769,18 @@
     function exportCountsToCSV() {
       if (countLogSession.length === 0) { alert("Nothing found to generate reports from."); return; }
       let header = "PART NUMBER,LOCATION,COUNT QTY,TIMESTAMP\n";
-      let content = countLogSession.map(l => `"${l.part}","${l.location}",${l.qty},"${l.time}"`).join("\n");
+      let content = countLogSession.map(function(l) {
+        return '"' + l.part + '","' + l.location + '",' + l.qty + ',"' + l.time + '"';
+      }).join("\n");
       let blob = new Blob([header + content], { type: 'text/csv;charset=utf-8;' });
       let link = document.createElement("a");
       link.href = URL.createObjectURL(blob);
-      link.setAttribute("download", `Physical_Inventory_Audit_Report_${new Date().toISOString().slice(0,10)}.csv`);
+      link.setAttribute("download", "Physical_Inventory_Audit_Report_" + new Date().toISOString().slice(0,10) + ".csv");
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
     }
 
-    // PURGES SCRIPT EMBED AND LOCALSTORAGE CACHE ENTIRELY
     function clearAppCache() {
       if (confirm("Force system to invalidate locally preserved manifest records? Run this if items show stale metadata positions.")) {
         localStorage.clear();
@@ -766,8 +789,8 @@
     }
 
     function switchMode(mode) {
-      document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
-      document.querySelectorAll('.app-screen').forEach(scr => scr.classList.remove('active'));
+      document.querySelectorAll('.tab-btn').forEach(function(btn) { btn.classList.remove('active'); });
+      document.querySelectorAll('.app-screen').forEach(function(scr) { scr.classList.remove('active'); });
       
       if (mode === 'finder') {
         document.getElementById('finderTab').classList.add('active');
@@ -775,7 +798,7 @@
         document.getElementById('footerBar').style.display = 'flex';
         document.getElementById('countSession').style.display = 'none';
         stopScanner();
-        setTimeout(() => { searchBox.focus(); }, 100);
+        setTimeout(function() { searchBox.focus(); }, 100);
       } else if (mode === 'counter') {
         document.getElementById('counterTab').classList.add('active');
         document.getElementById('counterScreen').classList.add('active');
@@ -790,7 +813,7 @@
         document.getElementById('countSession').style.display = 'none';
         stopScanner();
         stopInlineScanner();
-        setTimeout(() => { conSearchBox.focus(); }, 100);
+        setTimeout(function() { conSearchBox.focus(); }, 100);
       }
     }
   </script>
