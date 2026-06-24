@@ -3,1100 +3,534 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
-  <title>STOCK LOCATOR+</title>
+  <title>Stock Locator+</title>
 
   <link rel="manifest" href="manifest.json">
-
   <link rel="icon" type="image/png" sizes="192x192" href="./wh_icon.png">
-  <link rel="icon" type="image/png" sizes="512x512" href="./wh_icon.png">
-  <link rel="apple-touch-icon" sizes="180x180" href="./wh_icon.png">
-  <link rel="icon" type="image/png" sizes="32x32" href="./wh_icon.png">
-
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-title" content="STOCK LOCATOR+">
-  <meta name="theme-color" content="#0056b3">
+  <meta name="theme-color" content="#161a22">
 
   <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
 
   <style>
     :root {
-      --primary-accent: #0056b3; 
-      --bg: #f4f6f9; 
-      --panel: rgba(255, 255, 255, 0.85);
-      --text: #1e293b;
-      --muted: #475569;
-      --border: rgba(219, 226, 239, 0.7);
-      --th-bg: rgba(241, 245, 249, 0.9);
-      --accent-green: #10b981;
-      --accent-purple: #8250df;
-      --danger-red: #dc3545;
-      --warn-yellow: #f0b429;
-      --glass-blur: blur(12px);
-      --bg-overlay: rgba(244, 246, 249, 0.4);
+      --bg: #f8fafc;
+      --panel: #ffffff;
+      --text: #0f172a;
+      --border: #e2e8f0;
+      --primary: #0056b3;
+      --accent-green: #198754;
+      --accent-purple: #9b5de5;
     }
+    
     [data-theme="dark"] {
-      --primary-accent: #3b82f6;
       --bg: #0f1115;
-      --panel: rgba(22, 26, 34, 0.80);
+      --panel: #161a22;
       --text: #f8fafc;
-      --muted: #94a3b8;
-      --border: rgba(45, 55, 72, 0.6);
-      --th-bg: rgba(30, 41, 59, 0.9);
-      --bg-overlay: rgba(15, 17, 21, 0.75);
+      --border: #2d3748;
+      --primary: #3b82f6;
     }
+
     * { box-sizing: border-box; margin: 0; padding: 0; }
-     
-    html, body { min-height: 100vh; }
-     
     body { 
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; 
-      background-color: var(--bg);
-      background-position: center;
-      background-size: cover;
-      background-attachment: fixed;
-      background-repeat: no-repeat;
+      background-color: var(--bg); 
       color: var(--text); 
-      padding: 12px; 
-      padding-bottom: 90px; 
-      transition: background-color 0.2s ease;
-      position: relative;
+      padding: 12px;
+      padding-bottom: 90px;
     }
-
-    body::before {
-      content: "";
-      position: fixed;
-      top: 0; left: 0; right: 0; bottom: 0;
-      background: var(--bg-overlay);
-      z-index: -1;
-      pointer-events: none;
-      transition: background 0.2s ease;
-    }
-
-    .app-container { max-width: 750px; margin: 0 auto; position: relative; z-index: 1; }
 
     .app-header {
       display: flex;
-      flex-direction: column;
       align-items: center;
-      justify-content: center;
-      gap: 6px;
+      justify-content: space-between;
       margin-bottom: 14px;
-      padding: 10px;
+      padding-bottom: 8px;
+      border-bottom: 1px solid var(--border);
     }
-    .header-main-row {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 12px;
+    .header-title-block { display: flex; align-items: center; gap: 8px; font-weight: bold; font-size: 18px; }
+
+    .clear-cache-btn {
+      background-color: #dc3545;
+      color: white;
+      border: none;
+      padding: 6px 12px;
+      border-radius: 6px;
+      font-size: 12px;
+      font-weight: bold;
+      cursor: pointer;
     }
-    .app-logo { height: 38px; width: auto; object-fit: contain; }
-    .app-title { font-size: 24px; font-weight: 800; letter-spacing: -0.5px; color: var(--text); text-transform: uppercase; }
 
     .tabs-bar { 
       display: grid; 
       grid-template-columns: 1fr 1fr 1fr;
-      background: var(--panel); 
-      border: 1px solid var(--border); 
-      border-radius: 12px; 
-      padding: 5px; 
+      gap: 6px;
       margin-bottom: 14px; 
-      box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); 
-      backdrop-filter: var(--glass-blur);
     }
     .tab-btn { 
-      padding: 14px 6px; 
+      padding: 12px 4px; 
       text-align: center; 
       font-size: 13px; 
-      font-weight: 700; 
-      border: none; 
-      background: transparent; 
-      color: var(--muted); 
+      font-weight: bold; 
+      border: 1px solid var(--border); 
+      background: var(--panel); 
+      color: var(--text); 
       cursor: pointer; 
-      border-radius: 8px; 
-      transition: all 0.2s ease; 
+      border-radius: 6px; 
+      transition: all 0.2s ease;
     }
-     
-    #finderTab.active { background: #0056b3; color: white; }
-    #counterTab.active { background: var(--accent-green); color: white; }
-    #consolidationTab.active { background: var(--accent-purple); color: white; }
-
-    .app-screen { display: none; }
-    .app-screen.active { display: block; }
+    .tab-btn.active { background: var(--primary); color: white; border-color: var(--primary); }
 
     .panel-box { 
-      background: var(--panel); 
-      padding: 20px; 
-      border-radius: 12px; 
       border: 1px solid var(--border); 
-      box-shadow: 0 4px 10px rgba(0,0,0,0.04); 
+      padding: 16px; 
+      border-radius: 8px; 
       margin-bottom: 16px; 
-      backdrop-filter: var(--glass-blur);
+      background: var(--panel);
+      box-shadow: 0 1px 3px rgba(0,0,0,0.05);
     }
 
-    .input-group { margin-bottom: 14px; }
-    label { 
-      font-weight: 700; 
-      font-size: 11px; 
-      color: var(--text); 
+    .input-group { margin-bottom: 12px; }
+    .input-group label { 
       display: block; 
-      margin-bottom: 6px; 
-      text-transform: uppercase; 
+      font-size: 12px; 
+      font-weight: bold; 
+      text-transform: uppercase;
       letter-spacing: 0.5px;
-      opacity: 0.9;
+      color: #64748b; 
+      margin-bottom: 6px; 
     }
-     
     input[type="text"], input[type="number"] { 
       width: 100%; 
-      padding: 14px; 
-      font-size: 16px; 
-      border: 2px solid var(--border); 
-      border-radius: 8px; 
-      background: var(--panel); 
+      padding: 12px; 
+      font-size: 15px; 
+      border: 1px solid var(--border); 
+      border-radius: 6px; 
+      background: var(--bg);
       color: var(--text);
-      transition: border-color 0.2s;
     }
-    input:focus { outline: none; border-color: var(--primary-accent); }
 
     .shortcut-row { 
       display: grid; 
       grid-template-columns: 1fr 1fr; 
-      gap: 10px; 
-      margin-top: 14px; 
+      gap: 8px; 
+      margin-bottom: 12px;
     }
     .action-sub-btn { 
       padding: 12px; 
       font-size: 14px; 
       font-weight: 600; 
       color: white; 
-      background: #198754; 
+      background: var(--accent-green); 
       border: none; 
       border-radius: 6px; 
       cursor: pointer; 
       text-align: center;
     }
-    .action-sub-btn.reset { background: #4a5568; }
-    .shortcut-row .reset { grid-column: span 2; }
+    .action-sub-btn.reset { background: #475569; grid-column: span 2; }
 
-    .inline-scanner-box {
-      display: none;
-      background: #000;
-      border-radius: 8px;
-      overflow: hidden;
-      margin-bottom: 14px;
-      position: relative;
-    }
-    .close-scan-btn {
-      position: absolute;
-      top: 10px;
-      right: 10px;
-      background: rgba(0,0,0,0.7);
-      color: white;
-      border: 1px solid #fff;
-      padding: 6px 12px;
-      border-radius: 4px;
-      cursor: pointer;
-      z-index: 10;
-      font-size: 12px;
-      font-weight: bold;
-    }
+    .pref-row { display: flex; align-items: center; gap: 8px; margin-top: 14px; font-size: 14px; border-top: 1px dashed var(--border); padding-top: 12px; }
+    .color-swatch { width: 32px; height: 20px; background: var(--accent-purple); border-radius: 4px; display: inline-block; }
 
-    .preferences-container {
-      margin-top: 16px;
-      padding-top: 14px;
-      border-top: 1px dashed var(--border);
-      display: flex;
-      flex-direction: column;
-      gap: 12px;
-    }
-    .pref-row {
-      display: flex;
-      align-items: center;
-      justify-content: flex-start;
-      gap: 10px;
-      width: 100%;
-      flex-wrap: wrap;
-    }
-    .custom-file-upload {
-      display: inline-block;
-      padding: 8px 12px;
-      cursor: pointer;
-      background: var(--th-bg);
+    .results-section-header { font-size: 16px; font-weight: bold; margin-bottom: 10px; color: #64748b; }
+    
+    /* VERTICAL MOBILE CARDS CONFIGURATION */
+    .classic-card {
       border: 1px solid var(--border);
-      border-radius: 6px;
-      font-size: 12px;
-      font-weight: bold;
-      color: var(--text);
+      border-radius: 8px;
+      padding: 16px;
+      margin-bottom: 12px;
+      background: var(--panel);
+      box-shadow: 0 2px 4px rgba(0,0,0,0.02);
     }
-    .reset-bg-link {
-      font-size: 12px;
-      color: #dc3545;
-      text-decoration: none;
-      cursor: pointer;
-      font-weight: bold;
-      background: rgba(220, 53, 69, 0.1);
-      padding: 8px 12px;
-      border-radius: 6px;
-      border: 1px solid rgba(220, 53, 69, 0.2);
-      display: inline-block;
-    }
-
-    .sync-status-row {
+    .card-row {
       display: flex;
-      justify-content: flex-end;
-      align-items: center;
-      font-size: 11px;
-      color: var(--muted);
-      border-top: 1px solid var(--border);
-      padding-top: 10px;
-      margin-top: 4px;
+      justify-content: space-between;
+      padding: 8px 0;
+      font-size: 15px;
+      border-bottom: 1px dashed var(--border);
     }
-    .clear-cache-link { color: #dc3545; text-decoration: none; font-weight: 700; cursor: pointer; border: none; background: transparent; font-size: 12px; }
+    .card-row:last-child { border-bottom: none; }
+    .card-label { font-weight: bold; color: #64748b; width: 35%; }
+    .card-value { color: var(--text); width: 65%; text-align: left; font-weight: 500; }
+    
+    mark.classic-highlight { background: #ffeb3b; color: #000; padding: 2px 6px; border-radius: 4px; font-weight: bold; }
+    .sublocation-badge { background: var(--accent-green); color: white; padding: 4px 8px; border-radius: 4px; font-weight: bold; font-size: 13px; display: inline-block; }
 
-    .table-wrap { 
-      overflow-x: auto; 
-      background: var(--panel); 
-      border-radius: 12px; 
-      border: 1px solid var(--border); 
-      box-shadow: 0 4px 6px -1px rgba(0,0,0,0.02);
-      backdrop-filter: var(--glass-blur);
-    }
-    table { width: 100%; border-collapse: collapse; text-align: left; table-layout: fixed; }
-    th, td { padding: 12px 6px; border-bottom: 1px solid var(--border); border-right: 1px solid var(--border); vertical-align: middle; word-wrap: break-word; }
-    th:last-child, td:last-child { border-right: none; }
-    th { background: var(--th-bg); font-weight: 700; color: var(--muted); font-size: 12px; text-transform: uppercase; }
-     
-    th.col-main, td.col-main { width: 34%; }
-    th.col-pack, td.col-pack { width: 16%; text-align: center; }
-    th.col-boxes, td.col-boxes { width: 15%; text-align: center; }
-    th.col-total, td.col-total { width: 18%; text-align: center; }
-    th.col-save, td.col-save { width: 11%; text-align: center; }
-    th.col-sub, td.col-sub { width: 13%; text-align: center; }
+    .inline-scanner-box { display: none; background: #000; border-radius: 8px; overflow: hidden; margin-bottom: 14px; position: relative; }
+    .close-scan-btn { position: absolute; top: 10px; right: 10px; background: rgba(0,0,0,0.8); color: white; border: 1px solid #fff; padding: 6px 12px; border-radius: 4px; cursor: pointer; z-index: 10; font-size: 12px; }
 
-    mark.match { background: #ffeb3b; color: #000; padding: 1px 3px; border-radius: 3px; font-weight: bold; }
-    [data-theme="dark"] mark.match { background: #f59e0b; }
-     
-    .location-badge { 
-      background: #10b981; 
-      color: white; 
-      padding: 6px 4px; 
-      border-radius: 6px; 
-      font-weight: 700; 
-      font-size: 11px; 
-      display: inline-block; 
-      text-align: center;
-      max-width: 100%;
-    }
-    .location-badge.fittings-badge { background: #8b5cf6; }
+    .app-screen { display: none; }
+    .app-screen.active { display: block; }
+    .alertBox { display: none; background: #fef3c7; color: #92400e; padding: 12px; border-radius: 6px; text-align: center; font-weight: bold; margin-top: 12px; border: 1px solid #fde68a; }
 
-    .inline-edit-input {
-      width: 100% !important;
-      max-width: 60px !important;
-      padding: 6px 2px !important;
-      font-size: 13px !important;
-      font-weight: bold !important;
-      text-align: center !important;
-      border: 2px solid #8b5cf6 !important;
-      border-radius: 6px !important;
-      background: var(--panel) !important;
-      color: var(--text) !important;
-    }
+    /* AUDIT AND CONSOLIDATION DATA TABLE UI */
+    .table-wrap { overflow-x: auto; background: var(--panel); border: 1px solid var(--border); border-radius: 8px; margin-top: 12px; }
+    table { width: 100%; border-collapse: collapse; text-align: left; font-size: 14px; white-space: nowrap; }
+    th, td { padding: 12px; border-bottom: 1px solid var(--border); }
+    th { background: var(--bg); font-weight: bold; color: #64748b; }
+    
+    .audit-count-row td { background: rgba(25, 135, 84, 0.05); }
 
-    .row-save-btn {
-      background: var(--accent-green);
-      color: white;
-      border: none;
-      padding: 6px;
-      border-radius: 6px;
-      cursor: pointer;
-      font-size: 14px;
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      width: 32px;
-      height: 32px;
-    }
-
-    .alertBox { 
-      display: none; background: rgba(240, 180, 41, 0.1); border-color: rgba(240, 180, 41, 0.4); color: #f0b429; padding: 16px; border-radius: 8px; 
-      text-align: center; font-weight: bold; margin-top: 12px; border: 1px solid;
-    }
-
-    #reader { width: 100%; background: #000; border-radius: 8px; overflow: hidden; }
-    .count-overlay { display: none; background: var(--panel); border: 2px solid var(--accent-green); border-radius: 12px; padding: 16px; margin-bottom: 12px; position: relative; backdrop-filter: var(--glass-blur); }
-    .count-title { font-size: 12px; font-weight: bold; color: var(--muted); text-transform: uppercase; }
-    .count-item-name { font-size: 19px; font-weight: 800; margin: 4px 0; }
-    .count-sub { display: inline-block; background: #e0f2fe; color: #0369a1; font-weight: bold; padding: 4px 8px; border-radius: 4px; font-size: 12px; margin-bottom: 12px; }
-     
-    .input-row { display: flex; gap: 6px; align-items: center; margin-bottom: 12px; }
-    .qty-input { flex: 1; font-size: 22px; font-weight: bold; text-align: center; }
-    .mod-btn { padding: 12px; font-size: 15px; font-weight: bold; border: 1px solid var(--border); background: var(--th-bg); color: var(--text); border-radius: 6px; cursor: pointer; }
-
-    .action-row { display: flex; gap: 6px; }
-    .btn { flex: 1; padding: 12px; font-size: 14px; font-weight: bold; border: none; border-radius: 6px; cursor: pointer; }
-    .btn-save { background: var(--accent-green); color: white; }
-    .btn-cancel { background: #dc3545; color: white; }
-
-    .log-item { background: var(--panel); padding: 12px; border-radius: 8px; border: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; backdrop-filter: var(--glass-blur); }
-     
-    .session-actions-strip { display: flex; justify-content: space-between; align-items: center; margin: 14px 0 8px 0; }
-    .new-session-btn { background: #4a5568; color: white; border: none; padding: 6px 12px; font-size: 12px; font-weight: 700; border-radius: 6px; cursor: pointer; }
-    .clear-btn { background: none; border: none; color: #dc3545; cursor: pointer; font-weight: 600; padding: 4px; font-size: 12px; }
-
-    .intercept-modal-overlay {
-      display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0;
-      background: rgba(0, 0, 0, 0.7); backdrop-filter: blur(4px); z-index: 99999;
-      justify-content: center; align-items: center; padding: 20px;
-    }
-    .intercept-box {
-      background: var(--panel); border: 2px solid var(--primary-accent); padding: 24px;
-      border-radius: 16px; max-width: 460px; width: 100%; box-shadow: 0 10px 25px rgba(0,0,0,0.3);
-      text-align: center; backdrop-filter: var(--glass-blur);
-    }
-    .intercept-btns { display: flex; flex-direction: column; gap: 10px; margin-top: 15px; }
-    .btn-choice { width: 100%; padding: 14px; font-size: 15px; font-weight: bold; border: none; border-radius: 8px; cursor: pointer; }
-    .btn-choice.continue { background: var(--primary-accent); color: white; }
-    .btn-choice.purge { background: #dc3545; color: white; }
-
-    .footer-bar {
-      position: fixed; bottom: 0; left: 0; right: 0; height: 70px;
-      background: var(--panel); border-top: 1px solid var(--border);
-      display: flex; align-items: center; justify-content: center; padding: 0 12px; z-index: 1000; backdrop-filter: var(--glass-blur);
-    }
-    .export-btn { width: 100%; max-width: 726px; background: var(--primary-accent); color: white; border: none; padding: 14px; font-size: 15px; font-weight: 700; border-radius: 8px; cursor: pointer; }
+    .footer-bar { position: fixed; bottom: 0; left: 0; right: 0; background: var(--panel); border-top: 1px solid var(--border); padding: 12px; text-align: center; z-index: 1000; box-shadow: 0 -2px 10px rgba(0,0,0,0.05); }
+    .export-btn { width: 100%; max-width: 500px; background: var(--primary); color: white; border: none; padding: 12px; font-weight: bold; border-radius: 6px; cursor: pointer; font-size: 14px; }
   </style>
 </head>
 <body>
 
-<div id="startupInterceptModal" class="intercept-modal-overlay">
-  <div class="intercept-box">
-    <h3 style="color: var(--text);">Unexported Counts Detected! ⏳</h3>
-    <p id="interceptMessage">You have remaining logs saved in this terminal from an earlier date.</p>
-    <div class="intercept-btns">
-      <button class="btn-choice continue" onclick="resolveIntercept('continue')">🔄 Continue Previous Session</button>
-      <button class="btn-choice purge" onclick="resolveIntercept('purge')">🧹 Wipe & Start New Session</button>
-    </div>
-  </div>
-</div>
-
 <div class="app-container">
-   
+  
   <div class="app-header">
-    <div class="header-main-row">
-      <img src="logo.png" alt="Logo" class="app-logo" onerror="this.style.display='none'"/>
-      <h1 class="app-title">STOCK LOCATOR+</h1>
+    <div class="header-title-block">
+      <span>STOCK LOCATOR+</span>
     </div>
-  </div>
-   
-  <div class="tabs-bar">
-    <button id="finderTab" class="tab-btn active" onclick="switchMode('finder')">🔍 Stock Lookup</button>
-    <button id="counterTab" class="tab-btn" onclick="switchMode('counter')">📋 Audit Scanner</button>
-    <button id="consolidationTab" class="tab-btn" onclick="switchMode('consolidation')">📦 Consolidation</button>
+    <button class="clear-cache-btn" onclick="clearAppCache()">Clear App Cache</button>
   </div>
 
-  <div style="display: flex; justify-content: space-between; font-size: 12px; color: var(--text); font-weight: 600; margin-bottom: 8px; padding: 0 4px; opacity:0.85;">
-    <div id="metaDisplay">Loading database files...</div>
-    <div id="countSession" style="display:none;">Counts logged: 0</div>
+  <div class="tabs-bar">
+    <button id="finderTab" class="tab-btn active" onclick="switchMode('finder')">Stock Lookup</button>
+    <button id="counterTab" class="tab-btn" onclick="switchMode('counter')">Audit Scanner</button>
+    <button id="consolidationTab" class="tab-btn" onclick="switchMode('consolidation')">Consolidation</button>
   </div>
+
+  <div style="font-size: 13px; margin-bottom: 12px; color: #64748b; font-weight: 500;" id="metaDisplay">Loading database records...</div>
 
   <div id="finderScreen" class="app-screen active">
     <div class="panel-box">
-       
+      
       <div id="inlineScannerBox" class="inline-scanner-box">
         <button class="close-scan-btn" onclick="stopInlineScanner()">✕ Close Camera</button>
-        <div id="finderReader" style="width:100%;"></div>
+        <div id="finderReader"></div>
       </div>
 
       <div class="input-group">
-        <label for="searchBox">Search Part Number / Item No. / Supplier Reference</label>
-        <input id="searchBox" type="text" placeholder="DGN 3102C..." autofocus autocomplete="off"/>
+        <label for="searchBox">Search Part Number / Item No.</label>
+        <input id="searchBox" type="text" placeholder="DGN 3102C IC830" autofocus autocomplete="off"/>
       </div>
-   
+
+      <div class="input-group">
+        <label for="searchSupplierBox">Search Supplier Reference</label>
+        <input id="searchSupplierBox" type="text" placeholder="Supplier Reference" autocomplete="off"/>
+      </div>
+
       <div class="shortcut-row">
         <button class="action-sub-btn" onclick="startInlineScanner('qr')">Scan QR Code</button>
         <button class="action-sub-btn" onclick="startInlineScanner('supplier')">Scan Supplier Ref</button>
         <button class="action-sub-btn reset" onclick="resetSearchFields()">Reset Search Fields</button>
       </div>
 
-      <div class="preferences-container">
-        <div class="pref-row">
-          <label class="custom-file-upload">
-            <input type="file" id="bgUploader" accept="image/*" style="display: none;" onchange="handleWallpaperUpload(event)" />
-            🖼️ Upload Custom Theme Image
-          </label>
-          <span id="resetBgBtn" class="reset-bg-link" style="display: none;" onclick="clearWallpaperTheme()">✕ Reset Theme Image</span>
-        </div>
-         
-        <div class="pref-row" style="justify-content: flex-start; gap: 8px;">
-          <input id="themeToggle" type="checkbox" style="width:18px; height:18px; cursor:pointer;" />
-          <label for="themeToggle" style="display:inline; font-weight:600; color:var(--text); text-transform:none; cursor:pointer;">Dark Mode</label>
-        </div>
-
-        <div class="pref-row" style="justify-content: flex-start; gap: 8px;">
-          <button id="notifActivationBtn" class="custom-file-upload" onclick="requestNotificationPermission()" style="background:#475569; color:white; border:none; transition: background 0.3s;">🔔 Activate Notifications</button>
-        </div>
-
-        <div class="sync-status-row">
-          <button class="clear-cache-link" onclick="clearAppCache()">♻️ Clear App Cache</button>
-        </div>
+      <div class="pref-row">
+        <span>Accent Color</span>
+        <div class="color-swatch"></div>
+        <span style="margin-left: auto;">Dark Mode</span>
+        <input type="checkbox" id="themeToggle" style="width: 18px; height: 18px;">
       </div>
+
+      <div style="font-size:12px; color:#64748b; margin-top:12px; font-weight: 500;" id="syncTimeLabel">Loading stocks.csv from host...</div>
     </div>
 
-    <div class="results-container" id="resultsContainerLocationAnchor">
-      <div class="table-wrap" id="tableWrap" style="display:none;">
-        <table>
-          <thead>
-            <tr>
-              <th class="col-main">Part Number Map / Cross-Ref</th>
-              <th class="col-pack">Pack Size</th>
-              <th class="col-boxes">Boxes</th>
-              <th class="col-total">Total Qty</th>
-              <th class="col-sub">Loc</th>
-            </tr>
-          </thead>
-          <tbody id="tableBody"></tbody>
-        </table>
-      </div>
+    <div id="resultsContainer">
+      <div class="results-section-header" id="resultsTitle" style="display:none;">Results (Quantity > 0)</div>
+      <div id="cardsRegistryBox"></div>
       <div id="noResults" class="alertBox">❌ No matching inventory items found.</div>
     </div>
   </div>
 
   <div id="counterScreen" class="app-screen">
-    <div class="panel-box" style="padding:8px; margin-bottom:12px;">
-      <div id="reader"></div>
-    </div>
+    <div class="panel-box">
+      <h3 style="margin-bottom:12px; font-size:16px;">Audit Stock Capture Window</h3>
+      
+      <div id="auditReader" style="width:100%; background:#000; border-radius:6px; overflow:hidden; margin-bottom:12px;"></div>
+      <div style="margin-bottom:14px; font-size:13px; font-weight:600; text-align:center; color: var(--accent-green);" id="auditStatusLabel">Camera ready. Click a trigger below to start auditing.</div>
 
-    <div id="countOverlay" class="count-overlay">
-      <div id="targetTitleHeader" class="count-title">Matched Database Reference</div>
-      <div id="targetItemName" class="count-item-name">---</div>
-      <div id="targetMappingInfo" style="font-size:12px; color:var(--muted); margin-bottom:8px;">---</div>
-      <div id="targetSubLoc" class="count-sub">---</div>
-       
-      <div class="input-row">
-        <button class="mod-btn" onclick="adjustQty(-1)">-1</button>
-        <input id="qtyInputField" type="number" class="qty-input" placeholder="0" min="0" inputmode="numeric"/>
-        <button class="mod-btn" onclick="adjustQty(1)">+1</button>
-        <button class="mod-btn" onclick="adjustQty(10)">+10</button>
+      <div class="shortcut-row">
+        <button class="action-sub-btn" onclick="startAuditScanner()" style="grid-column: span 2; background: var(--primary);">📷 Activate Audit Camera</button>
       </div>
 
-      <div class="action-row">
-        <button class="btn btn-cancel" onclick="dismissOverlay()">Cancel</button>
-        <button class="btn btn-save" onclick="commitCount()">Save Count</button>
+      <div class="input-group" style="margin-top:14px;">
+        <label for="auditItemInput">Manual Scanned Value / Item Barcode</label>
+        <input id="auditItemInput" type="text" placeholder="Scan or enter manual code..." autocomplete="off"/>
       </div>
+      
+      <div class="input-group">
+        <label for="auditQtyInput">Counted Physical Quantity</label>
+        <input id="auditQtyInput" type="number" value="1" min="1"/>
+      </div>
+
+      <button class="action-sub-btn" onclick="commitAuditCountEntry()" style="width:100%; background: var(--accent-green);">💾 Log Count Entry to Session Ledger</button>
     </div>
 
-    <div class="session-actions-strip">
-      <button class="new-session-btn" onclick="triggerNewSessionManually()">Start New Session</button>
-      <button class="clear-btn" onclick="clearCounts()">Clear Current Logs</button>
+    <div class="results-section-header">Current Session Physical Audit Log</div>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Timestamp</th>
+            <th>Item Number / Barcode</th>
+            <th>Qty Logged</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody id="auditLogTableBody">
+          <tr><td colspan="4" style="text-align:center; color:#64748b;">No items audited in this session yet.</td></tr>
+        </tbody>
+      </table>
     </div>
-    <div id="logRegistryList"></div>
   </div>
 
   <div id="consolidationScreen" class="app-screen">
-     
     <div class="panel-box">
-      <h3 style="font-size:14px; margin-bottom:10px; color:var(--accent-purple); text-transform:uppercase; letter-spacing:0.5px;">Module A: Modify or Zero-Out Item</h3>
       <div class="input-group">
-        <label for="conSearchBox">Search Fitting Part Number to Edit</label>
-        <input id="conSearchBox" type="text" placeholder="Type part number to modify..." autocomplete="off"/>
-      </div>
-       
-      <div class="table-wrap" id="conTableWrap" style="display: none; margin-top:12px;">
-        <table>
-          <thead>
-            <tr>
-              <th class="col-main">Part Number Map</th>
-              <th class="col-pack">Pack Size</th>
-              <th class="col-boxes">Boxes</th>
-              <th class="col-total">Total Qty</th>
-              <th class="col-save">Sync</th>
-              <th class="col-sub">Loc</th>
-            </tr>
-          </thead>
-          <tbody id="conTableBody"></tbody>
-        </table>
+        <label for="conSearchBox">Search Master Stock Record to Inspect</label>
+        <input id="conSearchBox" type="text" placeholder="Type part or item number..." autocomplete="off"/>
       </div>
     </div>
 
-    <div class="panel-box">
-      <h3 style="font-size:14px; margin-bottom:12px; color:var(--accent-green); text-transform:uppercase; letter-spacing:0.5px;">Module B: Add To New Pallet</h3>
-       
-      <div class="input-group">
-        <label for="newPartNo">Part Number</label>
-        <input id="newPartNo" type="text" placeholder="e.g., 22611D-06-06N" autocomplete="off"/>
-      </div>
-
-      <div class="input-group">
-        <label for="newPalletNo">Pallet No.</label>
-        <input id="newPalletNo" type="text" placeholder="e.g., 7" autocomplete="off"/>
-      </div>
-
-      <div class="input-group">
-        <label for="newPackSize">Pack Size</label>
-        <input id="newPackSize" type="number" placeholder="e.g., 200" min="0" inputmode="numeric" oninput="calculateModuleBTotal()"/>
-      </div>
-
-      <div class="shortcut-row" style="grid-template-columns: 1fr 1fr; margin-top:0; margin-bottom:14px;">
-        <div class="input-group" style="margin-bottom:0;">
-          <label for="newBoxes">No. of Boxes</label>
-          <input id="newBoxes" type="number" placeholder="e.g., 3" min="0" inputmode="numeric" oninput="calculateModuleBTotal()"/>
-        </div>
-        <div class="input-group" style="margin-bottom:0;">
-          <label for="newTotalQty">Total Quantity</label>
-          <input id="newTotalQty" type="number" placeholder="e.g., 600" min="0" inputmode="numeric" readonly style="background: rgba(0,0,0,0.15); font-weight: bold; cursor: not-allowed;"/>
-        </div>
-      </div>
-
-      <button class="btn" style="width:100%; padding:14px; background:var(--accent-purple); font-weight:700; color:#fff;" onclick="submitNewPalletEntry()">💾 Save New Item Entry</button>
+    <div class="results-section-header" id="conTableHeader" style="display:none;">Consolidated Matrix Records</div>
+    <div class="table-wrap" id="conTableWrap" style="display: none;">
+      <table>
+        <thead>
+          <tr>
+            <th>Part Number</th>
+            <th>Item Number</th>
+            <th>Warehouse</th>
+            <th>System Inv</th>
+            <th>Sub Location</th>
+          </tr>
+        </thead>
+        <tbody id="conTableBody"></tbody>
+      </table>
     </div>
+    <div id="conNoResults" class="alertBox">❌ No matching ledger matrix items found.</div>
   </div>
 
 </div>
 
 <div id="footerBar" class="footer-bar" style="display: none;">
-  <button class="export-btn" onclick="exportCountsToCSV()">📊 Download Counts Spreadsheet (.CSV)</button>
+  <button class="export-btn" onclick="exportAuditLedgerToCsv()">📊 Download Counts Spreadsheet (.CSV)</button>
 </div>
 
 <script>
 const CSV_URL = 'https://raw.githubusercontent.com/wh-sec/stock-locator-pwa/main/stocks.csv';
-const GOOGLE_SHEETS_API_URL = 'https://script.google.com/macros/library/d/1CZbXup_51nGuostDRRiKah6-pbAK1e3ABJF6BIVDkiQYUvdF10DCOEh8/14';
 
-var stockRegistry = [];
-var fittingsRegistry = [];
-var countLogSession = [];
-var activeScanMatch = null;
-var html5QrcodeScanner = null;
-var inlineFinderScanner = null;
-var currentScanTargetField = 'qr'; 
-var isProcessingScan = false; 
+let stockRegistry = [];
+let auditSessionLog = [];
+let inlineFinderScanner = null;
+let activeAuditScanner = null;
+let currentScanTargetField = 'qr';
 
-var searchBox = document.getElementById('searchBox');
-var conSearchBox = document.getElementById('conSearchBox');
-var tableBody = document.getElementById('tableBody');
-var tableWrap = document.getElementById('tableWrap');
-var noResults = document.getElementById('noResults');
-var metaDisplay = document.getElementById('metaDisplay');
-var themeToggle = document.getElementById('themeToggle');
-
-var currentQuote = "Quality means doing it right when no one is looking.";
-var currentAuthor = "Henry Ford";
+const searchBox = document.getElementById('searchBox');
+const searchSupplierBox = document.getElementById('searchSupplierBox');
+const conSearchBox = document.getElementById('conSearchBox');
+const themeToggle = document.getElementById('themeToggle');
+const metaDisplay = document.getElementById('metaDisplay');
+const syncTimeLabel = document.getElementById('syncTimeLabel');
 
 window.addEventListener('DOMContentLoaded', () => {
-  initThemeAndWallpaper();
-  checkUnexportedSessionLogs();
+  initTheme();
+  loadSavedAuditSession();
   fetchInventoryDatabases();
-  updateNotificationButtonUI();
 
-  searchBox.addEventListener('input', renderResults);
+  searchBox.addEventListener('input', renderClassicCards);
+  searchSupplierBox.addEventListener('input', renderClassicCards);
   conSearchBox.addEventListener('input', renderConsolidationRows);
+  themeToggle.addEventListener('change', toggleTheme);
 });
 
-function calculateModuleBTotal() {
-  var packSize = parseInt(document.getElementById('newPackSize').value, 10) || 0;
-  var boxes = parseInt(document.getElementById('newBoxes').value, 10) || 0;
-  document.getElementById('newTotalQty').value = packSize * boxes;
+function initTheme() {
+  const savedTheme = localStorage.getItem('ms_theme') || 'light';
+  document.documentElement.setAttribute('data-theme', savedTheme);
+  themeToggle.checked = (savedTheme === 'dark');
 }
 
-function updateNotificationButtonUI() {
-  const btn = document.getElementById('notifActivationBtn');
-  if ("Notification" in window && Notification.permission === "granted") {
-    btn.style.background = "var(--accent-green)";
-    btn.textContent = "✅ Notifications Activated";
-  }
-}
-
-function requestNotificationPermission() {
-  if ("Notification" in window) {
-    Notification.requestPermission().then(perm => {
-      if (perm === "granted") {
-        updateNotificationButtonUI();
-        alert("System Notifications authorized successfully!");
-      }
-    });
-  } else {
-    alert("System notifications are unsupported on this mobile layout browser.");
-  }
-}
-
-function fireStockUpdateNotification() {
-  if ("Notification" in window && Notification.permission === "granted") {
-    const timestamp = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-    new Notification(`📦 Warehouse System Updated! (${timestamp})`, {
-      body: `"${currentQuote}" — ${currentAuthor}`
-    });
-  }
-}
-
-function initThemeAndWallpaper() {
-  const activeTheme = localStorage.getItem('ms_theme') || 'dark';
-  document.documentElement.setAttribute('data-theme', activeTheme);
-  themeToggle.checked = (activeTheme === 'dark');
-  
-  const savedBg = localStorage.getItem('ms_custom_bg');
-  if (savedBg) applyActiveWallpaper(savedBg);
-}
-
-themeToggle.addEventListener('change', function() {
-  const nextTheme = themeToggle.checked ? 'dark' : 'light';
-  document.documentElement.setAttribute('data-theme', nextTheme);
-  localStorage.setItem('ms_theme', nextTheme);
-});
-
-function handleWallpaperUpload(event) {
-  const file = event.target.files[0];
-  if (!file) return;
-  const reader = new FileReader();
-  reader.onload = function(e) {
-    const rawImg = new Image();
-    rawImg.src = e.target.result;
-    rawImg.onload = function() {
-      const canvas = document.createElement('canvas');
-      const maxDim = 1200;
-      let w = rawImg.width, h = rawImg.height;
-      if (w > h && w > maxDim) { h = Math.round((h * maxDim) / w); w = maxDim; }
-      else if (h > maxDim) { w = Math.round((w * maxDim) / h); h = maxDim; }
-      canvas.width = w; canvas.height = h;
-      const ctx = canvas.getContext('2d');
-      ctx.drawImage(rawImg, 0, 0, w, h);
-      const compressedBase64 = canvas.toDataURL('image/jpeg', 0.75);
-      try {
-        localStorage.setItem('ms_custom_bg', compressedBase64);
-        applyActiveWallpaper(compressedBase64);
-      } catch (err) { alert("Selected image is too large for local cache."); }
-    };
-  };
-  reader.readAsDataURL(file);
-}
-
-function applyActiveWallpaper(base64Data) {
-  if (base64Data) {
-    document.body.style.backgroundImage = `url('${base64Data}')`;
-    document.getElementById('resetBgBtn').style.display = 'inline-block';
-  } else {
-    document.body.style.backgroundImage = 'none';
-    document.getElementById('resetBgBtn').style.display = 'none';
-  }
-}
-
-function clearWallpaperTheme() {
-  localStorage.removeItem('ms_custom_bg');
-  applyActiveWallpaper(null);
-  document.getElementById('bgUploader').value = '';
-}
-
-function resetSearchFields() {
-  searchBox.value = '';
-  renderResults();
-  stopInlineScanner();
-  searchBox.focus();
+function toggleTheme() {
+  const target = themeToggle.checked ? 'dark' : 'light';
+  document.documentElement.setAttribute('data-theme', target);
+  localStorage.setItem('ms_theme', target);
 }
 
 async function fetchInventoryDatabases() {
   try {
-    const [stockRes, fitRes] = await Promise.all([
-      fetch(CSV_URL + '?t=' + Date.now()).catch(e => null),
-      fetch(GOOGLE_SHEETS_API_URL + '?action=getData&t=' + Date.now()).catch(e => null)
-    ]);
-
-    let loadedAny = false;
-
+    const stockRes = await fetch(CSV_URL + '?t=' + Date.now()).catch(() => null);
     if (stockRes && stockRes.ok) {
       const stockText = await stockRes.text();
       stockRegistry = parseCSV(stockText);
       localStorage.setItem('cached_stocks', stockText);
-      loadedAny = true;
-    }
-    
-    if (fitRes && fitRes.ok) {
-      const fittingsJson = await fitRes.json();
-      fittingsRegistry = parseGoogleSheetsJSON(fittingsJson);
-      localStorage.setItem('cached_fittings_json', JSON.stringify(fittingsJson));
-      loadedAny = true;
-    }
-
-    if (loadedAny) {
-      localStorage.setItem('cached_sync_time', new Date().toLocaleString());
-      updateMetaDisplay();
+      const timeStr = new Date().toLocaleString([], {month: 'short', day: 'numeric', hour: '2-digit', minute:'2-digit'});
+      localStorage.setItem('cached_sync_time', timeStr);
+      updateMetaUI(timeStr, false);
     } else {
-      loadCachedDatabases();
+      loadFromOfflineCache();
     }
-    
-    if (searchBox.value) renderResults();
-    if (conSearchBox.value) renderConsolidationRows();
   } catch (err) {
-    loadCachedDatabases();
+    loadFromOfflineCache();
   }
 }
 
-function loadCachedDatabases() {
+function loadFromOfflineCache() {
   const cStocks = localStorage.getItem('cached_stocks');
-  const cFittingsJson = localStorage.getItem('cached_fittings_json');
   const cTime = localStorage.getItem('cached_sync_time') || 'Never';
-  
-  if (cStocks) stockRegistry = parseCSV(cStocks);
-  if (cFittingsJson) fittingsRegistry = parseGoogleSheetsJSON(JSON.parse(cFittingsJson));
-
-  if (cStocks || cFittingsJson) {
-    updateMetaDisplay(cTime + " (Cached offline)");
+  if (cStocks) {
+    stockRegistry = parseCSV(cStocks);
+    updateMetaUI(cTime, true);
   } else {
-    metaDisplay.innerHTML = '<span style="color:#dc3545;">❌ No database files found. Connect to office Wi-Fi.</span>';
+    metaDisplay.innerHTML = '<span style="color:#dc3545;">❌ No database files found. Connect to network.</span>';
+    syncTimeLabel.textContent = "Offline - Connect to network";
   }
 }
 
-function updateMetaDisplay(customTime) {
-  const useTime = customTime || localStorage.getItem('cached_sync_time') || new Date().toLocaleString();
-  metaDisplay.innerHTML = `<span style="color:#10b981;">✅ Local Database Ready</span> (Last Sync: ${useTime})`;
+function updateMetaUI(timeStr, isCached) {
+  metaDisplay.innerHTML = `<span style="color:#198754;">✅ Local Database Matrix Bound (${stockRegistry.length} Items)</span>`;
+  syncTimeLabel.textContent = `Live Sync: ${timeStr}${isCached ? ' (Cached offline)' : ''}`;
 }
 
+// SCIENTIFIC NOTATION TO PURE PLAIN TEXT CONVERTER HOOK
+function cleanCsvCellToText(cellValue) {
+  let val = String(cellValue || '').trim().replace(/^"|"$/g, '');
+  if (!val) return '';
+  if (val.toUpperCase().includes('E+')) {
+    try {
+      return BigInt(Math.round(Number(val))).toString();
+    } catch(e) {
+      return val;
+    }
+  }
+  return val;
+}
+
+// EXACT GRID DATA MATRIX BINDING MAP (COLUMNS A TO G)
 function parseCSV(text) {
   let lines = text.split('\n');
   let result = [];
   for (let i = 1; i < lines.length; i++) {
-    if (!lines[i].trim()) continue;
-    let cols = lines[i].split(',');
+    let line = lines[i].trim();
+    if (!line) continue;
+    
+    // Split columns while keeping quoted text safe
+    let cols = line.split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/);
+    
+    let deptVal = cleanCsvCellToText(cols[0]);
+    let supplierVal = cleanCsvCellToText(cols[1]);
+    let warehouseVal = cleanCsvCellToText(cols[2]);
+    let partVal = cleanCsvCellToText(cols[3]);
+    let invVal = cleanCsvCellToText(cols[4]);
+    let subLocVal = cleanCsvCellToText(cols[5]);
+    let itemNumVal = cleanCsvCellToText(cols[6]);
+
+    if (!partVal && !itemNumVal) continue;
+
     result.push({
-      part: cols[0]?.trim() || '',
-      itemNo: cols[1]?.trim() || '',
-      supplierRef: cols[2]?.trim() || '',
-      packSize: 'N/A', 
-      boxes: cols[3]?.trim() || '0',
-      totalQty: cols[4]?.trim() || '0',
-      location: cols[5]?.trim() || 'N/A',
-      isFitting: false
+      dept: deptVal || 'CT',
+      supplierRef: supplierVal || 'N/A',
+      warehouse: warehouseVal || 'MAIN',
+      part: partVal,
+      inventory: invVal || '0',
+      subLocation: subLocVal || 'N/A',
+      itemNumber: itemNumVal
     });
   }
   return result;
 }
 
-function parseGoogleSheetsJSON(json) {
-  if (!json || !Array.isArray(json) || json.length < 2) return [];
-  let headers = json[0].map(h => String(h).trim().toUpperCase());
-  let partIdx = headers.indexOf("PART NUMBER");
-  let locIdx = headers.indexOf("PALLET NO.");
-  let packIdx = headers.indexOf("PACK SIZE");
-  let boxesIdx = headers.indexOf("NO. OF BOX");
-  let totalIdx = headers.indexOf("TOTAL");
+// VIEW 1: SEARCH FILTER CARDS RENDER
+function renderClassicCards() {
+  let queryPart = searchBox.value.trim().toLowerCase();
+  let querySupplier = searchSupplierBox.value.trim().toLowerCase();
+  
+  const container = document.getElementById('cardsRegistryBox');
+  const title = document.getElementById('resultsTitle');
+  const noRes = document.getElementById('noResults');
 
-  let result = [];
-  for (let i = 1; i < json.length; i++) {
-    let row = json[i];
-    result.push({
-      part: String(row[partIdx] || '').trim(),
-      itemNo: '',
-      supplierRef: '',
-      packSize: packIdx !== -1 ? String(row[packIdx] || '0').trim() : '0',
-      boxes: String(row[boxesIdx] || '0').trim(),
-      totalQty: String(row[totalIdx] || '0').trim(),
-      location: String(row[locIdx] || 'N/A').trim(),
-      isFitting: true
-    });
-  }
-  return result;
-}
-
-// LIVE FINDER TYPEAHEAD GENERATOR
-function renderResults() {
-  let query = searchBox.value.trim().toLowerCase();
-  if (!query) {
-    tableWrap.style.display = 'none';
-    noResults.style.display = 'none';
+  if (!queryPart && !querySupplier) {
+    container.innerHTML = '';
+    title.style.display = 'none';
+    noRes.style.display = 'none';
     return;
   }
 
   let matches = [];
-
-  // Search Stocks 
   for (let i = 0; i < stockRegistry.length; i++) {
     let item = stockRegistry[i];
-    let partStr = String(item.part || "").toLowerCase();
-    let itemNoStr = String(item.itemNo || "").toLowerCase();
-    let supplierRefStr = String(item.supplierRef || "").toLowerCase();
+    let partMatch = queryPart ? item.part.toLowerCase().includes(queryPart) || item.itemNumber.toLowerCase().includes(queryPart) : true;
+    let supplierMatch = querySupplier ? item.supplierRef.toLowerCase().includes(querySupplier) : true;
 
-    if (partStr.includes(query) || itemNoStr.includes(query) || supplierRefStr.includes(query)) {
+    if (partMatch && supplierMatch) {
       matches.push(item);
     }
   }
 
-  // Search Fittings
-  for (let i = 0; i < fittingsRegistry.length; i++) {
-    let item = fittingsRegistry[i];
-    let partStr = String(item.part || "").toLowerCase();
-    if (partStr.includes(query)) {
-      matches.push(item);
-    }
+  if (matches.length === 0) {
+    container.innerHTML = '';
+    title.style.display = 'none';
+    noRes.style.display = 'block';
+    return;
   }
 
-  // Sort Filter: Items strictly STARTING with the typed search are placed at the top
-  matches.sort((a, b) => {
-    let aPart = String(a.part || "").toLowerCase();
-    let bPart = String(b.part || "").toLowerCase();
-    let aStarts = aPart.startsWith(query) ? 1 : 0;
-    let bStarts = bPart.startsWith(query) ? 1 : 0;
-    return bStarts - aStarts;
+  noRes.style.display = 'none';
+  title.style.display = 'block';
+
+  let html = '';
+  matches.forEach(item => {
+    html += `
+      <div class="classic-card">
+        <div class="card-row">
+          <div class="card-label">Dept:</div>
+          <div class="card-value">${item.dept}</div>
+        </div>
+        <div class="card-row">
+          <div class="card-label">Supplier Ref:</div>
+          <div class="card-value">${item.supplierRef}</div>
+        </div>
+        <div class="card-row">
+          <div class="card-label">Warehouse:</div>
+          <div class="card-value">${item.warehouse}</div>
+        </div>
+        <div class="card-row">
+          <div class="card-label">Part Number:</div>
+          <div class="card-value"><mark class="classic-highlight">${item.part}</mark></div>
+        </div>
+        <div class="card-row">
+          <div class="card-label">Inventory:</div>
+          <div class="card-value" style="font-weight:bold;">${item.inventory}</div>
+        </div>
+        <div class="card-row">
+          <div class="card-label">SubLocation:</div>
+          <div class="card-value"><span class="sublocation-badge">${item.subLocation}</span></div>
+        </div>
+        <div class="card-row">
+          <div class="card-label">Item Number:</div>
+          <div class="card-value">${item.itemNumber}</div>
+        </div>
+      </div>
+    `;
   });
-
-  matches = matches.slice(0, 40);
-
-  if (matches.length === 0) {
-    tableWrap.style.display = 'none';
-    noResults.style.display = 'block';
-    return;
-  }
-
-  noResults.style.display = 'none';
-  tableWrap.style.display = 'block';
-
-  let html = '';
-  for (let i = 0; i < matches.length; i++) {
-    let item = matches[i];
-    let badgeClass = item.isFitting ? 'location-badge fittings-badge' : 'location-badge';
-    let labelInfo = item.isFitting ? 'FITTING / SHEET TRACK' : `Item No: ${item.itemNo || 'N/A'}`;
-    
-    html += `<tr>
-      <td class="col-main">
-        <div style="font-weight: 800; font-size:14px; font-family:monospace;">${highlightText(item.part, query)}</div>
-        <div style="font-size: 10px; color: var(--muted); margin-top: 2px;">${labelInfo}</div>
-      </td>
-      <td class="col-pack" style="text-align:center; font-weight:bold; font-family:monospace; color:var(--muted);">${item.packSize || '0'}</td>
-      <td class="col-boxes" style="text-align:center; font-weight:bold; font-family:monospace;">${item.boxes || '0'}</td>
-      <td class="col-total" style="text-align:center; font-weight:900; color:var(--primary-accent); font-family:monospace; font-size:15px;">${item.totalQty || '0'}</td>
-      <td class="col-sub" style="text-align:center;"><span class="${badgeClass}">${item.location}</span></td>
-    </tr>`;
-  }
-  tableBody.innerHTML = html;
+  container.innerHTML = html;
 }
 
-function highlightText(fullText, searchStr) {
-  if (!searchStr) return fullText;
-  let escapedSearch = searchStr.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&');
-  let regex = new RegExp(`(${escapedSearch})`, 'gi');
-  return fullText.replace(regex, '<mark class="match">$1</mark>');
-}
-
-// MODULE A: RENDERING CONSOLIDATION DATA WITH INLINE EDIT INPUTS
-function renderConsolidationRows() {
-  let query = conSearchBox.value.trim().toLowerCase();
-  let conTableWrap = document.getElementById('conTableWrap');
-  let conTableBody = document.getElementById('conTableBody');
-
-  if (!query) {
-    conTableWrap.style.display = 'none';
-    return;
-  }
-
-  let matches = [];
-  for (let i = 0; i < fittingsRegistry.length; i++) {
-    let item = fittingsRegistry[i];
-    if (String(item.part || "").toLowerCase().includes(query)) {
-      matches.push({ item: item, originalIndex: i });
-    }
-  }
-
-  if (matches.length === 0) {
-    conTableWrap.style.display = 'none';
-    return;
-  }
-
-  conTableWrap.style.display = 'block';
-  let html = '';
-
-  for (let i = 0; i < matches.length; i++) {
-    let match = matches[i];
-    let item = match.item;
-    let idx = match.originalIndex;
-
-    html += `<tr>
-      <td class="col-main">
-        <div style="font-weight: 800; font-size:13px; font-family:monospace;">${item.part}</div>
-      </td>
-      <td class="col-pack" style="text-align:center;">
-        <input type="number" class="inline-edit-input" id="inlinePack_${idx}" value="${item.packSize}" min="0" oninput="recalcInlineTotal(${idx})"/>
-      </td>
-      <td class="col-boxes" style="text-align:center;">
-        <input type="number" class="inline-edit-input" id="inlineBoxes_${idx}" value="${item.boxes}" min="0" oninput="recalcInlineTotal(${idx})"/>
-      </td>
-      <td class="col-total" style="text-align:center; font-weight:800; font-family:monospace;">
-        <span id="inlineTotalSpan_${idx}">${item.totalQty}</span>
-      </td>
-      <td class="col-save" style="text-align:center;">
-        <button id="syncBtn_${idx}" class="row-save-btn" onclick="syncInlineRowModification(${idx})">💾</button>
-      </td>
-      <td class="col-sub" style="text-align:center;">
-        <span class="location-badge fittings-badge">${item.location}</span>
-      </td>
-    </tr>`;
-  }
-  conTableBody.innerHTML = html;
-}
-
-function recalcInlineTotal(idx) {
-  let p = parseInt(document.getElementById(`inlinePack_${idx}`).value, 10) || 0;
-  let b = parseInt(document.getElementById(`inlineBoxes_${idx}`).value, 10) || 0;
-  document.getElementById(`inlineTotalSpan_${idx}`).textContent = p * b;
-}
-
-// REMOTE SYNC EXECUTION FOR SHEET ENTRIES (MODULE A)
-async function syncInlineRowModification(index) {
-  let syncBtn = document.getElementById(`syncBtn_${index}`);
-  if (!syncBtn || syncBtn.disabled) return;
-
-  syncBtn.disabled = true;
-  syncBtn.style.background = "#f0b429"; 
-  syncBtn.textContent = "⏳";
-
-  let item = fittingsRegistry[index];
-  let updatedPack = document.getElementById(`inlinePack_${index}`).value;
-  let updatedBoxes = document.getElementById(`inlineBoxes_${index}`).value;
-  let computedTotal = document.getElementById(`inlineTotalSpan_${index}`).textContent;
-
-  let formData = new URLSearchParams();
-  formData.append('action', 'updateRow');
-  formData.append('partNumber', item.part);
-  formData.append('palletNo', item.location);
-  formData.append('packSize', updatedPack);
-  formData.append('noOfBox', updatedBoxes);
-  formData.append('total', computedTotal);
-
-  try {
-    let res = await fetch(GOOGLE_SHEETS_API_URL, {
-      method: 'POST',
-      body: formData,
-      headers: { 'Content-Type': 'application/x-www-form-urlencoded' }
-    });
-    let status = await res.json();
-
-    if (status.result === "success") {
-      syncBtn.style.background = "var(--accent-green)";
-      syncBtn.textContent = "✅";
-      
-      fittingsRegistry[index].packSize = updatedPack;
-      fittingsRegistry[index].boxes = updatedBoxes;
-      fittingsRegistry[index].totalQty = computedTotal;
-      localStorage.setItem('cached_fittings_json', JSON.stringify([["PART NUMBER","PALLET NO.","PACK SIZE","NO. OF BOX","TOTAL"], ...fittingsRegistry.map(f => [f.part, f.location, f.packSize, f.boxes, f.totalQty])]));
-      
-      fireStockUpdateNotification();
-      setTimeout(() => {
-        syncBtn.disabled = false;
-        syncBtn.style.background = "var(--accent-green)";
-        syncBtn.textContent = "💾";
-      }, 1500);
-    } else {
-      throw new Error("API rejection");
-    }
-  } catch (err) {
-    alert("Network sync timed out. Data was not written safely to Google Sheets.");
-    syncBtn.disabled = false;
-    syncBtn.style.background = "var(--danger-red)";
-    syncBtn.textContent = "❌";
-  }
-}
-
-// NEW ENTRY SUBMISSION (MODULE B)
-async function submitNewPalletEntry() {
-  let part = document.getElementById('newPartNo').value.trim();
-  let pallet = document.getElementById('newPalletNo').value.trim();
-  let pack = document.getElementById('newPackSize').value.trim();
-  let boxes = document.getElementById('newBoxes').value.trim();
-  let total = document.getElementById('newTotalQty').value;
-
-  if (!part || !pallet || !pack || !boxes) {
-    alert("Please completely fill out all entry fields before sending to master sheets.");
-    return;
-  }
-
-  let formData = new URLSearchParams();
-  formData.append('action', 'addRow');
-  formData.append('partNumber', part);
-  formData.append('palletNo', pallet);
-  formData.append('packSize', pack);
-  formData.append('noOfBox', boxes);
-  formData.append('total', total);
-
-  try {
-    let res = await fetch(GOOGLE_SHEETS_API_URL, {
-      method: 'POST',
-      body: formData,
-      headers: { 'Content-Type': 'application/x-www-form-urlencoded' }
-    });
-    let status = await res.json();
-
-    if (status.result === "success") {
-      alert(`Successfully saved item ${part} to Pallet ${pallet}!`);
-      
-      fittingsRegistry.unshift({
-        part: part, itemNo: '', supplierRef: '',
-        packSize: pack, boxes: boxes, totalQty: total,
-        location: pallet, isFitting: true
-      });
-
-      document.getElementById('newPartNo').value = '';
-      document.getElementById('newPalletNo').value = '';
-      document.getElementById('newPackSize').value = '';
-      document.getElementById('newBoxes').value = '';
-      document.getElementById('newTotalQty').value = '';
-      
-      if (conSearchBox.value) renderConsolidationRows();
-      fireStockUpdateNotification();
-    } else {
-      alert("Cloud database failed to accept data stream layout.");
-    }
-  } catch (err) {
-    alert("Failed to submit entry. Check terminal network links.");
-  }
-}
-
-// SYSTEM APP SCREEN NAVIGATION CONTROL
-function switchMode(targetMode) {
-  document.querySelectorAll('.app-screen').forEach(scr => scr.classList.remove('active'));
-  document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
-  stopInlineScanner();
-  stopCounterScanner();
-
-  if (targetMode === 'finder') {
-    document.getElementById('finderScreen').classList.add('active');
-    document.getElementById('finderTab').classList.add('active');
-    document.getElementById('countSession').style.display = 'none';
-    document.getElementById('footerBar').style.display = 'none';
-    searchBox.focus();
-  } else if (targetMode === 'counter') {
-    document.getElementById('counterScreen').classList.add('active');
-    document.getElementById('counterTab').classList.add('active');
-    document.getElementById('countSession').style.display = 'inline-block';
-    document.getElementById('footerBar').style.display = 'flex';
-    startCounterScanner();
-  } else if (targetMode === 'consolidation') {
-    document.getElementById('consolidationScreen').classList.add('active');
-    document.getElementById('consolidationTab').classList.add('active');
-    document.getElementById('countSession').style.display = 'none';
-    document.getElementById('footerBar').style.display = 'none';
-    conSearchBox.focus();
-  }
-}
-
-// INLINE FINDER CAMERA SCAN CONTROL HOOKS
+// LOOKUP SEARCH INLINE CAM HANDLERS
 function startInlineScanner(mode) {
   currentScanTargetField = mode;
   document.getElementById('inlineScannerBox').style.display = 'block';
-  isProcessingScan = false;
 
-  if (inlineFinderScanner) {
-    inlineFinderScanner.clear();
-  }
+  if (inlineFinderScanner) { inlineFinderScanner.clear(); }
 
   inlineFinderScanner = new Html5Qrcode("finderReader");
   inlineFinderScanner.start(
-    { 
-      facingMode: "environment",
-      width: { ideal: 1280 },
-      height: { ideal: 720 }
+    { facingMode: "environment" },
+    { fps: 25, qrbox: { width: 260, height: 160 } },
+    (text) => {
+      let cleaned = String(text || "").trim();
+      if (currentScanTargetField === 'qr') {
+        searchBox.value = cleaned.split(',')[0];
+      } else {
+        searchSupplierBox.value = cleaned;
+      }
+      renderClassicCards();
+      stopInlineScanner();
     },
-    { fps: 15, qrbox: { width: 260, height: 150 } },
-    onInlineScanSuccess,
-    onInlineScanError
-  ).catch(err => {
-    alert("Camera initialization error. Please grant permissions.");
-    document.getElementById('inlineScannerBox').style.display = 'none';
-  });
+    () => {}
+  ).catch(() => { alert("Camera allocation failed. Check permissions."); });
 }
 
 function stopInlineScanner() {
@@ -1105,262 +539,197 @@ function stopInlineScanner() {
       inlineFinderScanner.clear();
       inlineFinderScanner = null;
       document.getElementById('inlineScannerBox').style.display = 'none';
-    }).catch(err => {
-      document.getElementById('inlineScannerBox').style.display = 'none';
-    });
+    }).catch(() => { document.getElementById('inlineScannerBox').style.display = 'none'; });
   } else {
     document.getElementById('inlineScannerBox').style.display = 'none';
   }
 }
 
-function onInlineScanSuccess(decodedText) {
-  if (isProcessingScan) return;
-  isProcessingScan = true;
-
-  let cleanCode = String(decodedText || "").trim();
-  
-  if (currentScanTargetField === 'qr') {
-    searchBox.value = parseQRCodePayload(cleanCode);
-  } else {
-    searchBox.value = cleanCode;
-  }
-
-  renderResults();
+function resetSearchFields() {
+  searchBox.value = '';
+  searchSupplierBox.value = '';
+  renderClassicCards();
   stopInlineScanner();
-  
-  setTimeout(() => { isProcessingScan = false; }, 1000);
 }
 
-function onInlineScanError(err) {}
+// VIEW 2: AUDIT ENGINE WORKFLOWS
+function startAuditScanner() {
+  document.getElementById('auditStatusLabel').textContent = "Scanning active...";
+  if (activeAuditScanner) { activeAuditScanner.clear(); }
 
-function parseQRCodePayload(text) {
-  if (text.includes(',')) {
-    let segments = text.split(',');
-    return segments[0].trim();
-  }
-  return text;
-}
-
-// AUDIT COUNTER LAYOUT CAMERA HANDLERS
-function startCounterScanner() {
-  if (html5QrcodeScanner) {
-    html5QrcodeScanner.clear();
-  }
-  html5QrcodeScanner = new Html5Qrcode("reader");
-  html5QrcodeScanner.start(
-    { 
-      facingMode: "environment",
-      width: { ideal: 1280 },
-      height: { ideal: 720 }
+  activeAuditScanner = new Html5Qrcode("auditReader");
+  activeAuditScanner.start(
+    { facingMode: "environment" },
+    { fps: 25, qrbox: { width: 250, height: 150 } },
+    (barcodeText) => {
+      let match = String(barcodeText || "").trim();
+      document.getElementById('auditItemInput').value = match;
+      document.getElementById('auditStatusLabel').textContent = `Captured Barcode: ${match}`;
+      
+      // Auto beep notification style simulation
+      if (navigator.vibrate) navigator.vibrate(100);
     },
-    { fps: 15, qrbox: { width: 260, height: 160 } },
-    onCounterScanSuccess,
-    onCounterScanError
-  ).catch(err => {
-    console.log("Audit scanner camera startup fault.");
-  });
+    () => {}
+  ).catch(() => { document.getElementById('auditStatusLabel').textContent = "Camera initialization error."; });
 }
 
-function stopCounterScanner() {
-  if (html5QrcodeScanner) {
-    html5QrcodeScanner.stop().then(() => {
-      html5QrcodeScanner.clear();
-      html5QrcodeScanner = null;
-    }).catch(e => console.log(e));
-  }
-}
+function commitAuditCountEntry() {
+  const itemVal = document.getElementById('auditItemInput').value.trim();
+  const qtyVal = parseInt(document.getElementById('auditQtyInput').value) || 1;
 
-function onCounterScanSuccess(decodedText) {
-  if (document.getElementById('countOverlay').style.display === 'block') return;
-
-  let searchStr = parseQRCodePayload(String(decodedText || "").trim()).toLowerCase();
-  let matchedItem = null;
-
-  for (let i = 0; i < stockRegistry.length; i++) {
-    let item = stockRegistry[i];
-    if (item.part.toLowerCase() === searchStr || item.itemNo.toLowerCase() === searchStr || item.supplierRef.toLowerCase() === searchStr) {
-      matchedItem = item;
-      break;
-    }
-  }
-
-  if (!matchedItem) {
-    for (let i = 0; i < fittingsRegistry.length; i++) {
-      let item = fittingsRegistry[i];
-      if (item.part.toLowerCase() === searchStr) {
-        matchedItem = item;
-        break;
-      }
-    }
-  }
-
-  if (matchedItem) {
-    activeScanMatch = matchedItem;
-    document.getElementById('targetItemName').textContent = matchedItem.part;
-    document.getElementById('targetMappingInfo').textContent = matchedItem.isFitting ? "FITTINGS DATABASE TRACK" : `Item No: ${matchedItem.itemNo || 'N/A'} | Ref: ${matchedItem.supplierRef || 'N/A'}`;
-    document.getElementById('targetSubLoc').className = matchedItem.isFitting ? 'count-sub fittings-badge' : 'count-sub';
-    document.getElementById('targetSubLoc').textContent = `Loc: ${matchedItem.location}`;
-    document.getElementById('qtyInputField').value = '';
-    document.getElementById('countOverlay').style.display = 'block';
-  } else {
-    activeScanMatch = { part: decodedText.toUpperCase(), itemNo: '', supplierRef: '', packSize: 'N/A', boxes: '0', totalQty: '0', location: 'UNMAPPED', isFitting: false };
-    document.getElementById('targetItemName').textContent = decodedText.toUpperCase();
-    document.getElementById('targetMappingInfo').textContent = "⚠️ Unregistered barcode pattern detected.";
-    document.getElementById('targetSubLoc').className = 'count-sub';
-    document.getElementById('targetSubLoc').textContent = "Loc: Unknown";
-    document.getElementById('qtyInputField').value = '';
-    document.getElementById('countOverlay').style.display = 'block';
-  }
-}
-
-function onCounterScanError(err) {}
-
-function adjustQty(amount) {
-  let f = document.getElementById('qtyInputField');
-  let currentVal = parseInt(f.value, 10) || 0;
-  let computed = currentVal + amount;
-  f.value = computed < 0 ? 0 : computed;
-}
-
-function dismissOverlay() {
-  document.getElementById('countOverlay').style.display = 'none';
-  activeScanMatch = null;
-}
-
-function commitCount() {
-  let enteredQty = parseInt(document.getElementById('qtyInputField').value, 10);
-  if (isNaN(enteredQty) || enteredQty < 0) {
-    alert("Please enter a valid count quantity layout.");
+  if (!itemVal) {
+    alert("Please scan an item code or input manual text identification entry first.");
     return;
   }
 
-  let timestamp = new Date().toLocaleString();
-  countLogSession.push({
-    part: activeScanMatch.part,
-    location: activeScanMatch.location,
-    qty: enteredQty,
-    time: timestamp
-  });
+  const newEntry = {
+    timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }),
+    item: itemVal,
+    qty: qtyVal
+  };
 
-  localStorage.setItem('local_count_logs', JSON.stringify(countLogSession));
-  updateCountSessionLabelCounter();
-  renderLogRegistryUI();
-  dismissOverlay();
+  auditSessionLog.unshift(newEntry);
+  localStorage.setItem('audit_session', JSON.stringify(auditSessionLog));
+  
+  // Reset fields for consecutive swift processing
+  document.getElementById('auditItemInput').value = '';
+  document.getElementById('auditQtyInput').value = '1';
+  
+  renderAuditSessionTable();
 }
 
-function updateCountSessionLabelCounter() {
-  let label = document.getElementById('countSession');
-  label.textContent = `Counts logged: ${countLogSession.length}`;
-}
-
-function renderLogRegistryUI() {
-  let logBox = document.getElementById('logRegistryList');
-  if (countLogSession.length === 0) {
-    logBox.innerHTML = '<div style="text-align:center; padding:20px; font-size:12px; opacity:0.5; font-weight:bold;">No logs recorded in this session pass yet.</div>';
+function renderAuditSessionTable() {
+  const body = document.getElementById('auditLogTableBody');
+  if (auditSessionLog.length === 0) {
+    body.innerHTML = `<tr><td colspan="4" style="text-align:center; color:#64748b;">No items audited in this session yet.</td></tr>`;
     return;
   }
 
   let html = '';
-  for (let i = countLogSession.length - 1; i >= 0; i--) {
-    let entry = countLogSession[i];
-    html += `<div class="log-item">
-      <div>
-        <div style="font-weight:800; font-family:monospace; font-size:14px;">${entry.part}</div>
-        <div style="font-size:10px; color:var(--muted); margin-top:2px;">Loc: ${entry.location} | Logged: ${entry.time}</div>
-      </div>
-      <div style="font-size:18px; font-weight:900; color:var(--accent-green); font-family:monospace;">${entry.qty} pcs</div>
-    </div>`;
-  }
-  logBox.innerHTML = html;
+  auditSessionLog.forEach((entry, index) => {
+    html += `
+      <tr class="audit-count-row">
+        <td>${entry.timestamp}</td>
+        <td style="font-weight:600;">${entry.item}</td>
+        <td style="font-weight:bold; color:var(--accent-green);">${entry.qty}</td>
+        <td><button onclick="removeAuditEntry(${index})" style="background:#dc3545; color:white; border:none; padding:4px 8px; border-radius:4px; cursor:pointer; font-size:11px;">Delete</button></td>
+      </tr>
+    `;
+  });
+  body.innerHTML = html;
 }
 
-function clearCounts() {
-  if (confirm("Are you sure you want to delete your running local terminal logs layout?")) {
-    countLogSession = [];
-    localStorage.removeItem('local_count_logs');
-    updateCountSessionLabelCounter();
-    renderLogRegistryUI();
-  }
-}
-
-function triggerNewSessionManually() {
-  if (confirm("This will clear out the current dashboard log rows layout. Ensure you have exported your spreadsheets! Continue?")) {
-    countLogSession = [];
-    localStorage.removeItem('local_count_logs');
-    localStorage.removeItem('session_lock_date');
-    updateCountSessionLabelCounter();
-    renderLogRegistryUI();
+function removeAuditEntry(index) {
+  if(confirm("Delete this count line entry record?")) {
+    auditSessionLog.splice(index, 1);
+    localStorage.setItem('audit_session', JSON.stringify(auditSessionLog));
+    renderAuditSessionTable();
   }
 }
 
-// LOG STORAGE PERSISTENCE INTERCEPT ENGINE
-function checkUnexportedSessionLogs() {
-  let storedLogs = localStorage.getItem('local_count_logs');
-  let currentTerminalDate = new Date().toDateString();
-  let sessionLockDate = localStorage.getItem('session_lock_date');
-
-  if (storedLogs) {
-    let parsed = JSON.parse(storedLogs);
-    if (parsed.length > 0) {
-      countLogSession = parsed;
-      updateCountSessionLabelCounter();
-      renderLogRegistryUI();
-
-      if (sessionLockDate && sessionLockDate !== currentTerminalDate) {
-        document.getElementById('interceptMessage').textContent = `You have ${parsed.length} unexported log rows recorded from an earlier date (${sessionLockDate}).`;
-        document.getElementById('startupInterceptModal').style.display = 'flex';
-      }
-    }
-  }
-
-  if (!localStorage.getItem('session_lock_date') && countLogSession.length > 0) {
-    localStorage.setItem('session_lock_date', currentTerminalDate);
+function loadSavedAuditSession() {
+  const saved = localStorage.getItem('audit_session');
+  if (saved) {
+    auditSessionLog = JSON.parse(saved);
+    renderAuditSessionTable();
   }
 }
 
-function resolveIntercept(decision) {
-  if (decision === 'purge') {
-    countLogSession = [];
-    localStorage.removeItem('local_count_logs');
-    localStorage.removeItem('session_lock_date');
-    updateCountSessionLabelCounter();
-    renderLogRegistryUI();
-  } else {
-    localStorage.setItem('session_lock_date', new Date().toDateString());
-  }
-  document.getElementById('startupInterceptModal').style.display = 'none';
-}
-
-// DATA CONVERSION TO LOCAL PLATFORM SPREADSHEETS (.CSV)
-function exportCountsToCSV() {
-  if (countLogSession.length === 0) {
-    alert("There are no registered log structures to extract.");
+function exportAuditLedgerToCsv() {
+  if(auditSessionLog.length === 0) {
+    alert("Session data ledger context is completely empty!");
     return;
   }
 
-  let csvContent = "data:text/csv;charset=utf-8,";
-  csvContent += "Part Number,Location,Logged Quantity,Timestamp\n";
-
-  countLogSession.forEach(r => {
-    csvContent += `"${r.part}","${r.location}","${r.qty}","${r.time}"\n`;
+  let csvContent = "data:text/csv;charset=utf-8,Timestamp,Item Number/Barcode,Quantity\n";
+  auditSessionLog.forEach(r => {
+    csvContent += `"${r.timestamp}","${r.item}",${r.qty}\n`;
   });
 
-  let encodedUri = encodeURI(csvContent);
-  let link = document.createElement("a");
-  
-  let formattedTime = new Date().toLocaleDateString().replace(/\//g, '-');
-  link.setAttribute("href", encodedUri);
-  link.setAttribute("download", `AUDIT_COUNTS_${formattedTime}.csv`);
-  document.body.appendChild(link);
+  const encodedUri = encodeURI(csvContent);
+  const downloadAnchor = document.createElement("a");
+  downloadAnchor.setAttribute("href", encodedUri);
+  downloadAnchor.setAttribute("download", `Audit_Count_Report_${new Date().toISOString().slice(0,10)}.csv`);
+  document.body.appendChild(downloadAnchor);
+  downloadAnchor.click();
+  document.body.removeChild(downloadAnchor);
+}
 
-  link.click();
-  document.body.removeChild(link);
+// VIEW 3: CONSOLIDATION VIEW LOOKUP
+function renderConsolidationRows() {
+  let query = conSearchBox.value.trim().toLowerCase();
+  let wrap = document.getElementById('conTableWrap');
+  let header = document.getElementById('conTableHeader');
+  let body = document.getElementById('conTableBody');
+  let noRes = document.getElementById('conNoResults');
+
+  if (!query) {
+    wrap.style.display = 'none';
+    header.style.display = 'none';
+    noRes.style.display = 'none';
+    return;
+  }
+
+  let filtered = stockRegistry.filter(item => 
+    item.part.toLowerCase().includes(query) || item.itemNumber.toLowerCase().includes(query)
+  );
+
+  if (filtered.length === 0) {
+    wrap.style.display = 'none';
+    header.style.display = 'none';
+    noRes.style.display = 'block';
+    return;
+  }
+
+  noRes.style.display = 'none';
+  header.style.display = 'block';
+  wrap.style.display = 'block';
+
+  let html = '';
+  filtered.forEach(item => {
+    html += `
+      <tr>
+        <td style="font-weight:600; color:var(--primary);">${item.part}</td>
+        <td>${item.itemNumber}</td>
+        <td>${item.warehouse}</td>
+        <td style="font-weight:bold;">${item.inventory}</td>
+        <td><span class="sublocation-badge" style="padding:2px 6px; font-size:11px;">${item.subLocation}</span></td>
+      </tr>
+    `;
+  });
+  body.innerHTML = html;
+}
+
+// CENTRAL MODE SWITCH CONTROLLER
+function switchMode(target) {
+  document.querySelectorAll('.app-screen').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  
+  stopInlineScanner();
+  if (activeAuditScanner) {
+    activeAuditScanner.stop().then(() => { activeAuditScanner.clear(); activeAuditScanner = null; }).catch(() => {});
+  }
+
+  if (target === 'finder') {
+    document.getElementById('finderScreen').classList.add('active');
+    document.getElementById('finderTab').classList.add('active');
+    document.getElementById('footerBar').style.display = 'none';
+  } else if (target === 'counter') {
+    document.getElementById('counterScreen').classList.add('active');
+    document.getElementById('counterTab').classList.add('active');
+    document.getElementById('footerBar').style.display = 'block';
+    document.getElementById('auditStatusLabel').textContent = "Camera module ready.";
+  } else if (target === 'consolidation') {
+    document.getElementById('consolidationScreen').classList.add('active');
+    document.getElementById('consolidationTab').classList.add('active');
+    document.getElementById('footerBar').style.display = 'none';
+    renderConsolidationRows();
+  }
 }
 
 function clearAppCache() {
-  if (confirm("Flush local cache profiles and fetch master catalogs from GitHub?")) {
+  if (confirm("Flush local offline storage caches and reload configuration profiles?")) {
     localStorage.clear();
-    alert("Local profiles completely flushed. Reloading storage pipelines.");
     window.location.reload();
   }
 }
