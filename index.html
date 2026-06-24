@@ -266,8 +266,9 @@
     th:last-child, td:last-child { border-right: none; }
     th { background: var(--th-bg); font-weight: 700; color: var(--muted); font-size: 12px; text-transform: uppercase; }
     
-    th.col-main, td.col-main { width: 40%; }
-    th.col-boxes, td.col-boxes { width: 18%; text-align: center; }
+    th.col-main, td.col-main { width: 34%; }
+    th.col-pack, td.col-pack { width: 16%; text-align: center; }
+    th.col-boxes, td.col-boxes { width: 15%; text-align: center; }
     th.col-total, td.col-total { width: 18%; text-align: center; }
     th.col-save, td.col-save { width: 11%; text-align: center; }
     th.col-sub, td.col-sub { width: 13%; text-align: center; }
@@ -447,6 +448,7 @@
           <thead>
             <tr>
               <th class="col-main">Part Number Map / Cross-Ref</th>
+              <th class="col-pack">Pack Size</th>
               <th class="col-boxes">Boxes</th>
               <th class="col-total">Total Qty</th>
               <th class="col-sub">Loc</th>
@@ -504,6 +506,7 @@
           <thead>
             <tr>
               <th class="col-main">Part Number Map</th>
+              <th class="col-pack">Pack Size</th>
               <th class="col-boxes">Boxes</th>
               <th class="col-total">Total Qty</th>
               <th class="col-save">Sync</th>
@@ -530,17 +533,17 @@
 
       <div class="input-group">
         <label for="newPackSize">Pack Size</label>
-        <input id="newPackSize" type="number" placeholder="e.g., 200" min="0" inputmode="numeric"/>
+        <input id="newPackSize" type="number" placeholder="e.g., 200" min="0" inputmode="numeric" oninput="calculateModuleBTotal()"/>
       </div>
 
       <div class="shortcut-row" style="grid-template-columns: 1fr 1fr; margin-top:0; margin-bottom:14px;">
         <div class="input-group" style="margin-bottom:0;">
           <label for="newBoxes">No. of Boxes</label>
-          <input id="newBoxes" type="number" placeholder="e.g., 3" min="0" inputmode="numeric"/>
+          <input id="newBoxes" type="number" placeholder="e.g., 3" min="0" inputmode="numeric" oninput="calculateModuleBTotal()"/>
         </div>
         <div class="input-group" style="margin-bottom:0;">
           <label for="newTotalQty">Total Quantity</label>
-          <input id="newTotalQty" type="number" placeholder="e.g., 600" min="0" inputmode="numeric"/>
+          <input id="newTotalQty" type="number" placeholder="e.g., 600" min="0" inputmode="numeric" readonly style="background: rgba(0,0,0,0.15); font-weight: bold; cursor: not-allowed;"/>
         </div>
       </div>
 
@@ -587,6 +590,12 @@ window.addEventListener('DOMContentLoaded', () => {
   searchBox.addEventListener('input', renderResults);
   conSearchBox.addEventListener('input', renderConsolidationRows);
 });
+
+function calculateModuleBTotal() {
+  var packSize = parseInt(document.getElementById('newPackSize').value, 10) || 0;
+  var boxes = parseInt(document.getElementById('newBoxes').value, 10) || 0;
+  document.getElementById('newTotalQty').value = packSize * boxes;
+}
 
 function updateNotificationButtonUI() {
   const btn = document.getElementById('notifActivationBtn');
@@ -699,6 +708,10 @@ async function fetchInventoryDatabases() {
     localStorage.setItem('cached_fittings_json', JSON.stringify(fittingsJson));
     localStorage.setItem('cached_sync_time', new Date().toLocaleString());
     updateMetaDisplay();
+    
+    // Refresh display panels if there is text in them
+    if (searchBox.value) renderResults();
+    if (conSearchBox.value) renderConsolidationRows();
   } catch (err) {
     loadCachedDatabases();
   }
@@ -732,6 +745,7 @@ function parseCSV(text) {
       part: cols[0]?.trim() || '',
       itemNo: cols[1]?.trim() || '',
       supplierRef: cols[2]?.trim() || '',
+      packSize: 'N/A', // CSV standard stock files do not use pack sizes
       boxes: cols[3]?.trim() || '0',
       totalQty: cols[4]?.trim() || '0',
       location: cols[5]?.trim() || 'N/A',
@@ -746,6 +760,7 @@ function parseGoogleSheetsJSON(json) {
   let headers = json[0].map(h => String(h).trim().toUpperCase());
   let partIdx = headers.indexOf("PART NUMBER");
   let locIdx = headers.indexOf("PALLET NO.");
+  let packIdx = headers.indexOf("PACK SIZE");
   let boxesIdx = headers.indexOf("NO. OF BOX");
   let totalIdx = headers.indexOf("TOTAL");
 
@@ -756,6 +771,7 @@ function parseGoogleSheetsJSON(json) {
       part: String(row[partIdx] || '').trim(),
       itemNo: '',
       supplierRef: '',
+      packSize: packIdx !== -1 ? String(row[packIdx] || '0').trim() : '0',
       boxes: String(row[boxesIdx] || '0').trim(),
       totalQty: String(row[totalIdx] || '0').trim(),
       location: String(row[locIdx] || 'N/A').trim(),
@@ -765,7 +781,192 @@ function parseGoogleSheetsJSON(json) {
   return result;
 }
 
-// FIXED IMPLEMENTATION ENGINE FOR HIGH QUALITY HD CAMERAS
+// ARRAYS LOOKUP GENERATOR FIXED AND INDEX COLUMN RE-MAPPED
+function renderResults() {
+  let query = searchBox.value.trim().toLowerCase();
+  if (!query) {
+    tableWrap.style.display = 'none';
+    noResults.style.display = 'none';
+    return;
+  }
+
+  let matches = [];
+  let matchCounter = 0;
+
+  // Search Stocks
+  for (let i = 0; i < stockRegistry.length; i++) {
+    let item = stockRegistry[i];
+    if (item.part.toLowerCase().includes(query) || item.itemNo.toLowerCase().includes(query) || item.supplierRef.toLowerCase().includes(query)) {
+      matches.push(item);
+      matchCounter++;
+      if (matchCounter >= 40) break;
+    }
+  }
+
+  // Search Fittings (Google Sheets)
+  if (matchCounter < 40) {
+    for (let i = 0; i < fittingsRegistry.length; i++) {
+      let item = fittingsRegistry[i];
+      if (item.part.toLowerCase().includes(query)) {
+        matches.push(item);
+        matchCounter++;
+        if (matchCounter >= 40) break;
+      }
+    }
+  }
+
+  if (matches.length === 0) {
+    tableWrap.style.display = 'none';
+    noResults.style.display = 'block';
+    return;
+  }
+
+  noResults.style.display = 'none';
+  tableWrap.style.display = 'block';
+
+  let html = '';
+  for (let i = 0; i < matches.length; i++) {
+    let item = matches[i];
+    let badgeClass = item.isFitting ? 'location-badge fittings-badge' : 'location-badge';
+    let labelInfo = item.isFitting ? 'FITTING / SHEET TRACK' : `Item No: ${item.itemNo || 'N/A'}`;
+    
+    html += `<tr>
+      <td class="col-main">
+        <div style="font-weight: 800; font-size:14px; font-family:monospace;">${highlightText(item.part, query)}</div>
+        <div style="font-size: 10px; color: var(--muted); margin-top: 2px;">${labelInfo}</div>
+      </td>
+      <td class="col-pack" style="text-align:center; font-weight:bold; font-family:monospace; color:var(--muted);">${item.packSize || '0'}</td>
+      <td class="col-boxes" style="text-align:center; font-weight:bold; font-family:monospace;">${item.boxes}</td>
+      <td class="col-total" style="text-align:center; font-weight:800; color:var(--primary-accent); font-family:monospace; font-size:14px;">${item.totalQty}</td>
+      <td class="col-sub" style="text-align:center;">
+        <span class="${badgeClass}">${item.location}</span>
+      </td>
+    </tr>`;
+  }
+  tableBody.innerHTML = html;
+}
+
+function highlightText(text, query) {
+  if (!query) return text;
+  let idx = text.toLowerCase().indexOf(query);
+  if (idx === -1) return text;
+  return text.substring(0, idx) + '<mark class="match">' + text.substring(idx, idx + query.length) + '</mark>' + text.substring(idx + query.length);
+}
+
+// MODULE A CONSOLIDATION MODULE WITH PACK SIZE MATRIX INJECTION
+function renderConsolidationRows() {
+  let query = conSearchBox.value.trim().toLowerCase();
+  let conTableWrap = document.getElementById('conTableWrap');
+  let conTableBody = document.getElementById('conTableBody');
+
+  if (!query) {
+    conTableWrap.style.display = 'none';
+    return;
+  }
+
+  // Filter only Sheet entries (fittingsRegistry) for direct modifications
+  let matches = fittingsRegistry.filter(i => i.part.toLowerCase().includes(query)).slice(0, 10);
+
+  if (matches.length === 0) {
+    conTableWrap.style.display = 'none';
+    return;
+  }
+
+  conTableWrap.style.display = 'block';
+  let html = '';
+
+  for (let i = 0; i < matches.length; i++) {
+    let item = matches[i];
+    let rowId = `conRow_${i}`;
+    html += `<tr>
+      <td class="col-main" style="font-weight:700; font-family:monospace; font-size:13px;">${item.part}</td>
+      <td class="col-pack" style="text-align:center;">
+        <input type="number" id="${rowId}_pack" value="${item.packSize}" class="inline-edit-input" oninput="calculateInlineTotal('${rowId}')"/>
+      </td>
+      <td class="col-boxes" style="text-align:center;">
+        <input type="number" id="${rowId}_boxes" value="${item.boxes}" class="inline-edit-input" oninput="calculateInlineTotal('${rowId}')"/>
+      </td>
+      <td class="col-total" id="${rowId}_total" style="text-align:center; font-weight:bold; font-family:monospace; color:var(--accent-purple); font-size:13px;">${item.totalQty}</td>
+      <td class="col-save" style="text-align:center;">
+        <button class="row-save-btn" onclick="syncInlineModification('${item.part}', '${item.location}', '${rowId}')">💾</button>
+      </td>
+      <td class="col-sub" style="text-align:center;">
+        <span class="location-badge fittings-badge">${item.location}</span>
+      </td>
+    </tr>`;
+  }
+  conTableBody.innerHTML = html;
+}
+
+function calculateInlineTotal(rowId) {
+  let p = parseInt(document.getElementById(`${rowId}_pack`).value, 10) || 0;
+  let b = parseInt(document.getElementById(`${rowId}_boxes`).value, 10) || 0;
+  document.getElementById(`${rowId}_total`).innerText = p * b;
+}
+
+// DISPATCH AND SYNC LIVE ONLINE CELL EDITS TO SPREADSHEET (MODULE A)
+function syncInlineModification(partNumber, location, rowId) {
+  let packSize = parseInt(document.getElementById(`${rowId}_pack`).value, 10) || 0;
+  let boxes = parseInt(document.getElementById(`${rowId}_boxes`).value, 10) || 0;
+  let totalQty = packSize * boxes;
+
+  metaDisplay.textContent = "Updating entry...";
+  
+  let targetUrl = `${GOOGLE_SHEETS_API_URL}?action=updateRow&partNumber=${encodeURIComponent(partNumber)}&location=${encodeURIComponent(location)}&packSize=${packSize}&boxes=${boxes}&totalQty=${totalQty}`;
+
+  fetch(targetUrl)
+    .then(res => res.json())
+    .then(data => {
+      if (data.result === 'success') {
+        alert(`Successfully synchronized changes for ${partNumber}`);
+        fetchInventoryDatabases(); // Automatically pulls the newest data instantly
+      } else {
+        alert("Server failed to log update: " + data.message);
+      }
+    })
+    .catch(() => alert("Network exception occurred during synchronization layout processing."));
+}
+
+// SAVE DYNAMIC NEW ENTRY FROM INPUT LOGIC VALUES (MODULE B)
+function submitNewPalletEntry() {
+  var partNumber = document.getElementById('newPartNo').value.trim();
+  var location = document.getElementById('newPalletNo').value.trim();
+  var packSize = parseInt(document.getElementById('newPackSize').value, 10) || 0;
+  var boxes = parseInt(document.getElementById('newBoxes').value, 10) || 0;
+  var totalQty = packSize * boxes;
+
+  if (!partNumber || !location) {
+    alert("Part Number and Pallet No. are strictly required parameters.");
+    return;
+  }
+
+  metaDisplay.textContent = "Saving new item pallet record...";
+
+  // CORRECTED ROUTE PARAMETERS TO SEND PACK SIZE DOWNSTREAM TO APPS SCRIPT
+  var targetUrl = `${GOOGLE_SHEETS_API_URL}?action=addStock&partNumber=${encodeURIComponent(partNumber)}&location=${encodeURIComponent(location)}&packSize=${packSize}&boxes=${boxes}&totalQty=${totalQty}`;
+
+  fetch(targetUrl)
+    .then(res => res.json())
+    .then(data => {
+      if (data.result === 'success') {
+        alert("Entry written successfully to master sheet ledger grid data matrix!");
+        
+        // Reset Module B layout parameter inputs
+        document.getElementById('newPartNo').value = '';
+        document.getElementById('newPalletNo').value = '';
+        document.getElementById('newPackSize').value = '';
+        document.getElementById('newBoxes').value = '';
+        document.getElementById('newTotalQty').value = '';
+        
+        fetchInventoryDatabases(); // Re-sync local cache dynamically
+      } else {
+        alert("Transmission logged an error outcome: " + data.message);
+      }
+    })
+    .catch(() => alert("CRITICAL: Server timeout exception. Verify Deployment configuration link properties."));
+}
+
+// SCANNER UTILITIES
 function startScanner() {
   if (html5QrcodeScanner) return;
   isProcessingScan = false;
@@ -844,6 +1045,126 @@ function onScanSuccess(decodedText) {
   }
 }
 
+// AUDIT MODAL LOGS Persistent Layout Controllers
+function showOverlay(item) {
+  activeScanMatch = item;
+  document.getElementById('targetItemName').innerText = item.part;
+  document.getElementById('targetMappingInfo').innerText = item.isFitting ? 'Google Sheets Database Profile' : `Item No: ${item.itemNo} | Ref: ${item.supplierRef}`;
+  document.getElementById('targetSubLoc').innerText = `Location Row: ${item.location}`;
+  document.getElementById('qtyInputField').value = '';
+  document.getElementById('countOverlay').style.display = 'block';
+}
+
+function adjustQty(amount) {
+  var f = document.getElementById('qtyInputField');
+  var current = parseInt(f.value, 10) || 0;
+  var next = current + amount;
+  f.value = next < 0 ? 0 : next;
+}
+
+function dismissOverlay() {
+  document.getElementById('countOverlay').style.display = 'none';
+  activeScanMatch = null;
+  setTimeout(() => { isProcessingScan = false; }, 1000);
+}
+
+function commitCount() {
+  var countVal = parseInt(document.getElementById('qtyInputField').value, 10);
+  if (isNaN(countVal) || countVal < 0) { alert("Provide a valid matching count metric index baseline."); return; }
+  
+  countLogSession.unshift({
+    part: activeScanMatch.part,
+    location: activeScanMatch.location,
+    qty: countVal,
+    time: new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})
+  });
+
+  localStorage.setItem('ms_saved_logs', JSON.stringify(countLogSession));
+  localStorage.setItem('ms_saved_date', new Date().toDateString());
+  
+  renderLogRegistryDisplay();
+  fireStockUpdateNotification();
+  dismissOverlay();
+}
+
+function renderLogRegistryDisplay() {
+  var list = document.getElementById('logRegistryList');
+  document.getElementById('countSession').innerText = `Counts logged: ${countLogSession.length}`;
+  if (countLogSession.length === 0) { list.innerHTML = ''; return; }
+  
+  list.innerHTML = countLogSession.map(log => `
+    <div class="log-item">
+      <div>
+        <div style="font-weight:bold; font-family:monospace; font-size:15px;">${log.part}</div>
+        <div style="font-size:11px; color:var(--muted); margin-top:2px;">Scanned at ${log.time} in Loc: ${log.location}</div>
+      </div>
+      <div style="font-size:18px; font-weight:800; color:var(--accent-green); font-family:monospace;">${log.qty} pcs</div>
+    </div>
+  `).join('');
+}
+
+function checkUnexportedSessionLogs() {
+  var savedDate = localStorage.getItem('ms_saved_date');
+  var savedLogs = localStorage.getItem('ms_saved_logs');
+  if (savedLogs && JSON.parse(savedLogs).length > 0) {
+    if (savedDate !== new Date().toDateString()) {
+      document.getElementById('interceptMessage').innerText = `Found unexported count data from terminal session date: ${savedDate || 'Unknown'}.`;
+      document.getElementById('startupInterceptModal').style.display = 'flex';
+    } else {
+      countLogSession = JSON.parse(savedLogs);
+      renderLogRegistryDisplay();
+    }
+  }
+}
+
+function resolveIntercept(strategy) {
+  if (strategy === 'purge') {
+    clearCounts();
+  } else {
+    countLogSession = JSON.parse(localStorage.getItem('ms_saved_logs') || '[]');
+    renderLogRegistryDisplay();
+  }
+  document.getElementById('startupInterceptModal').style.display = 'none';
+}
+
+function clearCounts() {
+  if (confirm("Permanently wipe active terminal operational log cache? Data cannot be recovered.")) {
+    countLogSession = [];
+    localStorage.removeItem('ms_saved_logs');
+    localStorage.removeItem('ms_saved_date');
+    renderLogRegistryDisplay();
+  }
+}
+
+function triggerNewSessionManually() {
+  if (confirm("End current workflow session parameters? Make sure you downloaded your spreadsheet compilation reports beforehand.")) {
+    countLogSession = [];
+    localStorage.removeItem('ms_saved_logs');
+    localStorage.removeItem('ms_saved_date');
+    renderLogRegistryDisplay();
+  }
+}
+
+function exportCountsToCSV() {
+  if (countLogSession.length === 0) { alert("Nothing found to generate reports from."); return; }
+  let header = "PART NUMBER,LOCATION,COUNT QTY,TIMESTAMP\n";
+  let content = countLogSession.map(l => `"${l.part}","${l.location}",${l.qty},"${l.time}"`).join("\n");
+  let blob = new Blob([header + content], { type: 'text/csv;charset=utf-8;' });
+  let link = document.createElement("a");
+  link.href = URL.createObjectURL(blob);
+  link.setAttribute("download", `Physical_Inventory_Audit_Report_${new Date().toISOString().slice(0,10)}.csv`);
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+}
+
+function clearAppCache() {
+  if (confirm("Force system to invalidate locally preserved manifest records? Run this if items show stale metadata positions.")) {
+    localStorage.clear();
+    location.reload();
+  }
+}
+
 function switchMode(mode) {
   document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
   document.querySelectorAll('.app-screen').forEach(scr => scr.classList.remove('active'));
@@ -859,8 +1180,7 @@ function switchMode(mode) {
     document.getElementById('counterTab').classList.add('active');
     document.getElementById('counterScreen').classList.add('active');
     document.getElementById('footerBar').style.display = 'flex';
-    document.getElementById('countSession').style.display = 'block';
-    renderSessionLogs();
+    document.getElementById('countSession').style.display = 'inline-block';
     stopInlineScanner();
     startScanner();
   } else if (mode === 'consolidation') {
@@ -870,242 +1190,8 @@ function switchMode(mode) {
     document.getElementById('countSession').style.display = 'none';
     stopScanner();
     stopInlineScanner();
-    renderConsolidationRows();
+    setTimeout(() => { conSearchBox.focus(); }, 100);
   }
-}
-
-function renderResults() {
-  var termGen = searchBox.value.trim().toLowerCase();
-  tableBody.innerHTML = '';
-  
-  if (!termGen) {
-    tableWrap.style.display = 'none';
-    noResults.style.display = 'none';
-    return;
-  }
-
-  var pool = stockRegistry.concat(fittingsRegistry);
-  var matches = pool.filter(i => 
-    i.part.toLowerCase().includes(termGen) || 
-    i.itemNo.toLowerCase().includes(termGen) || 
-    i.supplierRef.toLowerCase().includes(termGen)
-  );
-
-  if (matches.length === 0) {
-    tableWrap.style.display = 'none';
-    noResults.style.display = 'block';
-    return;
-  }
-
-  noResults.style.display = 'none';
-  tableWrap.style.display = 'block';
-
-  matches.forEach(item => {
-    let row = document.createElement('tr');
-    let badgeClass = item.isFitting ? 'location-badge fittings-badge' : 'location-badge';
-    row.innerHTML = `
-      <td class="col-main"><b>${item.part}</b><br><span style="font-size:11px; color:var(--muted);">${item.itemNo || 'N/A'} / ${item.supplierRef || 'N/A'}</span></td>
-      <td class="col-boxes">${item.boxes}</td>
-      <td class="col-total">${item.totalQty}</td>
-      <td class="col-sub"><span class="${badgeClass}">${item.location}</span></td>
-    `;
-    tableBody.appendChild(row);
-  });
-}
-
-// MODULE A: RENDER CONSOLIDATION ROWS ENGINE
-function renderConsolidationRows() {
-  var term = conSearchBox.value.trim().toLowerCase();
-  var conTableBody = document.getElementById('conTableBody');
-  var conTableWrap = document.getElementById('conTableWrap');
-  conTableBody.innerHTML = '';
-
-  if (!term) {
-    conTableWrap.style.display = 'none';
-    return;
-  }
-
-  var matches = fittingsRegistry.filter(i => i.part.toLowerCase().includes(term));
-
-  if (matches.length === 0) {
-    conTableWrap.style.display = 'none';
-    return;
-  }
-
-  conTableWrap.style.display = 'block';
-  matches.forEach((item, idx) => {
-    let row = document.createElement('tr');
-    row.innerHTML = `
-      <td class="col-main"><b>${item.part}</b></td>
-      <td class="col-boxes"><input type="number" class="inline-edit-input" id="modBoxes_${idx}" value="${item.boxes}" min="0"></td>
-      <td class="col-total"><input type="number" class="inline-edit-input" id="modTotal_${idx}" value="${item.totalQty}" min="0"></td>
-      <td class="col-save"><button class="row-save-btn" onclick="syncConsolidationRow('${item.part}', '${item.location}', ${idx})">🔄</button></td>
-      <td class="col-sub"><span class="location-badge fittings-badge">${item.location}</span></td>
-    `;
-    conTableBody.appendChild(row);
-  });
-}
-
-// MODULE A & B COMBINED SYNC WITH CORS PROTECTIONS
-async function syncConsolidationRow(partNumber, location, index) {
-  var newBoxes = document.getElementById(`modBoxes_${index}`).value;
-  var newTotal = document.getElementById(`modTotal_${index}`).value;
-
-  var targetUrl = `${GOOGLE_SHEETS_API_URL}?action=updateRow&partNumber=${encodeURIComponent(partNumber)}&location=${encodeURIComponent(location)}&boxes=${newBoxes}&totalQty=${newTotal}`;
-
-  try {
-    let res = await fetch(targetUrl);
-    let data = await res.json();
-    if (data.result === "success") {
-      alert("Item tracking data updated successfully inside Google Sheets!");
-      fireStockUpdateNotification();
-      fetchInventoryDatabases();
-    } else {
-      alert("Error processing updates: " + data.message);
-    }
-  } catch (err) {
-    alert("Connection Error while saving changes.");
-  }
-}
-
-async function submitNewPalletEntry() {
-  var partNumber = document.getElementById('newPartNo').value.trim();
-  var location = document.getElementById('newPalletNo').value.trim();
-  var boxes = document.getElementById('newBoxes').value.trim();
-  var totalQty = document.getElementById('newTotalQty').value.trim();
-
-  if (!partNumber || !location || !boxes || !totalQty) {
-    alert("Please ensure all entry inputs are filled.");
-    return;
-  }
-
-  var targetUrl = `${GOOGLE_SHEETS_API_URL}?action=addStock&partNumber=${encodeURIComponent(partNumber)}&location=${encodeURIComponent(location)}&boxes=${boxes}&totalQty=${totalQty}`;
-
-  try {
-    let res = await fetch(targetUrl);
-    let data = await res.json();
-    if (data.result === "success") {
-      alert("New entry added to your central database spreadsheet!");
-      document.getElementById('newPartNo').value = '';
-      document.getElementById('newPalletNo').value = '';
-      document.getElementById('newPackSize').value = '';
-      document.getElementById('newBoxes').value = '';
-      document.getElementById('newTotalQty').value = '';
-      fireStockUpdateNotification();
-      fetchInventoryDatabases();
-    } else {
-      alert("Error adding tracking entry row.");
-    }
-  } catch (err) {
-    alert("Sync error encountered while updating Google Sheets entries.");
-  }
-}
-
-// AUDIT COUNTER METHODS
-function showOverlay(item) {
-  activeScanMatch = item;
-  document.getElementById('targetItemName').textContent = item.part;
-  document.getElementById('targetMappingInfo').textContent = `Ref: ${item.itemNo || 'N/A'} / ${item.supplierRef || 'N/A'}`;
-  document.getElementById('targetSubLoc').textContent = item.location;
-  document.getElementById('qtyInputField').value = '';
-  document.getElementById('countOverlay').style.display = 'block';
-}
-
-function adjustQty(amount) {
-  var field = document.getElementById('qtyInputField');
-  var val = parseInt(field.value, 10) || 0;
-  field.value = Math.max(0, val + amount);
-}
-
-function dismissOverlay() {
-  document.getElementById('countOverlay').style.display = 'none';
-  isProcessingScan = false;
-}
-
-function commitCount() {
-  var countVal = parseInt(document.getElementById('qtyInputField').value, 10) || 0;
-  if (countVal <= 0) {
-    alert("Please enter a valid audit total quantity.");
-    return;
-  }
-  countLogSession.push({
-    part: activeScanMatch.part,
-    location: activeScanMatch.location,
-    qty: countVal,
-    time: new Date().toLocaleTimeString()
-  });
-  localStorage.setItem('saved_audit_logs', JSON.stringify(countLogSession));
-  renderSessionLogs();
-  dismissOverlay();
-}
-
-function renderSessionLogs() {
-  var container = document.getElementById('logRegistryList');
-  container.innerHTML = '';
-  document.getElementById('countSession').textContent = `Counts logged: ${countLogSession.length}`;
-  
-  countLogSession.slice().reverse().forEach(log => {
-    let div = document.createElement('div');
-    div.className = 'log-item';
-    div.innerHTML = `<div><b>${log.part}</b> [<span style="color:var(--accent-purple);">${log.location}</span>]</div><div>Qty: <b>${log.qty}</b> <span style="font-size:10px;color:var(--muted);">${log.time}</span></div>`;
-    container.appendChild(div);
-  });
-}
-
-function clearCounts() {
-  if (confirm("Are you sure you want to clear current local logs?")) {
-    countLogSession = [];
-    localStorage.removeItem('saved_audit_logs');
-    renderSessionLogs();
-  }
-}
-
-function triggerNewSessionManually() {
-  if (confirm("Clear local cache rows and reset operational counts window?")) {
-    countLogSession = [];
-    localStorage.removeItem('saved_audit_logs');
-    renderSessionLogs();
-  }
-}
-
-function checkUnexportedSessionLogs() {
-  var logs = localStorage.getItem('saved_audit_logs');
-  if (logs) {
-    countLogSession = JSON.parse(logs);
-    document.getElementById('startupInterceptModal').style.display = 'flex';
-  }
-}
-
-function resolveIntercept(action) {
-  if (action === 'purge') {
-    countLogSession = [];
-    localStorage.removeItem('saved_audit_logs');
-  }
-  document.getElementById('startupInterceptModal').style.display = 'none';
-  renderSessionLogs();
-}
-
-function exportCountsToCSV() {
-  if (countLogSession.length === 0) {
-    alert("No audit logs present to compile.");
-    return;
-  }
-  let csvContent = "data:text/csv;charset=utf-8,Part Number,Location,Audited Qty,Time\n" 
-    + countLogSession.map(e => `"${e.part}","${e.location}",${e.qty},"${e.time}"`).join("\n");
-  
-  let encodedUri = encodeURI(csvContent);
-  let link = document.createElement("a");
-  link.setAttribute("href", encodedUri);
-  link.setAttribute("download", `Audit_Report_${new Date().toISOString().slice(0,10)}.csv`);
-  document.body.appendChild(link);
-  link.click();
-  document.body.removeChild(link);
-}
-
-function clearAppCache() {
-  localStorage.clear();
-  alert("Local caches cleared. Application restarting...");
-  window.location.reload();
 }
 </script>
 </body>
