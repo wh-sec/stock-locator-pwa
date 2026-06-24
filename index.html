@@ -432,7 +432,7 @@
         </div>
 
         <div class="pref-row" style="justify-content: flex-start; gap: 8px;">
-          <button class="custom-file-upload" onclick="requestNotificationPermission()" style="background:#475569; color:white; border:none;">🔔 Activate Notifications</button>
+          <button id="notifActivationBtn" class="custom-file-upload" onclick="requestNotificationPermission()" style="background:#475569; color:white; border:none; transition: background 0.3s;">🔔 Activate Notifications</button>
         </div>
 
         <div class="sync-status-row">
@@ -568,7 +568,6 @@ var currentScanTargetField = 'qr';
 var isProcessingScan = false; 
 
 var searchBox = document.getElementById('searchBox');
-var fittingsSearchBox = document.getElementById('fittingsSearchBox');
 var conSearchBox = document.getElementById('conSearchBox');
 var tableBody = document.getElementById('tableBody');
 var tableWrap = document.getElementById('tableWrap');
@@ -579,21 +578,31 @@ var themeToggle = document.getElementById('themeToggle');
 var currentQuote = "Quality means doing it right when no one is looking.";
 var currentAuthor = "Henry Ford";
 
-// Lifecycle Hooks Setup
 window.addEventListener('DOMContentLoaded', () => {
   initThemeAndWallpaper();
   checkUnexportedSessionLogs();
   fetchInventoryDatabases();
+  updateNotificationButtonUI();
 
   searchBox.addEventListener('input', renderResults);
-  fittingsSearchBox.addEventListener('input', renderResults);
   conSearchBox.addEventListener('input', renderConsolidationRows);
 });
+
+function updateNotificationButtonUI() {
+  const btn = document.getElementById('notifActivationBtn');
+  if ("Notification" in window && Notification.permission === "granted") {
+    btn.style.background = "var(--accent-green)";
+    btn.textContent = "✅ Notifications Activated";
+  }
+}
 
 function requestNotificationPermission() {
   if ("Notification" in window) {
     Notification.requestPermission().then(perm => {
-      if (perm === "granted") alert("System Notifications authorized successfully!");
+      if (perm === "granted") {
+        updateNotificationButtonUI();
+        alert("System Notifications authorized successfully!");
+      }
     });
   } else {
     alert("System notifications are unsupported on this mobile layout browser.");
@@ -668,7 +677,6 @@ function clearWallpaperTheme() {
 
 function resetSearchFields() {
   searchBox.value = '';
-  fittingsSearchBox.value = '';
   renderResults();
   stopInlineScanner();
   searchBox.focus();
@@ -678,7 +686,7 @@ async function fetchInventoryDatabases() {
   try {
     const [stockRes, fitRes] = await Promise.all([
       fetch(CSV_URL + '?t=' + Date.now()),
-      fetch(GOOGLE_SHEETS_API_URL + '?t=' + Date.now())
+      fetch(GOOGLE_SHEETS_API_URL + '?action=getData&t=' + Date.now())
     ]);
     if (!stockRes.ok || !fitRes.ok) throw new Error("Connection fault");
     const stockText = await stockRes.text();
@@ -714,14 +722,65 @@ function updateMetaDisplay(customTime) {
   metaDisplay.textContent = `✅ Local Database Ready (Last Sync: ${useTime})`;
 }
 
-// RESTORED CAMERA SCANNER IMPLEMENTATION ENGINE
+function parseCSV(text) {
+  let lines = text.split('\n');
+  let result = [];
+  for (let i = 1; i < lines.length; i++) {
+    if (!lines[i].trim()) continue;
+    let cols = lines[i].split(',');
+    result.push({
+      part: cols[0]?.trim() || '',
+      itemNo: cols[1]?.trim() || '',
+      supplierRef: cols[2]?.trim() || '',
+      boxes: cols[3]?.trim() || '0',
+      totalQty: cols[4]?.trim() || '0',
+      location: cols[5]?.trim() || 'N/A',
+      isFitting: false
+    });
+  }
+  return result;
+}
+
+function parseGoogleSheetsJSON(json) {
+  if (!json || !Array.isArray(json) || json.length < 2) return [];
+  let headers = json[0].map(h => String(h).trim().toUpperCase());
+  let partIdx = headers.indexOf("PART NUMBER");
+  let locIdx = headers.indexOf("PALLET NO.");
+  let boxesIdx = headers.indexOf("NO. OF BOX");
+  let totalIdx = headers.indexOf("TOTAL");
+
+  let result = [];
+  for (let i = 1; i < json.length; i++) {
+    let row = json[i];
+    result.push({
+      part: String(row[partIdx] || '').trim(),
+      itemNo: '',
+      supplierRef: '',
+      boxes: String(row[boxesIdx] || '0').trim(),
+      totalQty: String(row[totalIdx] || '0').trim(),
+      location: String(row[locIdx] || 'N/A').trim(),
+      isFitting: true
+    });
+  }
+  return result;
+}
+
+// FIXED IMPLEMENTATION ENGINE FOR HIGH QUALITY HD CAMERAS
 function startScanner() {
   if (html5QrcodeScanner) return;
   isProcessingScan = false;
   html5QrcodeScanner = new Html5Qrcode("reader");
   html5QrcodeScanner.start(
     { facingMode: "environment" },
-    { fps: 30, formatsToSupport: [Html5QrcodeSupportedFormats.CODE_128, Html5QrcodeSupportedFormats.CODE_39, Html5QrcodeSupportedFormats.QR_CODE] },
+    { 
+      fps: 30, 
+      videoConstraints: {
+        width: { ideal: 1920 },
+        height: { ideal: 1080 },
+        aspectRatio: { ideal: 1.7777777778 }
+      },
+      formatsToSupport: [Html5QrcodeSupportedFormats.CODE_128, Html5QrcodeSupportedFormats.CODE_39, Html5QrcodeSupportedFormats.QR_CODE] 
+    },
     onScanSuccess
   ).catch(() => { metaDisplay.textContent = "Camera configuration failed."; });
 }
@@ -740,7 +799,14 @@ function startInlineScanner(targetType) {
   inlineFinderScanner = new Html5Qrcode("finderReader");
   inlineFinderScanner.start(
     { facingMode: "environment" },
-    { fps: 25, formatsToSupport: [Html5QrcodeSupportedFormats.CODE_128, Html5QrcodeSupportedFormats.CODE_39, Html5QrcodeSupportedFormats.QR_CODE] },
+    { 
+      fps: 25, 
+      videoConstraints: {
+        width: { ideal: 1920 },
+        height: { ideal: 1080 }
+      },
+      formatsToSupport: [Html5QrcodeSupportedFormats.CODE_128, Html5QrcodeSupportedFormats.CODE_39, Html5QrcodeSupportedFormats.QR_CODE] 
+    },
     onInlineScanSuccess
   ).catch(() => { alert("Could not access camera for target layout processing."); });
 }
@@ -754,9 +820,7 @@ function stopInlineScanner() {
 
 function onInlineScanSuccess(decodedText) {
   let scannedText = decodedText.trim();
-  playBeep('success');
   stopInlineScanner();
-  fittingsSearchBox.value = '';
   
   if (currentScanTargetField === 'qr') {
     searchBox.value = scannedText;
@@ -776,12 +840,10 @@ function onScanSuccess(decodedText) {
                     fittingsRegistry.find(i => i.part.toLowerCase() === term);
   if (matchedItem) {
     isProcessingScan = true;
-    playBeep('success');
     showOverlay(matchedItem);
   }
 }
 
-// VIEW SWITCH CONTROLLER
 function switchMode(mode) {
   document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
   document.querySelectorAll('.app-screen').forEach(scr => scr.classList.remove('active'));
@@ -812,26 +874,22 @@ function switchMode(mode) {
   }
 }
 
-// INVENTORY ROW MATCH RENDERING (LOOKUP SCREEN)
 function renderResults() {
   var termGen = searchBox.value.trim().toLowerCase();
-  var termFit = fittingsSearchBox.value.trim().toLowerCase();
   tableBody.innerHTML = '';
   
-  if (!termGen && !termFit) {
+  if (!termGen) {
     tableWrap.style.display = 'none';
     noResults.style.display = 'none';
     return;
   }
 
-  var pool = termFit ? fittingsRegistry : stockRegistry.concat(fittingsRegistry);
-  var targetQuery = termFit ? termFit : termGen;
-
-  var matches = pool.filter(function(item) {
-    return item.part.toLowerCase().includes(targetQuery) || 
-           item.itemNo.toLowerCase().includes(targetQuery) || 
-           item.supplierRef.toLowerCase().includes(targetQuery);
-  });
+  var pool = stockRegistry.concat(fittingsRegistry);
+  var matches = pool.filter(i => 
+    i.part.toLowerCase().includes(termGen) || 
+    i.itemNo.toLowerCase().includes(termGen) || 
+    i.supplierRef.toLowerCase().includes(termGen)
+  );
 
   if (matches.length === 0) {
     tableWrap.style.display = 'none';
@@ -842,238 +900,212 @@ function renderResults() {
   noResults.style.display = 'none';
   tableWrap.style.display = 'block';
 
-  matches.forEach(function(item) {
-    var tr = document.createElement('tr');
-    var badgeClass = (item.type === 'fittings') ? 'location-badge fittings-badge' : 'location-badge';
-    tr.innerHTML = `
-      <td class="col-main"><b>${highlightMatch(item.part, targetQuery)}</b></td>
-      <td class="col-boxes" style="color:#3b82f6; font-weight:700;">${item.boxes}</td>
-      <td class="col-total" style="color:#10b981; font-weight:700;">${item.qty}</td>
-      <td class="col-sub"><span class="${badgeClass}">${item.sub}</span></td>
+  matches.forEach(item => {
+    let row = document.createElement('tr');
+    let badgeClass = item.isFitting ? 'location-badge fittings-badge' : 'location-badge';
+    row.innerHTML = `
+      <td class="col-main"><b>${item.part}</b><br><span style="font-size:11px; color:var(--muted);">${item.itemNo || 'N/A'} / ${item.supplierRef || 'N/A'}</span></td>
+      <td class="col-boxes">${item.boxes}</td>
+      <td class="col-total">${item.totalQty}</td>
+      <td class="col-sub"><span class="${badgeClass}">${item.location}</span></td>
     `;
-    tableBody.appendChild(tr);
+    tableBody.appendChild(row);
   });
 }
 
-// RE-REALIGNED COLUMNS AND RE-IMPLEMENTED CONSOLIDATION ROW SYNC ACTIONS
+// MODULE A: RENDER CONSOLIDATION ROWS ENGINE
 function renderConsolidationRows() {
   var term = conSearchBox.value.trim().toLowerCase();
-  var body = document.getElementById('conTableBody');
-  var wrap = document.getElementById('conTableWrap');
-  body.innerHTML = '';
-  
-  if (!term) { wrap.style.display = 'none'; return; }
-  
+  var conTableBody = document.getElementById('conTableBody');
+  var conTableWrap = document.getElementById('conTableWrap');
+  conTableBody.innerHTML = '';
+
+  if (!term) {
+    conTableWrap.style.display = 'none';
+    return;
+  }
+
   var matches = fittingsRegistry.filter(i => i.part.toLowerCase().includes(term));
-  if (matches.length === 0) { wrap.style.display = 'none'; return; }
-  
-  wrap.style.display = 'block';
-  matches.forEach(item => {
-    var tr = document.createElement('tr');
-    tr.innerHTML = `
-      <td class="col-main"><span class="location-badge fittings-badge">${item.part}</span></td>
-      <td class="col-boxes"><input type="number" class="inline-edit-input" id="con_box_${item.id}" value="${item.boxes}"></td>
-      <td class="col-total"><input type="number" class="inline-edit-input" id="con_qty_${item.id}" value="${item.qty}"></td>
-      <td class="col-save"><button class="row-save-btn" onclick="submitModuleAChange('${item.part}', '${item.sub}', '${item.id}')">💾</button></td>
-      <td class="col-sub"><span class="location-badge" style="background:#4a5568;">${item.sub}</span></td>
+
+  if (matches.length === 0) {
+    conTableWrap.style.display = 'none';
+    return;
+  }
+
+  conTableWrap.style.display = 'block';
+  matches.forEach((item, idx) => {
+    let row = document.createElement('tr');
+    row.innerHTML = `
+      <td class="col-main"><b>${item.part}</b></td>
+      <td class="col-boxes"><input type="number" class="inline-edit-input" id="modBoxes_${idx}" value="${item.boxes}" min="0"></td>
+      <td class="col-total"><input type="number" class="inline-edit-input" id="modTotal_${idx}" value="${item.totalQty}" min="0"></td>
+      <td class="col-save"><button class="row-save-btn" onclick="syncConsolidationRow('${item.part}', '${item.location}', ${idx})">🔄</button></td>
+      <td class="col-sub"><span class="location-badge fittings-badge">${item.location}</span></td>
     `;
-    body.appendChild(tr);
+    conTableBody.appendChild(row);
   });
 }
 
-function submitModuleAChange(partNumber, location, rowId) {
-  let boxesVal = parseInt(document.getElementById(`con_box_${rowId}`).value, 10) || 0;
-  let qtyVal = parseInt(document.getElementById(`con_qty_${rowId}`).value, 10) || 0;
-  
-  metaDisplay.textContent = "⏳ Synchronizing rows into App Script storage columns...";
-  let callbackName = "jsonp_fit_" + Math.round(Math.random() * 1000000);
-  
-  window[callbackName] = function(res) {
-    clearTimeout(timeoutId); delete window[callbackName]; document.body.removeChild(script);
-    if (res && res.result === "success") {
-      playBeep('success'); alert("Inventory cell log modified successfully!"); fetchInventoryDatabases();
-    } else { alert("Data cell deployment rejected."); updateMetaDisplay(); }
-  };
-  
-  let timeoutId = setTimeout(() => { delete window[callbackName]; alert("Cloud execution sync timed out."); updateMetaDisplay(); }, 15000);
-  let script = document.createElement("script");
-  script.src = GOOGLE_SHEETS_API_URL + `?action=updateRow&partNumber=${encodeURIComponent(partNumber)}&location=${encodeURIComponent(location)}&boxes=${boxesVal}&totalQty=${qtyVal}&callback=${callbackName}`;
-  document.body.appendChild(script);
-}
+// MODULE A & B COMBINED SYNC WITH CORS PROTECTIONS
+async function syncConsolidationRow(partNumber, location, index) {
+  var newBoxes = document.getElementById(`modBoxes_${index}`).value;
+  var newTotal = document.getElementById(`modTotal_${index}`).value;
 
-function submitNewPalletEntry() {
-  let part = document.getElementById('newPartNo').value.trim();
-  let pallet = document.getElementById('newPalletNo').value.trim();
-  let packSize = parseInt(document.getElementById('newPackSize').value, 10) || 0;
-  let boxes = parseInt(document.getElementById('newBoxes').value, 10) || 0;
-  let total = parseInt(document.getElementById('newTotalQty').value, 10) || 0;
+  var targetUrl = `${GOOGLE_SHEETS_API_URL}?action=updateRow&partNumber=${encodeURIComponent(partNumber)}&location=${encodeURIComponent(location)}&boxes=${newBoxes}&totalQty=${newTotal}`;
 
-  if (!part || !pallet) { alert("Please complete both Part Number and Pallet No. fields."); return; }
-  
-  metaDisplay.textContent = "⏳ Saving new item row index entry...";
-  let callbackName = "jsonp_add_" + Math.round(Math.random() * 1000000);
-  
-  window[callbackName] = function(res) {
-    clearTimeout(timeoutId); delete window[callbackName]; document.body.removeChild(script);
-    if (res && res.result === "success") {
-      playBeep('success'); alert("Item entry appended and indexed!");
-      ['newPartNo', 'newPalletNo', 'newPackSize', 'newBoxes', 'newTotalQty'].forEach(id => document.getElementById(id).value = '');
+  try {
+    let res = await fetch(targetUrl);
+    let data = await res.json();
+    if (data.result === "success") {
+      alert("Item tracking data updated successfully inside Google Sheets!");
+      fireStockUpdateNotification();
       fetchInventoryDatabases();
-    } else { alert("Cloud addition error configuration rejected."); updateMetaDisplay(); }
-  };
-  
-  let timeoutId = setTimeout(() => { delete window[callbackName]; alert("Sync runtime timeout."); updateMetaDisplay(); }, 15000);
-  let script = document.createElement("script");
-  script.src = GOOGLE_SHEETS_API_URL + `?action=addStock&partNumber=${encodeURIComponent(part)}&location=${encodeURIComponent(pallet)}&packSize=${packSize}&boxes=${boxes}&totalQty=${total}&callback=${callbackName}`;
-  document.body.appendChild(script);
+    } else {
+      alert("Error processing updates: " + data.message);
+    }
+  } catch (err) {
+    alert("Connection Error while saving changes.");
+  }
 }
 
-// AUDIT ENGINE SUBSYSTEMS LOGIC
+async function submitNewPalletEntry() {
+  var partNumber = document.getElementById('newPartNo').value.trim();
+  var location = document.getElementById('newPalletNo').value.trim();
+  var boxes = document.getElementById('newBoxes').value.trim();
+  var totalQty = document.getElementById('newTotalQty').value.trim();
+
+  if (!partNumber || !location || !boxes || !totalQty) {
+    alert("Please ensure all entry inputs are filled.");
+    return;
+  }
+
+  var targetUrl = `${GOOGLE_SHEETS_API_URL}?action=addStock&partNumber=${encodeURIComponent(partNumber)}&location=${encodeURIComponent(location)}&boxes=${boxes}&totalQty=${totalQty}`;
+
+  try {
+    let res = await fetch(targetUrl);
+    let data = await res.json();
+    if (data.result === "success") {
+      alert("New entry added to your central database spreadsheet!");
+      document.getElementById('newPartNo').value = '';
+      document.getElementById('newPalletNo').value = '';
+      document.getElementById('newPackSize').value = '';
+      document.getElementById('newBoxes').value = '';
+      document.getElementById('newTotalQty').value = '';
+      fireStockUpdateNotification();
+      fetchInventoryDatabases();
+    } else {
+      alert("Error adding tracking entry row.");
+    }
+  } catch (err) {
+    alert("Sync error encountered while updating Google Sheets entries.");
+  }
+}
+
+// AUDIT COUNTER METHODS
 function showOverlay(item) {
   activeScanMatch = item;
   document.getElementById('targetItemName').textContent = item.part;
-  document.getElementById('targetMappingInfo').textContent = item.itemNo ? `Item No: ${item.itemNo} | Ref: ${item.supplierRef}` : `Fittings Stock Map`;
-  document.getElementById('targetSubLoc').textContent = item.sub;
+  document.getElementById('targetMappingInfo').textContent = `Ref: ${item.itemNo || 'N/A'} / ${item.supplierRef || 'N/A'}`;
+  document.getElementById('targetSubLoc').textContent = item.location;
   document.getElementById('qtyInputField').value = '';
   document.getElementById('countOverlay').style.display = 'block';
-  setTimeout(() => { document.getElementById('qtyInputField').focus(); }, 1500);
+}
+
+function adjustQty(amount) {
+  var field = document.getElementById('qtyInputField');
+  var val = parseInt(field.value, 10) || 0;
+  field.value = Math.max(0, val + amount);
 }
 
 function dismissOverlay() {
   document.getElementById('countOverlay').style.display = 'none';
-  activeScanMatch = null;
   isProcessingScan = false;
 }
 
-function adjustQty(amt) {
-  let f = document.getElementById('qtyInputField');
-  let current = parseInt(f.value, 10) || 0;
-  f.value = Math.max(0, current + amt);
-}
-
 function commitCount() {
-  if (!activeScanMatch) return;
-  let val = parseInt(document.getElementById('qtyInputField').value, 10) || 0;
-  countLogSession.push({ part: activeScanMatch.part, location: activeScanMatch.sub, qty: val, time: new Date().toLocaleTimeString() });
+  var countVal = parseInt(document.getElementById('qtyInputField').value, 10) || 0;
+  if (countVal <= 0) {
+    alert("Please enter a valid audit total quantity.");
+    return;
+  }
+  countLogSession.push({
+    part: activeScanMatch.part,
+    location: activeScanMatch.location,
+    qty: countVal,
+    time: new Date().toLocaleTimeString()
+  });
   localStorage.setItem('saved_audit_logs', JSON.stringify(countLogSession));
-  localStorage.setItem('saved_audit_date', new Date().toDateString());
-  document.getElementById('countSession').textContent = `Counts logged: ${countLogSession.length}`;
-  dismissOverlay();
   renderSessionLogs();
+  dismissOverlay();
 }
 
 function renderSessionLogs() {
-  let container = document.getElementById('logRegistryList');
+  var container = document.getElementById('logRegistryList');
   container.innerHTML = '';
-  countLogSession.slice().reverse().forEach((log, index) => {
+  document.getElementById('countSession').textContent = `Counts logged: ${countLogSession.length}`;
+  
+  countLogSession.slice().reverse().forEach(log => {
     let div = document.createElement('div');
     div.className = 'log-item';
-    div.innerHTML = `<div><b>${log.part}</b> <small style="color:var(--muted)">(${log.location})</small></div><div style="font-weight:700; color:var(--accent-green); font-size:16px;">${log.qty} pcs</div>`;
+    div.innerHTML = `<div><b>${log.part}</b> [<span style="color:var(--accent-purple);">${log.location}</span>]</div><div>Qty: <b>${log.qty}</b> <span style="font-size:10px;color:var(--muted);">${log.time}</span></div>`;
     container.appendChild(div);
   });
 }
 
-function triggerNewSessionManually() {
-  if (confirm("Wipe clear current session parameters to start over fresh?")) { clearCounts(); }
+function clearCounts() {
+  if (confirm("Are you sure you want to clear current local logs?")) {
+    countLogSession = [];
+    localStorage.removeItem('saved_audit_logs');
+    renderSessionLogs();
+  }
 }
 
-function clearCounts() {
-  countLogSession = [];
-  localStorage.removeItem('saved_audit_logs');
-  localStorage.removeItem('saved_audit_date');
-  document.getElementById('countSession').textContent = `Counts logged: 0`;
-  renderSessionLogs();
+function triggerNewSessionManually() {
+  if (confirm("Clear local cache rows and reset operational counts window?")) {
+    countLogSession = [];
+    localStorage.removeItem('saved_audit_logs');
+    renderSessionLogs();
+  }
 }
 
 function checkUnexportedSessionLogs() {
-  let saved = localStorage.getItem('saved_audit_logs');
-  let date = localStorage.getItem('saved_audit_date');
-  if (saved && date && date !== new Date().toDateString()) {
+  var logs = localStorage.getItem('saved_audit_logs');
+  if (logs) {
+    countLogSession = JSON.parse(logs);
     document.getElementById('startupInterceptModal').style.display = 'flex';
-  } else if (saved) {
-    countLogSession = JSON.parse(saved);
   }
 }
 
-function resolveIntercept(choice) {
-  if (choice === 'continue') {
-    countLogSession = JSON.parse(localStorage.getItem('saved_audit_logs') || '[]');
-    document.getElementById('countSession').textContent = `Counts logged: ${countLogSession.length}`;
-    renderSessionLogs();
-  } else {
-    clearCounts();
+function resolveIntercept(action) {
+  if (action === 'purge') {
+    countLogSession = [];
+    localStorage.removeItem('saved_audit_logs');
   }
   document.getElementById('startupInterceptModal').style.display = 'none';
+  renderSessionLogs();
 }
 
 function exportCountsToCSV() {
-  if (countLogSession.length === 0) { alert("Log session registry is currently empty."); return; }
-  let csv = "Part Number,Location,Logged Quantity,Timestamp\n";
-  countLogSession.forEach(r => { csv += `"${r.part}","${r.location}",${r.qty},"${r.time}"\n`; });
-  let blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+  if (countLogSession.length === 0) {
+    alert("No audit logs present to compile.");
+    return;
+  }
+  let csvContent = "data:text/csv;charset=utf-8,Part Number,Location,Audited Qty,Time\n" 
+    + countLogSession.map(e => `"${e.part}","${e.location}",${e.qty},"${e.time}"`).join("\n");
+  
+  let encodedUri = encodeURI(csvContent);
   let link = document.createElement("a");
-  link.href = URL.createObjectURL(blob);
+  link.setAttribute("href", encodedUri);
   link.setAttribute("download", `Audit_Report_${new Date().toISOString().slice(0,10)}.csv`);
   document.body.appendChild(link);
   link.click();
   document.body.removeChild(link);
 }
 
-// FORMAT PARSING UTILITIES
-function parseCSV(text) {
-  var lines = text.split(/\r?\n/), rows = [];
-  if (lines.length < 2) return [];
-  for (var i = 1; i < lines.length; i++) {
-    var line = lines[i].trim(); if (!line) continue;
-    var cols = line.split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/);
-    if (cols.length < 4) continue; 
-    var partStr = (cols[3] || '').replace(/"/g, '').trim();
-    var supplierRefStr = (cols[1] || '').replace(/"/g, '').trim();
-    var itemNoStr = (cols[6] || '').replace(/"/g, '').trim();
-    var subStr = (cols[5] || '').replace(/"/g, '').trim();
-    var qty = parseInt((cols[4] || '0').replace(/[^0-9.\-]/g, ''), 10) || 0;
-    
-    rows.push({ id: 'std_' + i, part: partStr, boxes: 0, qty: qty, sub: subStr || 'MAIN', itemNo: itemNoStr, supplierRef: supplierRefStr, type: 'standard' });
-  }
-  return rows;
-}
-
-function parseGoogleSheetsJSON(dataMatrix) {
-  var rows = []; if (!dataMatrix || dataMatrix.length < 2) return [];
-  var headers = dataMatrix[0].map(h => String(h).trim().toUpperCase());
-  var partCol = headers.indexOf("CODE"), locCol = headers.indexOf("PART NUMBER"), boxCol = headers.indexOf("PACK SIZE"), totalCol = headers.indexOf("NO. OF BOX");
-  if (partCol === -1 || locCol === -1 || boxCol === -1 || totalCol === -1) return [];
-
-  for (var i = 1; i < dataMatrix.length; i++) {
-    var cols = dataMatrix[i]; if (!cols || cols.length === 0) continue;
-    var partStr = String(cols[partCol] || '').trim();
-    if (!partStr) continue;
-    rows.push({
-      id: 'fit_' + i, part: partStr, boxes: parseInt(cols[boxCol], 10) || 0, qty: parseInt(cols[totalCol], 10) || 0,
-      sub: String(cols[locCol] || '').trim() || 'FITTINGS', itemNo: '', supplierRef: '', type: 'fittings'
-    });
-  }
-  return rows;
-}
-
-function highlightMatch(text, term) {
-  if (!term) return text;
-  var idx = text.toLowerCase().indexOf(term.toLowerCase());
-  if (idx === -1) return text;
-  return text.substring(0, idx) + '<mark class="match">' + text.substring(idx, idx + term.length) + '</mark>' + text.substring(idx + term.length);
-}
-
 function clearAppCache() {
-  if (confirm("Reset layout application local store cache memory?")) { localStorage.clear(); location.reload(); }
-}
-
-function playBeep(type) {
-  try {
-    let ctx = new (window.AudioContext || window.webkitAudioContext)();
-    let osc = ctx.createOscillator(), gain = ctx.createGain();
-    osc.connect(gain); gain.connect(ctx.destination);
-    if (type === 'success') { osc.frequency.setValueAtTime(587.33, ctx.currentTime); gain.gain.setValueAtTime(0.1, ctx.currentTime); osc.start(); osc.stop(ctx.currentTime + 0.12); }
-  } catch(e) {}
+  localStorage.clear();
+  alert("Local caches cleared. Application restarting...");
+  window.location.reload();
 }
 </script>
 </body>
