@@ -92,6 +92,9 @@
 
     .inline-edit-input { padding: 6px 8px; text-align: center; font-family: monospace; font-weight: 700; max-width: 75px; }
     .row-save-btn { border: none; background: none; font-size: 18px; cursor: pointer; padding: 4px; }
+    
+    /* Hidden file element */
+    #themeFileInput { display: none; }
   </style>
 </head>
 <body>
@@ -104,7 +107,7 @@
   <nav class="nav-tabs">
     <button class="tab-btn active" id="finderTab" onclick="switchMode('finder')">🔍 Stock Lookup</button>
     <button class="tab-btn" id="counterTab" onclick="switchMode('counter')">📋 Audit Scanner</button>
-    <button class="tab-btn" id="consolidationTab" onclick="switchMode('consolidation')">📦 Consolidation</button>
+    <button class="tab-btn" id="consolidationTab" onclick="switchMode('consolidation')">⚙️ Consolidation & Settings</button>
   </nav>
 
   <main id="finderScreen" class="app-screen active">
@@ -202,12 +205,21 @@
     </div>
 
     <div class="card">
-      <h3 style="font-size:15px; font-weight:800; margin-bottom:15px;">Core Utility Settings</h3>
+      <h3 style="font-size:15px; font-weight:800; margin-bottom:15px;">System Preference Controls</h3>
       
-      <div style="display:flex; align-items:center; justify-content:between; margin-bottom:15px; background:var(--bg-primary); padding:12px; border-radius:10px;">
+      <div style="display:flex; align-items:center; justify-content:between; margin-bottom:15px; background:var(--bg-primary); padding:14px; border-radius:10px; border:1px solid var(--border-color);">
         <label style="font-size:14px; font-weight:600; display:flex; align-items:center; gap:10px; cursor:pointer; width:100%;">
           <input type="checkbox" id="darkModeToggle" style="transform:scale(1.2);" onchange="toggleSystemThemeMode(this.checked)"> Dark Interface Mode
         </label>
+      </div>
+
+      <div class="form-group" style="background:var(--bg-primary); padding:14px; border-radius:10px; border:1px solid var(--border-color); margin-bottom:15px;">
+        <label style="margin-bottom:8px;">App Visual Theme Customization</label>
+        <input type="file" id="themeFileInput" accept="image/*" onchange="handleCustomThemeUpload(event)">
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
+          <button class="action-btn btn-blue" style="font-size:12px; padding:10px;" onclick="document.getElementById('themeFileInput').click()">🖼️ Upload Theme Image</button>
+          <button class="action-btn btn-muted" style="font-size:12px; padding:10px; background:#64748b;" onclick="resetCustomThemeWallpaper()">🔄 Reset Default Theme</button>
+        </div>
       </div>
 
       <button class="action-btn btn-muted" style="background:#475569;" onclick="clearAppCache()">♻️ Purge Manifest Cache (Reload Databases)</button>
@@ -286,11 +298,39 @@
       var isDark = localStorage.getItem('ms_dark_mode') === 'true';
       document.getElementById('darkModeToggle').checked = isDark;
       toggleSystemThemeMode(isDark);
+
+      var savedTheme = localStorage.getItem('ms_theme_wallpaper');
+      if (savedTheme) {
+        document.body.style.backgroundImage = "url(" + savedTheme + ")";
+        document.body.style.backgroundSize = "cover";
+        document.body.style.backgroundAttachment = "fixed";
+      }
     }
 
     function toggleSystemThemeMode(isDark) {
       document.documentElement.setAttribute('data-theme', isDark ? 'dark' : 'light');
       localStorage.setItem('ms_dark_mode', isDark);
+    }
+
+    function handleCustomThemeUpload(event) {
+      var file = event.target.files[0];
+      if (!file) return;
+      var reader = new FileReader();
+      reader.onload = function(e) {
+        var base64Img = e.target.result;
+        document.body.style.backgroundImage = "url(" + base64Img + ")";
+        document.body.style.backgroundSize = "cover";
+        document.body.style.backgroundAttachment = "fixed";
+        localStorage.setItem('ms_theme_wallpaper', base64Img);
+      };
+      reader.readAsDataURL(file);
+    }
+
+    function resetCustomThemeWallpaper() {
+      document.body.style.backgroundImage = "none";
+      localStorage.removeItem('ms_theme_wallpaper');
+      document.getElementById('themeFileInput').value = '';
+      alert("Theme background image reverted back to dynamic default system styles.");
     }
 
     function fetchInventoryDatabases() {
