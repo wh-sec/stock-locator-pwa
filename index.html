@@ -1,854 +1,816 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
-  <title>STOCK LOCATOR+</title>
-
-  <link rel="manifest" href="manifest.json">
-
-  <link rel="icon" type="image/png" sizes="192x192" href="./wh_icon.png">
-  <link rel="icon" type="image/png" sizes="512x512" href="./wh_icon.png">
-  <link rel="apple-touch-icon" sizes="180x180" href="./wh_icon.png">
-  <link rel="icon" type="image/png" sizes="32x32" href="./wh_icon.png">
-
-  <meta name="mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-title" content="STOCK LOCATOR+">
-  <meta name="theme-color" content="#0056b3">
-
-  <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
-
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Stock Locator+</title>
+  <script src="https://unpkg.com/html5-qrcode"></script>
   <style>
     :root {
-      --primary-accent: #0056b3; 
-      --bg: #f4f6f9; 
-      --panel: rgba(255, 255, 255, 0.85);
-      --text: #1e293b;
-      --muted: #475569;
-      --border: rgba(219, 226, 239, 0.7);
-      --th-bg: rgba(241, 245, 249, 0.9);
-      --accent-green: #10b981;
-      --accent-purple: #8250df;
+      --bg-primary: #f4f6f9;
+      --bg-card: #ffffff;
+      --text-main: #333333;
+      --text-muted: #666666;
+      --border-color: #dddddd;
+      --accent-blue: #0056b3;
+      --accent-green: #198754;
+      --accent-purple: #6f42c1;
       --danger-red: #dc3545;
-      --warn-yellow: #f0b429;
-      --glass-blur: blur(12px);
-      --bg-overlay: rgba(244, 246, 249, 0.4);
+      --badge-bg: #e9ecef;
     }
+
     [data-theme="dark"] {
-      --primary-accent: #3b82f6;
-      --bg: #0f1115;
-      --panel: rgba(22, 26, 34, 0.80);
-      --text: #f8fafc;
-      --muted: #94a3b8;
-      --border: rgba(45, 55, 72, 0.6);
-      --th-bg: rgba(30, 41, 59, 0.9);
-      --bg-overlay: rgba(15, 17, 21, 0.75);
+      --bg-primary: #121212;
+      --bg-card: #1e1e1e;
+      --text-main: #f0f0f0;
+      --text-muted: #aaaaaa;
+      --border-color: #333333;
+      --accent-blue: #0d6efd;
+      --accent-green: #2ecc71;
+      --accent-purple: #a87ffb;
+      --badge-bg: #2d2d2d;
     }
-    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+    body { background-color: var(--bg-primary); color: var(--text-main); transition: background 0.3s, color 0.3s; padding: 15px; padding-bottom: 80px; }
     
-    html, body { min-height: 100vh; }
-    
-    body { 
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; 
-      background-color: var(--bg);
-      background-position: center;
-      background-size: cover;
-      background-attachment: fixed;
-      background-repeat: no-repeat;
-      color: var(--text); 
-      padding: 12px; 
-      padding-bottom: 90px; 
-      transition: background-color 0.2s ease;
-      position: relative;
-    }
+    .app-header { text-align: center; margin-bottom: 20px; padding: 10px; display: flex; align-items: center; justify-content: center; gap: 10px; }
+    .app-header h1 { font-size: 24px; font-weight: 800; letter-spacing: -0.5px; }
 
-    body::before {
-      content: "";
-      position: fixed;
-      top: 0; left: 0; right: 0; bottom: 0;
-      background: var(--bg-overlay);
-      z-index: -1;
-      pointer-events: none;
-      transition: background 0.2s ease;
-    }
-
-    .app-container { max-width: 750px; margin: 0 auto; position: relative; z-index: 1; }
-
-    .app-header {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      gap: 6px;
-      margin-bottom: 14px;
-      padding: 10px;
-    }
-    .header-main-row {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 12px;
-    }
-    .app-logo { height: 38px; width: auto; object-fit: contain; }
-    .app-title { font-size: 24px; font-weight: 800; letter-spacing: -0.5px; color: var(--text); text-transform: uppercase; }
-
-    .tabs-bar { 
-      display: grid; 
-      grid-template-columns: 1fr 1fr 1fr;
-      background: var(--panel); 
-      border: 1px solid var(--border); 
-      border-radius: 12px; 
-      padding: 5px; 
-      margin-bottom: 14px; 
-      box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); 
-      backdrop-filter: var(--glass-blur);
-    }
-    .tab-btn { 
-      padding: 14px 6px; 
-      text-align: center; 
-      font-size: 13px; 
-      font-weight: 700; 
-      border: none; 
-      background: transparent; 
-      color: var(--muted); 
-      cursor: pointer; 
-      border-radius: 8px; 
-      transition: all 0.2s ease; 
-    }
-    
-    #finderTab.active { background: #0056b3; color: white; }
-    #counterTab.active { background: var(--accent-green); color: white; }
-    #consolidationTab.active { background: var(--accent-purple); color: white; }
+    .nav-tabs { display: flex; background: var(--bg-card); border-radius: 12px; padding: 6px; margin-bottom: 20px; border: 1px solid var(--border-color); }
+    .tab-btn { flex: 1; border: none; background: transparent; color: var(--text-muted); padding: 12px; font-size: 14px; font-weight: 600; cursor: pointer; border-radius: 8px; transition: all 0.2s; display: flex; align-items: center; justify-content: center; gap: 8px; }
+    .tab-btn.active { background: var(--accent-blue); color: white; }
+    #counterTab.active { background: var(--accent-green); }
+    #consolidationTab.active { background: var(--accent-purple); }
 
     .app-screen { display: none; }
     .app-screen.active { display: block; }
 
-    .panel-box { 
-      background: var(--panel); 
-      padding: 20px; 
-      border-radius: 12px; 
-      border: 1px solid var(--border); 
-      box-shadow: 0 4px 10px rgba(0,0,0,0.04); 
-      margin-bottom: 16px; 
-      backdrop-filter: var(--glass-blur);
-    }
-
-    .input-group { margin-bottom: 14px; }
-    label { 
-      font-weight: 700; 
-      font-size: 11px; 
-      color: var(--text); 
-      display: block; 
-      margin-bottom: 6px; 
-      text-transform: uppercase; 
-      letter-spacing: 0.5px;
-      opacity: 0.9;
-    }
+    .card { background: var(--bg-card); border-radius: 16px; border: 1px solid var(--border-color); padding: 20px; margin-bottom: 20px; box-shadow: 0 4px 6px rgba(0,0,0,0.02); }
+    .form-group { margin-bottom: 15px; }
+    .form-group label { display: block; font-size: 11px; font-weight: 700; text-transform: uppercase; margin-bottom: 6px; color: var(--text-muted); letter-spacing: 0.5px; }
     
-    input[type="text"], input[type="number"] { 
-      width: 100%; 
-      padding: 14px; 
-      font-size: 16px; 
-      border: 2px solid var(--border); 
-      border-radius: 8px; 
-      background: var(--panel); 
-      color: var(--text);
-      transition: border-color 0.2s;
-    }
-    input:focus { outline: none; border-color: var(--primary-accent); }
-
-    .shortcut-row { 
-      display: grid; 
-      grid-template-columns: 1fr 1fr; 
-      gap: 10px; 
-      margin-top: 14px; 
-    }
-    .action-sub-btn { 
-      padding: 12px; 
-      font-size: 14px; 
-      font-weight: 600; 
-      color: white; 
-      background: #198754; 
-      border: none; 
-      border-radius: 6px; 
-      cursor: pointer; 
-      text-align: center;
-    }
-    .action-sub-btn.reset { background: #4a5568; }
-    .shortcut-row .reset { grid-column: span 2; }
-
-    .inline-scanner-box {
-      display: none;
-      background: #000;
-      border-radius: 8px;
-      overflow: hidden;
-      margin-bottom: 14px;
-      position: relative;
-    }
-    .close-scan-btn {
-      position: absolute;
-      top: 10px;
-      right: 10px;
-      background: rgba(0,0,0,0.7);
-      color: white;
-      border: 1px solid #fff;
-      padding: 6px 12px;
-      border-radius: 4px;
-      cursor: pointer;
-      z-index: 10;
-      font-size: 12px;
-      font-weight: bold;
-    }
-
-    .preferences-container {
-      margin-top: 16px;
-      padding-top: 14px;
-      border-top: 1px dashed var(--border);
-      display: flex;
-      flex-direction: column;
-      gap: 12px;
-    }
-    .pref-row {
-      display: flex;
-      align-items: center;
-      justify-content: flex-start;
-      gap: 10px;
-      width: 100%;
-      flex-wrap: wrap;
-    }
-    .custom-file-upload {
-      display: inline-block;
-      padding: 8px 12px;
-      cursor: pointer;
-      background: var(--th-bg);
-      border: 1px solid var(--border);
-      border-radius: 6px;
-      font-size: 12px;
-      font-weight: bold;
-      color: var(--text);
-    }
-    .reset-bg-link {
-      font-size: 12px;
-      color: #dc3545;
-      text-decoration: none;
-      cursor: pointer;
-      font-weight: bold;
-      background: rgba(220, 53, 69, 0.1);
-      padding: 8px 12px;
-      border-radius: 6px;
-      border: 1px solid rgba(220, 53, 69, 0.2);
-      display: inline-block;
-    }
-
-    .sync-status-row {
-      display: flex;
-      justify-content: flex-end;
-      align-items: center;
-      font-size: 11px;
-      color: var(--muted);
-      border-top: 1px solid var(--border);
-      padding-top: 10px;
-      margin-top: 4px;
-    }
-    .clear-cache-link { color: #dc3545; text-decoration: none; font-weight: 700; cursor: pointer; border: none; background: transparent; font-size: 12px; }
-
-    .table-wrap { 
-      overflow-x: auto; 
-      background: var(--panel); 
-      border-radius: 12px; 
-      border: 1px solid var(--border); 
-      box-shadow: 0 4px 6px -1px rgba(0,0,0,0.02);
-      backdrop-filter: var(--glass-blur);
-    }
-    table { width: 100%; border-collapse: collapse; text-align: left; table-layout: fixed; }
-    th, td { padding: 12px 6px; border-bottom: 1px solid var(--border); border-right: 1px solid var(--border); vertical-align: middle; word-wrap: break-word; }
-    th:last-child, td:last-child { border-right: none; }
-    th { background: var(--th-bg); font-weight: 700; color: var(--muted); font-size: 12px; text-transform: uppercase; }
+    .search-input, .inline-edit-input { width: 100%; padding: 14px; border-radius: 10px; border: 2px solid var(--border-color); background: var(--bg-primary); color: var(--text-main); font-size: 16px; font-weight: 500; outline: none; transition: border-color 0.2s; }
+    .search-input:focus { border-color: var(--accent-blue); }
     
-    th.col-main, td.col-main { width: 34%; }
-    th.col-pack, td.col-pack { width: 16%; text-align: center; }
-    th.col-boxes, td.col-boxes { width: 15%; text-align: center; }
-    th.col-total, td.col-total { width: 18%; text-align: center; }
-    th.col-save, td.col-save { width: 11%; text-align: center; }
-    th.col-sub, td.col-sub { width: 13%; text-align: center; }
+    .btn-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 15px; }
+    .action-btn { width: 100%; border: none; padding: 14px; border-radius: 10px; font-size: 14px; font-weight: 700; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; color: white; transition: opacity 0.2s; }
+    .action-btn:active { opacity: 0.8; }
+    .btn-blue { background-color: var(--accent-blue); }
+    .btn-green { background-color: var(--accent-green); }
+    .btn-muted { background-color: #4a5568; color: white; }
 
-    mark.match { background: #ffeb3b; color: #000; padding: 1px 3px; border-radius: 3px; font-weight: bold; }
-    [data-theme="dark"] mark.match { background: #f59e0b; }
+    /* Data Display Tables */
+    .table-responsive { width: 100%; overflow-x: auto; margin-top: 15px; border-radius: 8px; }
+    table { width: 100%; border-collapse: collapse; text-align: left; font-size: 14px; }
+    th { background: var(--badge-bg); padding: 12px; font-weight: 700; font-size: 11px; text-transform: uppercase; color: var(--text-muted); border-bottom: 2px solid var(--border-color); }
+    td { padding: 14px 12px; border-bottom: 1px solid var(--border-color); vertical-align: middle; }
     
-    .location-badge { 
-      background: #10b981; 
-      color: white; 
-      padding: 6px 4px; 
-      border-radius: 6px; 
-      font-weight: 700; 
-      font-size: 11px; 
-      display: inline-block; 
-      text-align: center;
-      max-width: 100%;
-    }
-    .location-badge.fittings-badge { background: #8b5cf6; }
+    .location-badge { display: inline-block; padding: 6px 12px; font-weight: 800; font-family: monospace; font-size: 13px; border-radius: 6px; color: white; background: var(--accent-green); }
+    mark.match { background: #fef08a; color: #000000; padding: 2px 0; font-weight: bold; border-radius: 2px; }
 
-    .inline-edit-input {
-      width: 100% !important;
-      max-width: 60px !important;
-      padding: 6px 2px !important;
-      font-size: 13px !important;
-      font-weight: bold !important;
-      text-align: center !important;
-      border: 2px solid #8b5cf6 !important;
-      border-radius: 6px !important;
-      background: var(--panel) !important;
-      color: var(--text) !important;
-    }
+    /* Camera/Scanner Layouts */
+    #reader, #finderReader { width: 100%; background: #000; border-radius: 12px; overflow: hidden; margin-bottom: 15px; }
+    #inlineScannerBox { display: none; margin-top: 15px; padding: 10px; background: var(--bg-primary); border-radius: 12px; }
 
-    .row-save-btn {
-      background: var(--accent-green);
-      color: white;
-      border: none;
-      padding: 6px;
-      border-radius: 6px;
-      cursor: pointer;
-      font-size: 14px;
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      width: 32px;
-      height: 32px;
-    }
-
-    .alertBox { 
-      display: none; background: rgba(240, 180, 41, 0.1); border-color: rgba(240, 180, 41, 0.4); color: #f0b429; padding: 16px; border-radius: 8px; 
-      text-align: center; font-weight: bold; margin-top: 12px; border: 1px solid;
-    }
-
-    #reader { width: 100%; background: #000; border-radius: 8px; overflow: hidden; }
-    .count-overlay { display: none; background: var(--panel); border: 2px solid var(--accent-green); border-radius: 12px; padding: 16px; margin-bottom: 12px; position: relative; backdrop-filter: var(--glass-blur); }
-    .count-title { font-size: 12px; font-weight: bold; color: var(--muted); text-transform: uppercase; }
-    .count-item-name { font-size: 19px; font-weight: 800; margin: 4px 0; }
-    .count-sub { display: inline-block; background: #e0f2fe; color: #0369a1; font-weight: bold; padding: 4px 8px; border-radius: 4px; font-size: 12px; margin-bottom: 12px; }
+    /* Overlays and Modals */
+    .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); backdrop-filter: blur(4px); z-index: 1000; justify-content: center; align-items: center; padding: 20px; }
+    .modal-content { background: var(--bg-card); width: 100%; max-width: 450px; border-radius: 20px; padding: 25px; box-shadow: 0 10px 25px rgba(0,0,0,0.2); position: relative; }
     
-    .input-row { display: flex; gap: 6px; align-items: center; margin-bottom: 12px; }
-    .qty-input { flex: 1; font-size: 22px; font-weight: bold; text-align: center; }
-    .mod-btn { padding: 12px; font-size: 15px; font-weight: bold; border: 1px solid var(--border); background: var(--th-bg); color: var(--text); border-radius: 6px; cursor: pointer; }
+    .qty-control-box { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin: 20px 0; }
+    .qty-btn { width: 55px; height: 55px; border-radius: 12px; border: none; background: var(--badge-bg); color: var(--text-main); font-size: 20px; font-weight: bold; cursor: pointer; }
+    .qty-display-input { flex: 1; text-align: center; height: 55px; font-size: 24px; font-weight: 800; font-family: monospace; border: 2px solid var(--border-color); border-radius: 12px; background: var(--bg-primary); color: var(--text-main); }
 
-    .action-row { display: flex; gap: 6px; }
-    .btn { flex: 1; padding: 12px; font-size: 14px; font-weight: bold; border: none; border-radius: 6px; cursor: pointer; }
-    .btn-save { background: var(--accent-green); color: white; }
-    .btn-cancel { background: #dc3545; color: white; }
-
-    .log-item { background: var(--panel); padding: 12px; border-radius: 8px; border: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; backdrop-filter: var(--glass-blur); }
+    .log-item { display: flex; justify-content: space-between; align-items: center; padding: 12px; border-bottom: 1px solid var(--border-color); }
     
-    .session-actions-strip { display: flex; justify-content: space-between; align-items: center; margin: 14px 0 8px 0; }
-    .new-session-btn { background: #4a5568; color: white; border: none; padding: 6px 12px; font-size: 12px; font-weight: 700; border-radius: 6px; cursor: pointer; }
-    .clear-btn { background: none; border: none; color: #dc3545; cursor: pointer; font-weight: 600; padding: 4px; font-size: 12px; }
+    /* Footer Status Bar */
+    .footer-status-bar { position: fixed; bottom: 0; left: 0; width: 100%; background: var(--bg-card); border-top: 1px solid var(--border-color); padding: 12px 20px; display: flex; justify-content: space-between; align-items: center; z-index: 900; }
+    .status-indicator { display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 600; }
+    .status-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--danger-red); }
+    .status-dot.ready { background: var(--accent-green); }
 
-    .intercept-modal-overlay {
-      display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0;
-      background: rgba(0, 0, 0, 0.7); backdrop-filter: blur(4px); z-index: 99999;
-      justify-content: center; align-items: center; padding: 20px;
-    }
-    .intercept-box {
-      background: var(--panel); border: 2px solid var(--primary-accent); padding: 24px;
-      border-radius: 16px; max-width: 460px; width: 100%; box-shadow: 0 10px 25px rgba(0,0,0,0.3);
-      text-align: center; backdrop-filter: var(--glass-blur);
-    }
-    .intercept-btns { display: flex; flex-direction: column; gap: 10px; margin-top: 15px; }
-    .btn-choice { width: 100%; padding: 14px; font-size: 15px; font-weight: bold; border: none; border-radius: 8px; cursor: pointer; }
-    .btn-choice.continue { background: var(--primary-accent); color: white; }
-    .btn-choice.purge { background: #dc3545; color: white; }
-
-    .footer-bar {
-      position: fixed; bottom: 0; left: 0; right: 0; height: 70px;
-      background: var(--panel); border-top: 1px solid var(--border);
-      display: flex; align-items: center; justify-content: center; padding: 0 12px; z-index: 1000; backdrop-filter: var(--glass-blur);
-    }
-    .export-btn { width: 100%; max-width: 726px; background: var(--primary-accent); color: white; border: none; padding: 14px; font-size: 15px; font-weight: 700; border-radius: 8px; cursor: pointer; }
+    .inline-edit-input { padding: 6px 8px; text-align: center; font-family: monospace; font-weight: 700; max-width: 75px; }
+    .row-save-btn { border: none; background: none; font-size: 18px; cursor: pointer; padding: 4px; }
   </style>
 </head>
 <body>
 
-<div id="startupInterceptModal" class="intercept-modal-overlay">
-  <div class="intercept-box">
-    <h3 style="color: var(--text);">Unexported Counts Detected! ⏳</h3>
-    <p id="interceptMessage">You have remaining logs saved in this terminal from an earlier date.</p>
-    <div class="intercept-btns">
-      <button class="btn-choice continue" onclick="resolveIntercept('continue')">🔄 Continue Previous Session</button>
-      <button class="btn-choice purge" onclick="resolveIntercept('purge')">🧹 Wipe & Start New Session</button>
-    </div>
-  </div>
-</div>
+  <header class="app-header">
+    <span style="font-size:28px;">📦</span>
+    <h1>STOCK LOCATOR+</h1>
+  </header>
 
-<div class="app-container">
-  
-  <div class="app-header">
-    <div class="header-main-row">
-      <img src="logo.png" alt="Logo" class="app-logo" onerror="this.style.display='none'"/>
-      <h1 class="app-title">STOCK LOCATOR+</h1>
-    </div>
-  </div>
-  
-  <div class="tabs-bar">
-    <button id="finderTab" class="tab-btn active" onclick="switchMode('finder')">🔍 Stock Lookup</button>
-    <button id="counterTab" class="tab-btn" onclick="switchMode('counter')">📋 Audit Scanner</button>
-    <button id="consolidationTab" class="tab-btn" onclick="switchMode('consolidation')">📦 Consolidation</button>
-  </div>
+  <nav class="nav-tabs">
+    <button class="tab-btn active" id="finderTab" onclick="switchMode('finder')">🔍 Stock Lookup</button>
+    <button class="tab-btn" id="counterTab" onclick="switchMode('counter')">📋 Audit Scanner</button>
+    <button class="tab-btn" id="consolidationTab" onclick="switchMode('consolidation')">📦 Consolidation</button>
+  </nav>
 
-  <div style="display: flex; justify-content: space-between; font-size: 12px; color: var(--text); font-weight: 600; margin-bottom: 8px; padding: 0 4px; opacity:0.85;">
-    <div id="metaDisplay">Loading database files...</div>
-    <div id="countSession" style="display:none;">Counts logged: 0</div>
-  </div>
-
-  <div id="finderScreen" class="app-screen active">
-    <div class="panel-box">
-      
-      <div id="inlineScannerBox" class="inline-scanner-box">
-        <button class="close-scan-btn" onclick="stopInlineScanner()">✕ Close Camera</button>
-        <div id="finderReader" style="width:100%;"></div>
-      </div>
-
-      <div class="input-group">
+  <main id="finderScreen" class="app-screen active">
+    <div class="card">
+      <div class="form-group">
         <label for="searchBox">Search Part Number / Item No. / Supplier Reference</label>
-        <input id="searchBox" type="text" placeholder="DGN 3102C..." autofocus autocomplete="off"/>
+        <input type="text" id="searchBox" class="search-input" placeholder="Type part or click scan inputs below..." oninput="renderResults()">
       </div>
-  
-      <div class="shortcut-row">
-        <button class="action-sub-btn" onclick="startInlineScanner('qr')">Scan QR Code</button>
-        <button class="action-sub-btn" onclick="startInlineScanner('supplier')">Scan Supplier Ref</button>
-        <button class="action-sub-btn reset" onclick="resetSearchFields()">Reset Search Fields</button>
+      <div class="btn-grid">
+        <button class="action-btn btn-green" onclick="startInlineScanner('qr')">Scan QR Code</button>
+        <button class="action-btn btn-green" onclick="startInlineScanner('bar')">Scan Supplier Ref</button>
       </div>
+      <button class="action-btn btn-muted" style="margin-top:10px;" onclick="resetSearchLayout()">Reset Search Fields</button>
 
-      <div class="preferences-container">
-        <div class="pref-row">
-          <label class="custom-file-upload">
-            <input type="file" id="bgUploader" accept="image/*" style="display: none;" onchange="handleWallpaperUpload(event)" />
-            🖼️ Upload Custom Theme Image
-          </label>
-          <span id="resetBgBtn" class="reset-bg-link" style="display: none;" onclick="clearWallpaperTheme()">✕ Reset Theme Image</span>
+      <div id="inlineScannerBox">
+        <div style="display:flex; justify-content:space-between; margin-bottom:8px; align-items:center;">
+          <span style="font-size:12px; font-weight:bold; color:var(--text-muted)">Active Document Target Camera</span>
+          <button style="border:none; padding:4px 8px; border-radius:4px; background:var(--danger-red); color:white; font-size:11px; font-weight:bold;" onclick="stopInlineScanner()">Close Camera</button>
         </div>
-        
-        <div class="pref-row" style="justify-content: flex-start; gap: 8px;">
-          <input id="themeToggle" type="checkbox" style="width:18px; height:18px; cursor:pointer;" />
-          <label for="themeToggle" style="display:inline; font-weight:600; color:var(--text); text-transform:none; cursor:pointer;">Dark Mode</label>
-        </div>
-
-        <div class="pref-row" style="justify-content: flex-start; gap: 8px;">
-          <button id="notifActivationBtn" class="custom-file-upload" onclick="requestNotificationPermission()" style="background:#475569; color:white; border:none; transition: background 0.3s;">🔔 Activate Notifications</button>
-        </div>
-
-        <div class="sync-status-row">
-          <button class="clear-cache-link" onclick="clearAppCache()">♻️ Clear App Cache</button>
-        </div>
+        <div id="finderReader"></div>
       </div>
     </div>
 
-    <div class="results-container" id="resultsContainerLocationAnchor">
-      <div class="table-wrap" id="tableWrap" style="display:none;">
-        <table>
+    <div id="resultsContainerLocationAnchor"></div>
+    <div id="searchResultsArea"></div>
+  </main>
+
+  <main id="counterScreen" class="app-screen">
+    <div class="card">
+      <div id="reader"></div>
+      <div style="display:flex; gap:10px;">
+        <button class="action-btn btn-blue" onclick="exportCountsToCSV()">💾 Export Terminal Sessions (.CSV)</button>
+        <button class="action-btn btn-muted" onclick="triggerNewSessionManually()">🔄 Clear Run</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <h3 style="font-size:14px; font-weight:800; border-bottom:1px solid var(--border-color); padding-bottom:8px; margin-bottom:12px;">Active Running Counter Audit Manifest</h3>
+      <div id="logRegistryList"></div>
+    </div>
+  </main>
+
+  <main id="consolidationScreen" class="app-screen">
+    <div class="card">
+      <h3 style="font-size:15px; font-weight:800; margin-bottom:4px;">Module A: Direct Ledger Synchronization</h3>
+      <p style="font-size:12px; color:var(--text-muted); margin-bottom:15px;">Search entries down from your Google Sheets registry matrix below to edit and save variables instantly.</p>
+      
+      <div class="form-group">
+        <input type="text" id="conSearchBox" class="search-input" placeholder="Type part number reference..." oninput="renderConsolidationRows()">
+      </div>
+
+      <div class="table-responsive" id="conTableWrap" style="display:none;">
+        <table style="min-width:400px;">
           <thead>
             <tr>
-              <th class="col-main">Part Number Map / Cross-Ref</th>
-              <th class="col-pack">Pack Size</th>
-              <th class="col-boxes">Boxes</th>
-              <th class="col-total">Total Qty</th>
-              <th class="col-sub">Loc</th>
+              <th>Part Number Reference</th>
+              <th style="text-align:center;">Pack Size</th>
+              <th style="text-align:center;">Boxes</th>
+              <th style="text-align:center;">Total</th>
+              <th style="text-align:center;">Save</th>
+              <th style="text-align:center;">Loc</th>
             </tr>
           </thead>
-          <tbody id="tableBody"></tbody>
+          <tbody id="conTableBody"></tbody>
         </table>
       </div>
-      <div id="noResults" class="alertBox">❌ No matching inventory items found.</div>
+    </div>
+
+    <div class="card">
+      <h3 style="font-size:15px; font-weight:800; margin-bottom:15px;">Module B: Add Dynamic Stock Reference Record</h3>
+      
+      <div class="form-group">
+        <label>Part Number Target</label>
+        <input type="text" id="newPartNo" class="search-input" placeholder="e.g. DGN 3102C">
+      </div>
+      <div class="form-group">
+        <label>Pallet Location Assigned Row</label>
+        <input type="text" id="newPalletNo" class="search-input" placeholder="e.g. CT-06-A2R029">
+      </div>
+      <div class="grid-form-parameters" style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
+        <div class="form-group">
+          <label>Pack Size Matrix Qty</label>
+          <input type="number" id="newPackSize" class="search-input" oninput="calculateModuleBTotal()">
+        </div>
+        <div class="form-group">
+          <label>Box / Container Units Count</label>
+          <input type="number" id="newBoxes" class="search-input" oninput="calculateModuleBTotal()">
+        </div>
+      </div>
+      <div class="form-group">
+        <label>Calculated Target Total Output</label>
+        <input type="text" id="newTotalQty" class="search-input" style="font-family:monospace; font-weight:bold; background:var(--badge-bg);" readonly value="0">
+      </div>
+      <button class="action-btn btn-purple" onclick="submitNewPalletEntry()">📤 Commit Entry Record Downstream</button>
+    </div>
+
+    <div class="card">
+      <h3 style="font-size:15px; font-weight:800; margin-bottom:15px;">Core Utility Settings</h3>
+      
+      <div style="display:flex; align-items:center; justify-content:between; margin-bottom:15px; background:var(--bg-primary); padding:12px; border-radius:10px;">
+        <label style="font-size:14px; font-weight:600; display:flex; align-items:center; gap:10px; cursor:pointer; width:100%;">
+          <input type="checkbox" id="darkModeToggle" style="transform:scale(1.2);" onchange="toggleSystemThemeMode(this.checked)"> Dark Interface Mode
+        </label>
+      </div>
+
+      <button class="action-btn btn-muted" style="background:#475569;" onclick="clearAppCache()">♻️ Purge Manifest Cache (Reload Databases)</button>
+    </div>
+  </main>
+
+  <div class="modal-overlay" id="countOverlay">
+    <div class="modal-content">
+      <h2 id="targetTitleHeader" style="font-size:18px; font-weight:800; margin-bottom:5px;">Matched Database Reference</h2>
+      <div id="targetItemName" style="font-size:22px; font-weight:800; font-family:monospace; margin-bottom:2px; color:var(--accent-blue);">---</div>
+      <div id="targetMappingInfo" style="font-size:12px; color:var(--text-muted); margin-bottom:4px;">---</div>
+      <div id="targetSubLoc" style="font-size:13px; font-weight:bold; margin-bottom:15px;">---</div>
+      
+      <label style="font-size:11px; font-weight:700; text-transform:uppercase; color:var(--text-muted);">Adjust Physical Count Audit Value</label>
+      <div class="qty-control-box">
+        <button class="qty-btn" onclick="adjustQty(-10)">-10</button>
+        <button class="qty-btn" onclick="adjustQty(-1)">-1</button>
+        <input type="number" id="qtyInputField" class="qty-display-input" placeholder="0">
+        <button class="qty-btn" onclick="adjustQty(1)">+1</button>
+        <button class="qty-btn" onclick="adjustQty(10)">+10</button>
+      </div>
+
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-top:20px;">
+        <button class="action-btn btn-green" onclick="commitCount()">💾 Log Entry</button>
+        <button class="action-btn btn-muted" onclick="dismissOverlay()">Cancel</button>
+      </div>
     </div>
   </div>
 
-  function highlightText(text, query) {
-  if (!query) return text;
-  let idx = text.toLowerCase().indexOf(query);
-  if (idx === -1) return text;
-  return text.substring(0, idx) + '<mark class="match">' + text.substring(idx, idx + query.length) + '</mark>' + text.substring(idx + query.length);
-}
-
-// MODULE A CONSOLIDATION MODULE WITH PACK SIZE MATRIX INJECTION
-function renderConsolidationRows() {
-  let query = conSearchBox.value.trim().toLowerCase();
-  let conTableWrap = document.getElementById('conTableWrap');
-  let conTableBody = document.getElementById('conTableBody');
-
-  if (!query) {
-    conTableWrap.style.display = 'none';
-    return;
-  }
-
-  // Filter only Sheet entries (fittingsRegistry) for direct modifications
-  let matches = fittingsRegistry.filter(i => i.part.toLowerCase().includes(query)).slice(0, 10);
-
-  if (matches.length === 0) {
-    conTableWrap.style.display = 'none';
-    return;
-  }
-
-  conTableWrap.style.display = 'block';
-  let html = '';
-
-  for (let i = 0; i < matches.length; i++) {
-    let item = matches[i];
-    let rowId = `conRow_${i}`;
-    html += `<tr>
-      <td class="col-main" style="font-weight:700; font-family:monospace; font-size:13px;">${item.part}</td>
-      <td class="col-pack" style="text-align:center;">
-        <input type="number" id="${rowId}_pack" value="${item.packSize}" class="inline-edit-input" oninput="calculateInlineTotal('${rowId}')"/>
-      </td>
-      <td class="col-boxes" style="text-align:center;">
-        <input type="number" id="${rowId}_boxes" value="${item.boxes}" class="inline-edit-input" oninput="calculateInlineTotal('${rowId}')"/>
-      </td>
-      <td class="col-total" id="${rowId}_total" style="text-align:center; font-weight:bold; font-family:monospace; color:var(--accent-purple); font-size:13px;">${item.totalQty}</td>
-      <td class="col-save" style="text-align:center;">
-        <button class="row-save-btn" onclick="syncInlineModification('${item.part}', '${item.location}', '${rowId}')">💾</button>
-      </td>
-      <td class="col-sub" style="text-align:center;">
-        <span class="location-badge fittings-badge">${item.location}</span>
-      </td>
-    </tr>`;
-  }
-  conTableBody.innerHTML = html;
-}
-
-function calculateInlineTotal(rowId) {
-  let p = parseInt(document.getElementById(`${rowId}_pack`).value, 10) || 0;
-  let b = parseInt(document.getElementById(`${rowId}_boxes`).value, 10) || 0;
-  document.getElementById(`${rowId}_total`).innerText = p * b;
-}
-
-// DISPATCH AND SYNC LIVE ONLINE CELL EDITS TO SPREADSHEET (MODULE A)
-function syncInlineModification(partNumber, location, rowId) {
-  let packSize = parseInt(document.getElementById(`${rowId}_pack`).value, 10) || 0;
-  let boxes = parseInt(document.getElementById(`${rowId}_boxes`).value, 10) || 0;
-  let totalQty = packSize * boxes;
-
-  metaDisplay.textContent = "Updating entry...";
-  
-  let targetUrl = `${GOOGLE_SHEETS_API_URL}?action=updateRow&partNumber=${encodeURIComponent(partNumber)}&location=${encodeURIComponent(location)}&packSize=${packSize}&boxes=${boxes}&totalQty=${totalQty}`;
-
-  fetch(targetUrl)
-    .then(res => res.json())
-    .then(data => {
-      if (data.result === 'success') {
-        alert(`Successfully synchronized changes for ${partNumber}`);
-        fetchInventoryDatabases(); // Automatically pulls the newest data instantly
-      } else {
-        alert("Server failed to log update: " + data.message);
-      }
-    })
-    .catch(() => alert("Network exception occurred during synchronization layout processing."));
-}
-
-// SAVE DYNAMIC NEW ENTRY FROM INPUT LOGIC VALUES (MODULE B)
-function submitNewPalletEntry() {
-  var partNumber = document.getElementById('newPartNo').value.trim();
-  var location = document.getElementById('newPalletNo').value.trim();
-  var packSize = parseInt(document.getElementById('newPackSize').value, 10) || 0;
-  var boxes = parseInt(document.getElementById('newBoxes').value, 10) || 0;
-  var totalQty = packSize * boxes;
-
-  if (!partNumber || !location) {
-    alert("Part Number and Pallet No. are strictly required parameters.");
-    return;
-  }
-
-  metaDisplay.textContent = "Saving new item pallet record...";
-
-  // CORRECTED ROUTE PARAMETERS TO SEND PACK SIZE DOWNSTREAM TO APPS SCRIPT
-  var targetUrl = `${GOOGLE_SHEETS_API_URL}?action=addStock&partNumber=${encodeURIComponent(partNumber)}&location=${encodeURIComponent(location)}&packSize=${packSize}&boxes=${boxes}&totalQty=${totalQty}`;
-
-  fetch(targetUrl)
-    .then(res => res.json())
-    .then(data => {
-      if (data.result === 'success') {
-        alert("Entry written successfully to master sheet ledger grid data matrix!");
-        
-        // Reset Module B layout parameter inputs
-        document.getElementById('newPartNo').value = '';
-        document.getElementById('newPalletNo').value = '';
-        document.getElementById('newPackSize').value = '';
-        document.getElementById('newBoxes').value = '';
-        document.getElementById('newTotalQty').value = '';
-        
-        fetchInventoryDatabases(); // Re-sync local cache dynamically
-      } else {
-        alert("Transmission logged an error outcome: " + data.message);
-      }
-    })
-    .catch(() => alert("CRITICAL: Server timeout exception. Verify Deployment configuration link properties."));
-}
-
-// SCANNER UTILITIES
-function startScanner() {
-  if (html5QrcodeScanner) return;
-  isProcessingScan = false;
-  html5QrcodeScanner = new Html5Qrcode("reader");
-  html5QrcodeScanner.start(
-    { facingMode: "environment" },
-    { 
-      fps: 30, 
-      videoConstraints: {
-        width: { ideal: 1920 },
-        height: { ideal: 1080 },
-        aspectRatio: { ideal: 1.7777777778 }
-      },
-      formatsToSupport: [
-        Html5QrcodeSupportedFormats.CODE_128, 
-        Html5QrcodeSupportedFormats.CODE_39, 
-        Html5QrcodeSupportedFormats.EAN_13, 
-        Html5QrcodeSupportedFormats.EAN_8, 
-        Html5QrcodeSupportedFormats.QR_CODE
-      ] 
-    },
-    onScanSuccess
-  ).catch(() => { metaDisplay.textContent = "Camera configuration failed."; });
-}
-
-function stopScanner() {
-  if (html5QrcodeScanner) {
-    html5QrcodeScanner.stop().then(() => { html5QrcodeScanner = null; }).catch(()=>{});
-  }
-}
-
-function startInlineScanner(targetType) {
-  stopScanner(); 
-  stopInlineScanner(); 
-  currentScanTargetField = targetType;
-  document.getElementById('inlineScannerBox').style.display = 'block';
-  inlineFinderScanner = new Html5Qrcode("finderReader");
-  inlineFinderScanner.start(
-    { facingMode: "environment" },
-    { 
-      fps: 25, 
-      videoConstraints: {
-        width: { ideal: 1920 },
-        height: { ideal: 1080 }
-      },
-      formatsToSupport: [
-        Html5QrcodeSupportedFormats.CODE_128, 
-        Html5QrcodeSupportedFormats.CODE_39, 
-        Html5QrcodeSupportedFormats.EAN_13, 
-        Html5QrcodeSupportedFormats.QR_CODE
-      ] 
-    },
-    onInlineScanSuccess
-  ).catch(() => { alert("Could not access camera for target layout processing."); });
-}
-
-function stopInlineScanner() {
-  if (inlineFinderScanner) {
-    inlineFinderScanner.stop().then(() => { inlineFinderScanner = null; }).catch(()=>{});
-  }
-  document.getElementById('inlineScannerBox').style.display = 'none';
-}
-
-function onInlineScanSuccess(decodedText) {
-  let scannedText = decodedText.trim();
-  stopInlineScanner();
-  
-  if (currentScanTargetField === 'qr') {
-    searchBox.value = scannedText;
-  } else {
-    searchBox.value = (scannedText.startsWith('0') && scannedText.length > 1) ? scannedText.replace(/^0+/, '') : scannedText;
-  }
-  renderResults();
-  setTimeout(() => {
-    document.getElementById('resultsContainerLocationAnchor')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-  }, 100);
-}
-
-function onScanSuccess(decodedText) {
-  if (isProcessingScan) return;
-  let term = decodedText.trim().toLowerCase();
-  
-  // Cross-match check against master registries
-  let matchedItem = stockRegistry.find(i => i.part.toLowerCase() === term || i.itemNo.toLowerCase() === term || i.supplierRef.toLowerCase() === term) ||
-                    fittingsRegistry.find(i => i.part.toLowerCase() === term);
-                    
-  if (matchedItem) {
-    isProcessingScan = true;
-    showOverlay(matchedItem);
-  } else {
-    // Audit Match Exception handling: Pause camera stream and display input grid
-    isProcessingScan = true;
-    stopScanner();
-    
-    let simulatedItem = {
-      part: decodedText.trim(),
-      itemNo: decodedText.trim(),
-      supplierRef: 'MANUAL COUNTER INJECTION',
-      packSize: '1',
-      boxes: '0',
-      totalQty: '0',
-      location: 'PENDING ASSIGNMENT',
-      isFitting: false
-    };
-    
-    document.getElementById('targetTitleHeader').innerHTML = `<span style="color:var(--danger-red);">⚠️ NOT FOUND IN SYSTEM STOCKS</span>`;
-    showOverlay(simulatedItem);
-  }
-}
-
-// AUDIT MODAL LOGS Persistent Layout Controllers
-function showOverlay(item) {
-  activeScanMatch = item;
-  document.getElementById('targetItemName').innerText = item.part;
-  document.getElementById('targetMappingInfo').innerText = item.isFitting ? 'Google Sheets Database Profile' : `Item No: ${item.itemNo} | Ref: ${item.supplierRef}`;
-  document.getElementById('targetSubLoc').innerText = `Location Row: ${item.location}`;
-  document.getElementById('qtyInputField').value = '';
-  document.getElementById('countOverlay').style.display = 'block';
-}
-
-function adjustQty(amount) {
-  var f = document.getElementById('qtyInputField');
-  var current = parseInt(f.value, 10) || 0;
-  var next = current + amount;
-  f.value = next < 0 ? 0 : next;
-}
-
-function dismissOverlay() {
-  document.getElementById('countOverlay').style.display = 'none';
-  document.getElementById('targetTitleHeader').innerText = "Matched Database Reference";
-  activeScanMatch = null;
-  isProcessingScan = false;
-  
-  // Re-engage stream tracking if user switched tabs or encountered exceptions
-  if (document.getElementById('counterScreen').classList.contains('active')) {
-    startScanner();
-  }
-}
-
-function commitCount() {
-  var countVal = parseInt(document.getElementById('qtyInputField').value, 10);
-  if (isNaN(countVal) || countVal < 0) { alert("Provide a valid matching count metric index baseline."); return; }
-  
-  countLogSession.unshift({
-    part: activeScanMatch.part,
-    location: activeScanMatch.location,
-    qty: countVal,
-    time: new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})
-  });
-
-  localStorage.setItem('ms_saved_logs', JSON.stringify(countLogSession));
-  localStorage.setItem('ms_saved_date', new Date().toDateString());
-  
-  renderLogRegistryDisplay();
-  fireStockUpdateNotification();
-  dismissOverlay();
-}
-
-function renderLogRegistryDisplay() {
-  var list = document.getElementById('logRegistryList');
-  document.getElementById('countSession').innerText = `Counts logged: ${countLogSession.length}`;
-  if (countLogSession.length === 0) { list.innerHTML = ''; return; }
-  
-  list.innerHTML = countLogSession.map(log => `
-    <div class="log-item">
-      <div>
-        <div style="font-weight:bold; font-family:monospace; font-size:15px;">${log.part}</div>
-        <div style="font-size:11px; color:var(--muted); margin-top:2px;">Scanned at ${log.time} in Loc: ${log.location}</div>
+  <div class="modal-overlay" id="startupInterceptModal" style="display:none; padding:15px;">
+    <div class="modal-content" style="text-align:center;">
+      <span style="font-size:40px;">⚠️</span>
+      <h3 style="font-size:18px; font-weight:bold; margin-top:10px; margin-bottom:10px;">Unsaved Workflow Session Found</h3>
+      <p id="interceptMessage" style="font-size:13px; color:var(--text-muted); margin-bottom:20px;"></p>
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
+        <button class="action-btn btn-blue" onclick="resolveIntercept('restore')">Restore Run</button>
+        <button class="action-btn btn-muted" style="background:var(--danger-red);" onclick="resolveIntercept('purge')">Wipe Logs</button>
       </div>
-      <div style="font-size:18px; font-weight:800; color:var(--accent-green); font-family:monospace;">${log.qty} pcs</div>
     </div>
-  `).join('');
-}
+  </div>
 
-function checkUnexportedSessionLogs() {
-  var savedDate = localStorage.getItem('ms_saved_date');
-  var savedLogs = localStorage.getItem('ms_saved_logs');
-  if (savedLogs && JSON.parse(savedLogs).length > 0) {
-    if (savedDate !== new Date().toDateString()) {
-      document.getElementById('interceptMessage').innerText = `Found unexported count data from terminal session date: ${savedDate || 'Unknown'}.`;
-      document.getElementById('startupInterceptModal').style.display = 'flex';
-    } else {
-      countLogSession = JSON.parse(savedLogs);
-      renderLogRegistryDisplay();
+  <footer class="footer-status-bar" id="footerBar">
+    <div class="status-indicator">
+      <div id="metaStatusDot" class="status-dot"></div>
+      <span id="metaDisplay" style="font-family:monospace; font-size:12px; font-weight:700;">System Offline</span>
+    </div>
+    <span id="countSession" style="font-size:12px; font-weight:700; background:var(--badge-bg); padding:4px 8px; border-radius:6px; display:none;">Counts logged: 0</span>
+  </footer>
+
+  <script>
+    // System Endpoint Config Configurations
+    const GOOGLE_SHEETS_API_URL = "https://script.google.com/macros/s/AKfycbzQ_W1D99_8u572x-rA/exec"; 
+    const REPO_STOCKS_CSV_URL = "https://wh-sec.github.io/stocks.csv"; 
+
+    // Runtime Storage Registers
+    let stockRegistry = [];
+    let fittingsRegistry = [];
+    let countLogSession = [];
+
+    // Hardware Interface Stream Global State Parameters
+    let html5QrcodeScanner = null;
+    let inlineFinderScanner = null;
+    let currentScanTargetField = null;
+    let activeScanMatch = null;
+    let isProcessingScan = false;
+
+    // Element Target Anchors
+    const searchBox = document.getElementById('searchBox');
+    const conSearchBox = document.getElementById('conSearchBox');
+    const metaDisplay = document.getElementById('metaDisplay');
+    const metaStatusDot = document.getElementById('metaStatusDot');
+
+    // INITIALIZATION RUNNER
+    window.addEventListener('DOMContentLoaded', () => {
+      loadSystemStatePreference();
+      fetchInventoryDatabases();
+      checkUnexportedSessionLogs();
+    });
+
+    function loadSystemStatePreference() {
+      const isDark = localStorage.getItem('ms_dark_mode') === 'true';
+      document.getElementById('darkModeToggle').checked = isDark;
+      toggleSystemThemeMode(isDark);
     }
-  }
-}
 
-function resolveIntercept(strategy) {
-  if (strategy === 'purge') {
-    countLogSession = [];
-    localStorage.removeItem('ms_saved_logs');
-    localStorage.removeItem('ms_saved_date');
-    renderLogRegistryDisplay();
-  } else {
-    countLogSession = JSON.parse(localStorage.getItem('ms_saved_logs') || '[]');
-    renderLogRegistryDisplay();
-  }
-  document.getElementById('startupInterceptModal').style.display = 'none';
-}
+    function toggleSystemThemeMode(isDark) {
+      document.documentElement.setAttribute('data-theme', isDark ? 'dark' : 'light');
+      localStorage.setItem('ms_dark_mode', isDark);
+    }
 
-function clearCounts() {
-  if (confirm("Permanently wipe active terminal operational log cache? Data cannot be recovered.")) {
-    countLogSession = [];
-    localStorage.removeItem('ms_saved_logs');
-    localStorage.removeItem('ms_saved_date');
-    renderLogRegistryDisplay();
-  }
-}
+    // SANITIZED RAW DATA PARSER MATRIX
+    async function fetchInventoryDatabases() {
+      metaDisplay.textContent = "Loading database files...";
+      metaStatusDot.className = "status-dot";
 
-function triggerNewSessionManually() {
-  if (confirm("End current workflow session parameters? Make sure you downloaded your spreadsheet compilation reports beforehand.")) {
-    countLogSession = [];
-    localStorage.removeItem('ms_saved_logs');
-    localStorage.removeItem('ms_saved_date');
-    renderLogRegistryDisplay();
-  }
-}
+      try {
+        // Step 1: Pull Local Stocks Reference Database Cache
+        let localRes = await fetch(REPO_STOCKS_CSV_URL);
+        if (!localRes.ok) throw new Error("Stocks repository data stream dropped.");
+        let rawCsvText = await localRes.text();
+        stockRegistry = parseSanitizedCSV(rawCsvText);
 
-function exportCountsToCSV() {
-  if (countLogSession.length === 0) { alert("Nothing found to generate reports from."); return; }
-  let header = "PART NUMBER,LOCATION,COUNT QTY,TIMESTAMP\n";
-  let content = countLogSession.map(l => `"${l.part}","${l.location}",${l.qty},"${l.time}"`).join("\n");
-  let blob = new Blob([header + content], { type: 'text/csv;charset=utf-8;' });
-  let link = document.createElement("a");
-  link.href = URL.createObjectURL(blob);
-  link.setAttribute("download", `Physical_Inventory_Audit_Report_${new Date().toISOString().slice(0,10)}.csv`);
-  document.body.appendChild(link);
-  link.click();
-  document.body.removeChild(link);
-}
+        // Step 2: Pull Dynamic Row Updates from Spreadsheet Ledger Matrix API
+        let sheetRes = await fetch(`${GOOGLE_SHEETS_API_URL}?action=readDatabase`);
+        if (!sheetRes.ok) throw new Error("Spreadsheet endpoint interface rejected parsing.");
+        let sheetData = await sheetRes.json();
+        fittingsRegistry = sheetData.records || [];
 
-function clearAppCache() {
-  if (confirm("Force system to invalidate locally preserved manifest records? Run this if items show stale metadata positions.")) {
-    localStorage.clear();
-    location.reload();
-  }
-}
+        // Save state changes internally
+        localStorage.setItem('cached_stocks', JSON.stringify(stockRegistry));
+        localStorage.setItem('cached_fittings', JSON.stringify(fittingsRegistry));
 
-function switchMode(mode) {
-  document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
-  document.querySelectorAll('.app-screen').forEach(scr => scr.classList.remove('active'));
-  
-  if (mode === 'finder') {
-    document.getElementById('finderTab').classList.add('active');
-    document.getElementById('finderScreen').classList.add('active');
-    document.getElementById('footerBar').style.display = 'none';
-    document.getElementById('countSession').style.display = 'none';
-    stopScanner();
-    setTimeout(() => { searchBox.focus(); }, 100);
-  } else if (mode === 'counter') {
-    document.getElementById('counterTab').classList.add('active');
-    document.getElementById('counterScreen').classList.add('active');
-    document.getElementById('footerBar').style.display = 'flex';
-    document.getElementById('countSession').style.display = 'inline-block';
-    stopInlineScanner();
-    startScanner();
-  } else if (mode === 'consolidation') {
-    document.getElementById('consolidationTab').classList.add('active');
-    document.getElementById('consolidationScreen').classList.add('active');
-    document.getElementById('footerBar').style.display = 'none';
-    document.getElementById('countSession').style.display = 'none';
-    stopScanner();
-    stopInlineScanner();
-    setTimeout(() => { conSearchBox.focus(); }, 100);
-  }
-}
-</script>
+        metaDisplay.textContent = "Local Database Ready";
+        metaStatusDot.className = "status-dot ready";
+      } catch (err) {
+        console.warn("Live pull failed. Attempting offline fallback parameters...", err);
+        stockRegistry = JSON.parse(localStorage.getItem('cached_stocks') || "[]");
+        fittingsRegistry = JSON.parse(localStorage.getItem('cached_fittings') || "[]");
+        
+        if (stockRegistry.length > 0) {
+          metaDisplay.textContent = "Cached Database Ready (Offline)";
+          metaStatusDot.className = "status-dot ready";
+        } else {
+          metaDisplay.textContent = "No database files found. Connect to office Wi-Fi.";
+          metaStatusDot.className = "status-dot";
+        }
+      }
+    }
+
+    // HELPER: Safeguards strings from being warped into scientific notation (1.002E+12)
+    function parseSanitizedCSV(text) {
+      let lines = text.split(/\r?\n/);
+      if (lines.length < 2) return [];
+      let items = [];
+
+      for (let i = 1; i < lines.length; i++) {
+        if (!lines[i].trim()) continue;
+        
+        // Handle standard comma separation with optional escape quotes bounds
+        let row = [];
+        let insideQuote = false;
+        let entry = "";
+        
+        for (let j = 0; j < lines[i].length; j++) {
+          let char = lines[i][j];
+          if (char === '"') {
+            insideQuote = !insideQuote;
+          } else if (char === ',' && !insideQuote) {
+            row.push(rowSanitizeClean(entry));
+            entry = "";
+          } else {
+            entry += char;
+          }
+        }
+        row.push(rowSanitizeClean(entry));
+
+        if (row.length >= 7) {
+          items.push({
+            dept: row[0],
+            supplierRef: row[1],
+            warehouse: row[2],
+            part: row[3],
+            totalQty: parseInt(row[4], 10) || 0,
+            location: row[5],
+            itemNo: row[6],
+            isFitting: false
+          });
+        }
+      }
+      return items;
+    }
+
+    function rowSanitizeClean(val) {
+      return val.trim().replace(/^"|"$/g, '');
+    }
+
+    // SEARCH SEARCH LOGIC AND RENDERERS
+    function renderResults() {
+      let query = searchBox.value.trim().toLowerCase();
+      let area = document.getElementById('searchResultsArea');
+      if (!query) { area.innerHTML = ''; return; }
+
+      // Cross-match filtering matrix across datasets
+      let resultsA = stockRegistry.filter(i => 
+        i.part.toLowerCase().includes(query) || 
+        i.itemNo.toLowerCase().includes(query) || 
+        i.supplierRef.toLowerCase().includes(query)
+      );
+
+      let resultsB = fittingsRegistry.filter(i => 
+        i.part.toLowerCase().includes(query) || 
+        i.location.toLowerCase().includes(query)
+      ).map(i => ({...i, isFitting: true}));
+
+      let compiled = [...resultsA, ...resultsB].slice(0, 25);
+
+      if (compiled.length === 0) {
+        area.innerHTML = `<div class="card" style="text-align:center; color:var(--text-muted);">No records match your active parameters.</div>`;
+        return;
+      }
+
+      area.innerHTML = compiled.map(item => `
+        <div class="card" style="border-left: 5px solid ${item.isFitting ? 'var(--accent-purple)' : 'var(--accent-blue)'};">
+          <div style="display:flex; justify-content:space-between; align-items:start; margin-bottom:8px;">
+            <div>
+              <div style="font-size:11px; text-transform:uppercase; font-weight:700; color:var(--text-muted); margin-bottom:2px;">
+                ${item.isFitting ? 'Google Sheets Registry' : `${item.dept || 'STK'} &bull; Ref: ${highlightText(item.supplierRef, query)}`}
+              </div>
+              <h4 style="font-size:18px; font-weight:800; font-family:monospace; letter-spacing:-0.5px;">${highlightText(item.part, query)}</h4>
+            </div>
+            <span class="location-badge" style="background:${item.isFitting ? 'var(--accent-purple)' : 'var(--accent-green)'}">${highlightText(item.location, query)}</span>
+          </div>
+          
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-top:12px; background:var(--bg-primary); padding:10px; border-radius:8px; font-size:13px;">
+            <div>
+              <span style="color:var(--text-muted);">Item No:</span> 
+              <strong style="font-family:monospace;">${item.isFitting ? 'N/A' : highlightText(item.itemNo, query)}</strong>
+            </div>
+            <div>
+              <span style="color:var(--text-muted);">In-Stock:</span> 
+              <strong style="color:var(--accent-blue); font-size:15px; font-family:monospace;">${item.totalQty} pcs</strong>
+            </div>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    function highlightText(text, query) {
+      if (!query) return text;
+      let idx = text.toLowerCase().indexOf(query);
+      if (idx === -1) return text;
+      return text.substring(0, idx) + '<mark class="match">' + text.substring(idx, idx + query.length) + '</mark>' + text.substring(idx + query.length);
+    }
+
+    function resetSearchLayout() {
+      searchBox.value = '';
+      renderResults();
+      stopInlineScanner();
+    }
+
+    // MODULE A CONSOLIDATION MODULE WITH PACK SIZE MATRIX INJECTION
+    function renderConsolidationRows() {
+      let query = conSearchBox.value.trim().toLowerCase();
+      let conTableWrap = document.getElementById('conTableWrap');
+      let conTableBody = document.getElementById('conTableBody');
+
+      if (!query) {
+        conTableWrap.style.display = 'none';
+        return;
+      }
+
+      let matches = fittingsRegistry.filter(i => i.part.toLowerCase().includes(query)).slice(0, 10);
+
+      if (matches.length === 0) {
+        conTableWrap.style.display = 'none';
+        return;
+      }
+
+      conTableWrap.style.display = 'block';
+      let html = '';
+
+      for (let i = 0; i < matches.length; i++) {
+        let item = matches[i];
+        let rowId = `conRow_${i}`;
+        html += `<tr>
+          <td style="font-weight:700; font-family:monospace; font-size:13px;">${item.part}</td>
+          <td style="text-align:center;">
+            <input type="number" id="${rowId}_pack" value="${item.packSize || 1}" class="inline-edit-input" oninput="calculateInlineTotal('${rowId}')"/>
+          </td>
+          <td style="text-align:center;">
+            <input type="number" id="${rowId}_boxes" value="${item.boxes || 0}" class="inline-edit-input" oninput="calculateInlineTotal('${rowId}')"/>
+          </td>
+          <td id="${rowId}_total" style="text-align:center; font-weight:bold; font-family:monospace; color:var(--accent-purple); font-size:13px;">${item.totalQty}</td>
+          <td style="text-align:center;">
+            <button class="row-save-btn" onclick="syncInlineModification('${item.part}', '${item.location}', '${rowId}')">💾</button>
+          </td>
+          <td style="text-align:center;">
+            <span class="location-badge" style="background:var(--accent-purple); font-size:11px; padding:4px 8px;">${item.location}</span>
+          </td>
+        </tr>`;
+      }
+      conTableBody.innerHTML = html;
+    }
+
+    function calculateInlineTotal(rowId) {
+      let p = parseInt(document.getElementById(`${rowId}_pack`).value, 10) || 0;
+      let b = parseInt(document.getElementById(`${rowId}_boxes`).value, 10) || 0;
+      document.getElementById(`${rowId}_total`).innerText = p * b;
+    }
+
+    function syncInlineModification(partNumber, location, rowId) {
+      let packSize = parseInt(document.getElementById(`${rowId}_pack`).value, 10) || 0;
+      let boxes = parseInt(document.getElementById(`${rowId}_boxes`).value, 10) || 0;
+      let totalQty = packSize * boxes;
+
+      metaDisplay.textContent = "Updating entry...";
+      
+      let targetUrl = `${GOOGLE_SHEETS_API_URL}?action=updateRow&partNumber=${encodeURIComponent(partNumber)}&location=${encodeURIComponent(location)}&packSize=${packSize}&boxes=${boxes}&totalQty=${totalQty}`;
+
+      fetch(targetUrl)
+        .then(res => res.json())
+        .then(data => {
+          if (data.result === 'success') {
+            alert(`Successfully synchronized changes for ${partNumber}`);
+            fetchInventoryDatabases();
+          } else {
+            alert("Server failed to log update: " + data.message);
+          }
+        })
+        .catch(() => alert("Network exception occurred during synchronization layout processing."));
+    }
+
+    // SAVE DYNAMIC NEW ENTRY FROM INPUT LOGIC VALUES (MODULE B)
+    function calculateModuleBTotal() {
+      let p = parseInt(document.getElementById('newPackSize').value, 10) || 0;
+      let b = parseInt(document.getElementById('newBoxes').value, 10) || 0;
+      document.getElementById('newTotalQty').value = p * b;
+    }
+
+    function submitNewPalletEntry() {
+      var partNumber = document.getElementById('newPartNo').value.trim();
+      var location = document.getElementById('newPalletNo').value.trim();
+      var packSize = parseInt(document.getElementById('newPackSize').value, 10) || 0;
+      var boxes = parseInt(document.getElementById('newBoxes').value, 10) || 0;
+      var totalQty = packSize * boxes;
+
+      if (!partNumber || !location) {
+        alert("Part Number and Pallet No. are strictly required parameters.");
+        return;
+      }
+
+      metaDisplay.textContent = "Saving new item pallet record...";
+
+      var targetUrl = `${GOOGLE_SHEETS_API_URL}?action=addStock&partNumber=${encodeURIComponent(partNumber)}&location=${encodeURIComponent(location)}&packSize=${packSize}&boxes=${boxes}&totalQty=${totalQty}`;
+
+      fetch(targetUrl)
+        .then(res => res.json())
+        .then(data => {
+          if (data.result === 'success') {
+            alert("Entry written successfully to master sheet ledger!");
+            
+            document.getElementById('newPartNo').value = '';
+            document.getElementById('newPalletNo').value = '';
+            document.getElementById('newPackSize').value = '';
+            document.getElementById('newBoxes').value = '';
+            document.getElementById('newTotalQty').value = '0';
+            
+            fetchInventoryDatabases();
+          } else {
+            alert("Transmission logged an error outcome: " + data.message);
+          }
+        })
+        .catch(() => alert("CRITICAL: Server timeout exception. Verify Deployment configuration link properties."));
+    }
+
+    // HARDWARE SCANNER CONTROLS CONTROL HOOKS
+    function startScanner() {
+      if (html5QrcodeScanner) return;
+      isProcessingScan = false;
+      html5QrcodeScanner = new Html5Qrcode("reader");
+      html5QrcodeScanner.start(
+        { facingMode: "environment" },
+        { 
+          fps: 30, 
+          videoConstraints: { width: { ideal: 1920 }, height: { ideal: 1080 }, aspectRatio: { ideal: 1.7777777778 } },
+          formatsToSupport: [
+            Html5QrcodeSupportedFormats.CODE_128, 
+            Html5QrcodeSupportedFormats.CODE_39, 
+            Html5QrcodeSupportedFormats.EAN_13, 
+            Html5QrcodeSupportedFormats.EAN_8, 
+            Html5QrcodeSupportedFormats.QR_CODE
+          ] 
+        },
+        onScanSuccess
+      ).catch(() => { metaDisplay.textContent = "Camera configuration failed."; });
+    }
+
+    function stopScanner() {
+      if (html5QrcodeScanner) {
+        html5QrcodeScanner.stop().then(() => { html5QrcodeScanner = null; }).catch(()=>{});
+      }
+    }
+
+    function startInlineScanner(targetType) {
+      stopScanner(); 
+      stopInlineScanner(); 
+      currentScanTargetField = targetType;
+      document.getElementById('inlineScannerBox').style.display = 'block';
+      inlineFinderScanner = new Html5Qrcode("finderReader");
+      inlineFinderScanner.start(
+        { facingMode: "environment" },
+        { 
+          fps: 25, 
+          videoConstraints: { width: { ideal: 1920 }, height: { ideal: 1080 } },
+          formatsToSupport: [
+            Html5QrcodeSupportedFormats.CODE_128, 
+            Html5QrcodeSupportedFormats.CODE_39, 
+            Html5QrcodeSupportedFormats.EAN_13, 
+            Html5QrcodeSupportedFormats.QR_CODE
+          ] 
+        },
+        onInlineScanSuccess
+      ).catch(() => { alert("Could not access camera for target layout processing."); });
+    }
+
+    function stopInlineScanner() {
+      if (inlineFinderScanner) {
+        inlineFinderScanner.stop().then(() => { inlineFinderScanner = null; }).catch(()=>{});
+      }
+      document.getElementById('inlineScannerBox').style.display = 'none';
+    }
+
+    function onInlineScanSuccess(decodedText) {
+      let scannedText = decodedText.trim();
+      stopInlineScanner();
+      
+      if (currentScanTargetField === 'qr') {
+        searchBox.value = scannedText;
+      } else {
+        searchBox.value = (scannedText.startsWith('0') && scannedText.length > 1) ? scannedText.replace(/^0+/, '') : scannedText;
+      }
+      renderResults();
+      setTimeout(() => {
+        document.getElementById('resultsContainerLocationAnchor')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }, 100);
+    }
+
+    function onScanSuccess(decodedText) {
+      if (isProcessingScan) return;
+      let term = decodedText.trim().toLowerCase();
+      
+      let matchedItem = stockRegistry.find(i => i.part.toLowerCase() === term || i.itemNo.toLowerCase() === term || i.supplierRef.toLowerCase() === term) ||
+                        fittingsRegistry.find(i => i.part.toLowerCase() === term);
+                        
+      if (matchedItem) {
+        isProcessingScan = true;
+        showOverlay(matchedItem);
+      } else {
+        isProcessingScan = true;
+        stopScanner();
+        
+        let simulatedItem = {
+          part: decodedText.trim(),
+          itemNo: decodedText.trim(),
+          supplierRef: 'MANUAL COUNTER INJECTION',
+          packSize: '1',
+          boxes: '0',
+          totalQty: '0',
+          location: 'PENDING ASSIGNMENT',
+          isFitting: false
+        };
+        
+        document.getElementById('targetTitleHeader').innerHTML = `<span style="color:var(--danger-red);">⚠️ NOT FOUND IN SYSTEM STOCKS</span>`;
+        showOverlay(simulatedItem);
+      }
+    }
+
+    // AUDIT OVERLAY LOGIC CONTROLLERS
+    function showOverlay(item) {
+      activeScanMatch = item;
+      document.getElementById('targetItemName').innerText = item.part;
+      document.getElementById('targetMappingInfo').innerText = item.isFitting ? 'Google Sheets Database Profile' : `Item No: ${item.itemNo} | Ref: ${item.supplierRef}`;
+      document.getElementById('targetSubLoc').innerText = `Location Row: ${item.location}`;
+      document.getElementById('qtyInputField').value = '';
+      document.getElementById('countOverlay').style.display = 'flex';
+    }
+
+    function adjustQty(amount) {
+      var f = document.getElementById('qtyInputField');
+      var current = parseInt(f.value, 10) || 0;
+      var next = current + amount;
+      f.value = next < 0 ? 0 : next;
+    }
+
+    function dismissOverlay() {
+      document.getElementById('countOverlay').style.display = 'none';
+      document.getElementById('targetTitleHeader').innerText = "Matched Database Reference";
+      activeScanMatch = null;
+      isProcessingScan = false;
+      
+      if (document.getElementById('counterScreen').classList.contains('active')) {
+        startScanner();
+      }
+    }
+
+    function commitCount() {
+      var countVal = parseInt(document.getElementById('qtyInputField').value, 10);
+      if (isNaN(countVal) || countVal < 0) { alert("Provide a valid matching count metric index baseline."); return; }
+      
+      countLogSession.unshift({
+        part: activeScanMatch.part,
+        location: activeScanMatch.location,
+        qty: countVal,
+        time: new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})
+      });
+
+      localStorage.setItem('ms_saved_logs', JSON.stringify(countLogSession));
+      localStorage.setItem('ms_saved_date', new Date().toDateString());
+      
+      renderLogRegistryDisplay();
+      dismissOverlay();
+    }
+
+    function renderLogRegistryDisplay() {
+      var list = document.getElementById('logRegistryList');
+      document.getElementById('countSession').innerText = `Counts logged: ${countLogSession.length}`;
+      if (countLogSession.length === 0) { list.innerHTML = ''; return; }
+      
+      list.innerHTML = countLogSession.map(log => `
+        <div class="log-item">
+          <div>
+            <div style="font-weight:bold; font-family:monospace; font-size:15px;">${log.part}</div>
+            <div style="font-size:11px; color:var(--text-muted); margin-top:2px;">Scanned at ${log.time} in Loc: ${log.location}</div>
+          </div>
+          <div style="font-size:18px; font-weight:800; color:var(--accent-green); font-family:monospace;">${log.qty} pcs</div>
+        </div>
+      `).join('');
+    }
+
+    function checkUnexportedSessionLogs() {
+      var savedDate = localStorage.getItem('ms_saved_date');
+      var savedLogs = localStorage.getItem('ms_saved_logs');
+      if (savedLogs && JSON.parse(savedLogs).length > 0) {
+        if (savedDate !== new Date().toDateString()) {
+          document.getElementById('interceptMessage').innerText = `Found unexported count data from terminal session date: ${savedDate || 'Unknown'}.`;
+          document.getElementById('startupInterceptModal').style.display = 'flex';
+        } else {
+          countLogSession = JSON.parse(savedLogs);
+          renderLogRegistryDisplay();
+        }
+      }
+    }
+
+    function resolveIntercept(strategy) {
+      if (strategy === 'purge') {
+        countLogSession = [];
+        localStorage.removeItem('ms_saved_logs');
+        localStorage.removeItem('ms_saved_date');
+        renderLogRegistryDisplay();
+      } else {
+        countLogSession = JSON.parse(localStorage.getItem('ms_saved_logs') || '[]');
+        renderLogRegistryDisplay();
+      }
+      document.getElementById('startupInterceptModal').style.display = 'none';
+    }
+
+    function triggerNewSessionManually() {
+      if (confirm("End current workflow session parameters? Make sure you downloaded your spreadsheet compilation reports beforehand.")) {
+        countLogSession = [];
+        localStorage.removeItem('ms_saved_logs');
+        localStorage.removeItem('ms_saved_date');
+        renderLogRegistryDisplay();
+      }
+    }
+
+    function exportCountsToCSV() {
+      if (countLogSession.length === 0) { alert("Nothing found to generate reports from."); return; }
+      let header = "PART NUMBER,LOCATION,COUNT QTY,TIMESTAMP\n";
+      let content = countLogSession.map(l => `"${l.part}","${l.location}",${l.qty},"${l.time}"`).join("\n");
+      let blob = new Blob([header + content], { type: 'text/csv;charset=utf-8;' });
+      let link = document.createElement("a");
+      link.href = URL.createObjectURL(blob);
+      link.setAttribute("download", `Physical_Inventory_Audit_Report_${new Date().toISOString().slice(0,10)}.csv`);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    }
+
+    function clearAppCache() {
+      if (confirm("Force system to invalidate locally preserved manifest records? Run this if items show stale metadata positions.")) {
+        localStorage.clear();
+        location.reload();
+      }
+    }
+
+    // MODE ROUTER SWITCH CONTROLLERS
+    function switchMode(mode) {
+      document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+      document.querySelectorAll('.app-screen').forEach(scr => scr.classList.remove('active'));
+      
+      if (mode === 'finder') {
+        document.getElementById('finderTab').classList.add('active');
+        document.getElementById('finderScreen').classList.add('active');
+        document.getElementById('footerBar').style.display = 'flex';
+        document.getElementById('countSession').style.display = 'none';
+        stopScanner();
+        setTimeout(() => { searchBox.focus(); }, 100);
+      } else if (mode === 'counter') {
+        document.getElementById('counterTab').classList.add('active');
+        document.getElementById('counterScreen').classList.add('active');
+        document.getElementById('footerBar').style.display = 'flex';
+        document.getElementById('countSession').style.display = 'inline-block';
+        stopInlineScanner();
+        startScanner();
+      } else if (mode === 'consolidation') {
+        document.getElementById('consolidationTab').classList.add('active');
+        document.getElementById('consolidationScreen').classList.add('active');
+        document.getElementById('footerBar').style.display = 'flex';
+        document.getElementById('countSession').style.display = 'none';
+        stopScanner();
+        stopInlineScanner();
+        setTimeout(() => { conSearchBox.focus(); }, 100);
+      }
+    }
+  </script>
 </body>
 </html>
