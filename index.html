@@ -46,9 +46,9 @@
       --bg-overlay: rgba(15, 17, 21, 0.75);
     }
     * { box-sizing: border-box; margin: 0; padding: 0; }
-    
+     
     html, body { min-height: 100vh; }
-    
+     
     body { 
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; 
       background-color: var(--bg);
@@ -116,7 +116,7 @@
       border-radius: 8px; 
       transition: all 0.2s ease; 
     }
-    
+     
     #finderTab.active { background: #0056b3; color: white; }
     #counterTab.active { background: var(--accent-green); color: white; }
     #consolidationTab.active { background: var(--accent-purple); color: white; }
@@ -145,7 +145,7 @@
       letter-spacing: 0.5px;
       opacity: 0.9;
     }
-    
+     
     input[type="text"], input[type="number"] { 
       width: 100%; 
       padding: 14px; 
@@ -265,7 +265,7 @@
     th, td { padding: 12px 6px; border-bottom: 1px solid var(--border); border-right: 1px solid var(--border); vertical-align: middle; word-wrap: break-word; }
     th:last-child, td:last-child { border-right: none; }
     th { background: var(--th-bg); font-weight: 700; color: var(--muted); font-size: 12px; text-transform: uppercase; }
-    
+     
     th.col-main, td.col-main { width: 34%; }
     th.col-pack, td.col-pack { width: 16%; text-align: center; }
     th.col-boxes, td.col-boxes { width: 15%; text-align: center; }
@@ -275,7 +275,7 @@
 
     mark.match { background: #ffeb3b; color: #000; padding: 1px 3px; border-radius: 3px; font-weight: bold; }
     [data-theme="dark"] mark.match { background: #f59e0b; }
-    
+     
     .location-badge { 
       background: #10b981; 
       color: white; 
@@ -327,7 +327,7 @@
     .count-title { font-size: 12px; font-weight: bold; color: var(--muted); text-transform: uppercase; }
     .count-item-name { font-size: 19px; font-weight: 800; margin: 4px 0; }
     .count-sub { display: inline-block; background: #e0f2fe; color: #0369a1; font-weight: bold; padding: 4px 8px; border-radius: 4px; font-size: 12px; margin-bottom: 12px; }
-    
+     
     .input-row { display: flex; gap: 6px; align-items: center; margin-bottom: 12px; }
     .qty-input { flex: 1; font-size: 22px; font-weight: bold; text-align: center; }
     .mod-btn { padding: 12px; font-size: 15px; font-weight: bold; border: 1px solid var(--border); background: var(--th-bg); color: var(--text); border-radius: 6px; cursor: pointer; }
@@ -338,7 +338,7 @@
     .btn-cancel { background: #dc3545; color: white; }
 
     .log-item { background: var(--panel); padding: 12px; border-radius: 8px; border: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; backdrop-filter: var(--glass-blur); }
-    
+     
     .session-actions-strip { display: flex; justify-content: space-between; align-items: center; margin: 14px 0 8px 0; }
     .new-session-btn { background: #4a5568; color: white; border: none; padding: 6px 12px; font-size: 12px; font-weight: 700; border-radius: 6px; cursor: pointer; }
     .clear-btn { background: none; border: none; color: #dc3545; cursor: pointer; font-weight: 600; padding: 4px; font-size: 12px; }
@@ -380,14 +380,14 @@
 </div>
 
 <div class="app-container">
-  
+   
   <div class="app-header">
     <div class="header-main-row">
       <img src="logo.png" alt="Logo" class="app-logo" onerror="this.style.display='none'"/>
       <h1 class="app-title">STOCK LOCATOR+</h1>
     </div>
   </div>
-  
+   
   <div class="tabs-bar">
     <button id="finderTab" class="tab-btn active" onclick="switchMode('finder')">🔍 Stock Lookup</button>
     <button id="counterTab" class="tab-btn" onclick="switchMode('counter')">📋 Audit Scanner</button>
@@ -401,7 +401,7 @@
 
   <div id="finderScreen" class="app-screen active">
     <div class="panel-box">
-      
+       
       <div id="inlineScannerBox" class="inline-scanner-box">
         <button class="close-scan-btn" onclick="stopInlineScanner()">✕ Close Camera</button>
         <div id="finderReader" style="width:100%;"></div>
@@ -411,7 +411,7 @@
         <label for="searchBox">Search Part Number / Item No. / Supplier Reference</label>
         <input id="searchBox" type="text" placeholder="DGN 3102C..." autofocus autocomplete="off"/>
       </div>
-  
+   
       <div class="shortcut-row">
         <button class="action-sub-btn" onclick="startInlineScanner('qr')">Scan QR Code</button>
         <button class="action-sub-btn" onclick="startInlineScanner('supplier')">Scan Supplier Ref</button>
@@ -426,7 +426,7 @@
           </label>
           <span id="resetBgBtn" class="reset-bg-link" style="display: none;" onclick="clearWallpaperTheme()">✕ Reset Theme Image</span>
         </div>
-        
+         
         <div class="pref-row" style="justify-content: flex-start; gap: 8px;">
           <input id="themeToggle" type="checkbox" style="width:18px; height:18px; cursor:pointer;" />
           <label for="themeToggle" style="display:inline; font-weight:600; color:var(--text); text-transform:none; cursor:pointer;">Dark Mode</label>
@@ -471,7 +471,7 @@
       <div id="targetItemName" class="count-item-name">---</div>
       <div id="targetMappingInfo" style="font-size:12px; color:var(--muted); margin-bottom:8px;">---</div>
       <div id="targetSubLoc" class="count-sub">---</div>
-      
+       
       <div class="input-row">
         <button class="mod-btn" onclick="adjustQty(-1)">-1</button>
         <input id="qtyInputField" type="number" class="qty-input" placeholder="0" min="0" inputmode="numeric"/>
@@ -493,14 +493,14 @@
   </div>
 
   <div id="consolidationScreen" class="app-screen">
-    
+     
     <div class="panel-box">
       <h3 style="font-size:14px; margin-bottom:10px; color:var(--accent-purple); text-transform:uppercase; letter-spacing:0.5px;">Module A: Modify or Zero-Out Item</h3>
       <div class="input-group">
         <label for="conSearchBox">Search Fitting Part Number to Edit</label>
         <input id="conSearchBox" type="text" placeholder="Type part number to modify..." autocomplete="off"/>
       </div>
-      
+       
       <div class="table-wrap" id="conTableWrap" style="display: none; margin-top:12px;">
         <table>
           <thead>
@@ -520,7 +520,7 @@
 
     <div class="panel-box">
       <h3 style="font-size:14px; margin-bottom:12px; color:var(--accent-green); text-transform:uppercase; letter-spacing:0.5px;">Module B: Add To New Pallet</h3>
-      
+       
       <div class="input-group">
         <label for="newPartNo">Part Number</label>
         <input id="newPartNo" type="text" placeholder="e.g., 22611D-06-06N" autocomplete="off"/>
@@ -780,7 +780,7 @@ function parseGoogleSheetsJSON(json) {
   return result;
 }
 
-// UPGRADED LIVE TYPEAHEAD GENERATOR WITH START-MATCH RANKING
+// LIVE FINDER TYPEAHEAD GENERATOR
 function renderResults() {
   let query = searchBox.value.trim().toLowerCase();
   if (!query) {
@@ -791,7 +791,7 @@ function renderResults() {
 
   let matches = [];
 
-  // Search Stocks (Converts variables to safe lower strings to prevent exponential key failures)
+  // Search Stocks 
   for (let i = 0; i < stockRegistry.length; i++) {
     let item = stockRegistry[i];
     let partStr = String(item.part || "").toLowerCase();
@@ -803,7 +803,7 @@ function renderResults() {
     }
   }
 
-  // Search Fittings (Google Sheets Layout)
+  // Search Fittings
   for (let i = 0; i < fittingsRegistry.length; i++) {
     let item = fittingsRegistry[i];
     let partStr = String(item.part || "").toLowerCase();
@@ -812,18 +812,15 @@ function renderResults() {
     }
   }
 
-  // Sort Filter: Items strictly STARTING with the typed search are placed at the very top
+  // Sort Filter: Items strictly STARTING with the typed search are placed at the top
   matches.sort((a, b) => {
     let aPart = String(a.part || "").toLowerCase();
     let bPart = String(b.part || "").toLowerCase();
-    
     let aStarts = aPart.startsWith(query) ? 1 : 0;
     let bStarts = bPart.startsWith(query) ? 1 : 0;
-    
     return bStarts - aStarts;
   });
 
-  // Keep search capped at top 40 items for clear UI snappiness
   matches = matches.slice(0, 40);
 
   if (matches.length === 0) {
@@ -847,24 +844,22 @@ function renderResults() {
         <div style="font-size: 10px; color: var(--muted); margin-top: 2px;">${labelInfo}</div>
       </td>
       <td class="col-pack" style="text-align:center; font-weight:bold; font-family:monospace; color:var(--muted);">${item.packSize || '0'}</td>
-      <td class="col-boxes" style="text-align:center; font-weight:bold; font-family:monospace;">${item.boxes}</td>
-      <td class="col-total" style="text-align:center; font-weight:800; color:var(--primary-accent); font-family:monospace; font-size:14px;">${item.totalQty}</td>
-      <td class="col-sub" style="text-align:center;">
-        <span class="${badgeClass}">${item.location}</span>
-      </td>
+      <td class="col-boxes" style="text-align:center; font-weight:bold; font-family:monospace;">${item.boxes || '0'}</td>
+      <td class="col-total" style="text-align:center; font-weight:900; color:var(--primary-accent); font-family:monospace; font-size:15px;">${item.totalQty || '0'}</td>
+      <td class="col-sub" style="text-align:center;"><span class="${badgeClass}">${item.location}</span></td>
     </tr>`;
   }
   tableBody.innerHTML = html;
 }
 
-function highlightText(text, query) {
-  if (!text) return "";
-  if (!query) return text;
-  let index = text.toLowerCase().indexOf(query.toLowerCase());
-  if (index === -1) return text;
-  return text.substring(0, index) + "<mark class='match'>" + text.substring(index, index + query.length) + "</mark>" + text.substring(index + query.length);
+function highlightText(fullText, searchStr) {
+  if (!searchStr) return fullText;
+  let escapedSearch = searchStr.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&');
+  let regex = new RegExp(`(${escapedSearch})`, 'gi');
+  return fullText.replace(regex, '<mark class="match">$1</mark>');
+}
 
-  // MODULE A: RENDERING CONSOLIDATION DATA WITH INLINE EDIT INPUTS
+// MODULE A: RENDERING CONSOLIDATION DATA WITH INLINE EDIT INPUTS
 function renderConsolidationRows() {
   let query = conSearchBox.value.trim().toLowerCase();
   let conTableWrap = document.getElementById('conTableWrap');
@@ -931,9 +926,8 @@ async function syncInlineRowModification(index) {
   let syncBtn = document.getElementById(`syncBtn_${index}`);
   if (!syncBtn || syncBtn.disabled) return;
 
-  let originalText = syncBtn.textContent;
   syncBtn.disabled = true;
-  syncBtn.style.background = "#f0b429"; // Pending indicator color
+  syncBtn.style.background = "#f0b429"; 
   syncBtn.textContent = "⏳";
 
   let item = fittingsRegistry[index];
@@ -961,7 +955,6 @@ async function syncInlineRowModification(index) {
       syncBtn.style.background = "var(--accent-green)";
       syncBtn.textContent = "✅";
       
-      // Keep local runtime arrays uniform
       fittingsRegistry[index].packSize = updatedPack;
       fittingsRegistry[index].boxes = updatedBoxes;
       fittingsRegistry[index].totalQty = computedTotal;
@@ -1016,7 +1009,6 @@ async function submitNewPalletEntry() {
     if (status.result === "success") {
       alert(`Successfully saved item ${part} to Pallet ${pallet}!`);
       
-      // Inject fresh record inside local running stack array
       fittingsRegistry.unshift({
         part: part, itemNo: '', supplierRef: '',
         packSize: pack, boxes: boxes, totalQty: total,
@@ -1118,13 +1110,10 @@ function onInlineScanSuccess(decodedText) {
   renderResults();
   stopInlineScanner();
   
-  // Re-enable camera channel updates after slight visual delay
   setTimeout(() => { isProcessingScan = false; }, 1000);
 }
 
-function onInlineScanError(err) {
-  // Silent fallback capture to avoid spamming system overlays during sweeps
-}
+function onInlineScanError(err) {}
 
 function parseQRCodePayload(text) {
   if (text.includes(',')) {
@@ -1165,7 +1154,6 @@ function onCounterScanSuccess(decodedText) {
   let searchStr = parseQRCodePayload(String(decodedText || "").trim()).toLowerCase();
   let matchedItem = null;
 
-  // Scan Matching Core Array Pass
   for (let i = 0; i < stockRegistry.length; i++) {
     let item = stockRegistry[i];
     if (item.part.toLowerCase() === searchStr || item.itemNo.toLowerCase() === searchStr || item.supplierRef.toLowerCase() === searchStr) {
@@ -1193,7 +1181,6 @@ function onCounterScanSuccess(decodedText) {
     document.getElementById('qtyInputField').value = '';
     document.getElementById('countOverlay').style.display = 'block';
   } else {
-    // Dynamic unregistered item fallback mapping injection
     activeScanMatch = { part: decodedText.toUpperCase(), itemNo: '', supplierRef: '', packSize: 'N/A', boxes: '0', totalQty: '0', location: 'UNMAPPED', isFitting: false };
     document.getElementById('targetItemName').textContent = decodedText.toUpperCase();
     document.getElementById('targetMappingInfo').textContent = "⚠️ Unregistered barcode pattern detected.";
@@ -1252,7 +1239,6 @@ function renderLogRegistryUI() {
   }
 
   let html = '';
-  // Render array upside down to show newest audit counts right at the top
   for (let i = countLogSession.length - 1; i >= 0; i--) {
     let entry = countLogSession[i];
     html += `<div class="log-item">
