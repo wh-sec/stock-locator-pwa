@@ -559,7 +559,7 @@
 
 <script>
 const CSV_URL = 'https://raw.githubusercontent.com/wh-sec/stock-locator-pwa/main/stocks.csv';
-const GOOGLE_SHEETS_API_URL = 'https://script.google.com/macros/s/AKfycbzzPnnJgf0SFadbkO1tIjZw04GajQEhDHCss0ukd43xbGOtq_aTGrmttPyER1UT87xhMw/exec';
+const GOOGLE_SHEETS_API_URL = 'https://script.google.com/macros/library/d/1CZbXup_51nGuostDRRiKah6-pbAK1e3ABJF6BIVDkiQYUvdF10DCOEh8/14';
 
 var stockRegistry = [];
 var fittingsRegistry = [];
@@ -709,7 +709,6 @@ async function fetchInventoryDatabases() {
     localStorage.setItem('cached_sync_time', new Date().toLocaleString());
     updateMetaDisplay();
     
-    // Refresh display panels if there is text in them
     if (searchBox.value) renderResults();
     if (conSearchBox.value) renderConsolidationRows();
   } catch (err) {
@@ -745,7 +744,7 @@ function parseCSV(text) {
       part: cols[0]?.trim() || '',
       itemNo: cols[1]?.trim() || '',
       supplierRef: cols[2]?.trim() || '',
-      packSize: 'N/A', // CSV standard stock files do not use pack sizes
+      packSize: 'N/A', 
       boxes: cols[3]?.trim() || '0',
       totalQty: cols[4]?.trim() || '0',
       location: cols[5]?.trim() || 'N/A',
@@ -781,7 +780,7 @@ function parseGoogleSheetsJSON(json) {
   return result;
 }
 
-// ARRAYS LOOKUP GENERATOR FIXED AND INDEX COLUMN RE-MAPPED
+// UPGRADED LIVE TYPEAHEAD GENERATOR WITH START-MATCH RANKING
 function renderResults() {
   let query = searchBox.value.trim().toLowerCase();
   if (!query) {
@@ -791,29 +790,41 @@ function renderResults() {
   }
 
   let matches = [];
-  let matchCounter = 0;
 
-  // Search Stocks
+  // Search Stocks (Converts variables to safe lower strings to prevent exponential key failures)
   for (let i = 0; i < stockRegistry.length; i++) {
     let item = stockRegistry[i];
-    if (item.part.toLowerCase().includes(query) || item.itemNo.toLowerCase().includes(query) || item.supplierRef.toLowerCase().includes(query)) {
+    let partStr = String(item.part || "").toLowerCase();
+    let itemNoStr = String(item.itemNo || "").toLowerCase();
+    let supplierRefStr = String(item.supplierRef || "").toLowerCase();
+
+    if (partStr.includes(query) || itemNoStr.includes(query) || supplierRefStr.includes(query)) {
       matches.push(item);
-      matchCounter++;
-      if (matchCounter >= 40) break;
     }
   }
 
-  // Search Fittings (Google Sheets)
-  if (matchCounter < 40) {
-    for (let i = 0; i < fittingsRegistry.length; i++) {
-      let item = fittingsRegistry[i];
-      if (item.part.toLowerCase().includes(query)) {
-        matches.push(item);
-        matchCounter++;
-        if (matchCounter >= 40) break;
-      }
+  // Search Fittings (Google Sheets Layout)
+  for (let i = 0; i < fittingsRegistry.length; i++) {
+    let item = fittingsRegistry[i];
+    let partStr = String(item.part || "").toLowerCase();
+    if (partStr.includes(query)) {
+      matches.push(item);
     }
   }
+
+  // Sort Filter: Items strictly STARTING with the typed search are placed at the very top
+  matches.sort((a, b) => {
+    let aPart = String(a.part || "").toLowerCase();
+    let bPart = String(b.part || "").toLowerCase();
+    
+    let aStarts = aPart.startsWith(query) ? 1 : 0;
+    let bStarts = bPart.startsWith(query) ? 1 : 0;
+    
+    return bStarts - aStarts;
+  });
+
+  // Keep search capped at top 40 items for clear UI snappiness
+  matches = matches.slice(0, 40);
 
   if (matches.length === 0) {
     tableWrap.style.display = 'none';
@@ -847,13 +858,13 @@ function renderResults() {
 }
 
 function highlightText(text, query) {
+  if (!text) return "";
   if (!query) return text;
-  let idx = text.toLowerCase().indexOf(query);
-  if (idx === -1) return text;
-  return text.substring(0, idx) + '<mark class="match">' + text.substring(idx, idx + query.length) + '</mark>' + text.substring(idx + query.length);
-}
+  let index = text.toLowerCase().indexOf(query.toLowerCase());
+  if (index === -1) return text;
+  return text.substring(0, index) + "<mark class='match'>" + text.substring(index, index + query.length) + "</mark>" + text.substring(index + query.length);
 
-// MODULE A CONSOLIDATION MODULE WITH PACK SIZE MATRIX INJECTION
+  // MODULE A: RENDERING CONSOLIDATION DATA WITH INLINE EDIT INPUTS
 function renderConsolidationRows() {
   let query = conSearchBox.value.trim().toLowerCase();
   let conTableWrap = document.getElementById('conTableWrap');
@@ -864,8 +875,13 @@ function renderConsolidationRows() {
     return;
   }
 
-  // Filter only Sheet entries (fittingsRegistry) for direct modifications
-  let matches = fittingsRegistry.filter(i => i.part.toLowerCase().includes(query)).slice(0, 10);
+  let matches = [];
+  for (let i = 0; i < fittingsRegistry.length; i++) {
+    let item = fittingsRegistry[i];
+    if (String(item.part || "").toLowerCase().includes(query)) {
+      matches.push({ item: item, originalIndex: i });
+    }
+  }
 
   if (matches.length === 0) {
     conTableWrap.style.display = 'none';
@@ -876,19 +892,25 @@ function renderConsolidationRows() {
   let html = '';
 
   for (let i = 0; i < matches.length; i++) {
-    let item = matches[i];
-    let rowId = `conRow_${i}`;
+    let match = matches[i];
+    let item = match.item;
+    let idx = match.originalIndex;
+
     html += `<tr>
-      <td class="col-main" style="font-weight:700; font-family:monospace; font-size:13px;">${item.part}</td>
+      <td class="col-main">
+        <div style="font-weight: 800; font-size:13px; font-family:monospace;">${item.part}</div>
+      </td>
       <td class="col-pack" style="text-align:center;">
-        <input type="number" id="${rowId}_pack" value="${item.packSize}" class="inline-edit-input" oninput="calculateInlineTotal('${rowId}')"/>
+        <input type="number" class="inline-edit-input" id="inlinePack_${idx}" value="${item.packSize}" min="0" oninput="recalcInlineTotal(${idx})"/>
       </td>
       <td class="col-boxes" style="text-align:center;">
-        <input type="number" id="${rowId}_boxes" value="${item.boxes}" class="inline-edit-input" oninput="calculateInlineTotal('${rowId}')"/>
+        <input type="number" class="inline-edit-input" id="inlineBoxes_${idx}" value="${item.boxes}" min="0" oninput="recalcInlineTotal(${idx})"/>
       </td>
-      <td class="col-total" id="${rowId}_total" style="text-align:center; font-weight:bold; font-family:monospace; color:var(--accent-purple); font-size:13px;">${item.totalQty}</td>
+      <td class="col-total" style="text-align:center; font-weight:800; font-family:monospace;">
+        <span id="inlineTotalSpan_${idx}">${item.totalQty}</span>
+      </td>
       <td class="col-save" style="text-align:center;">
-        <button class="row-save-btn" onclick="syncInlineModification('${item.part}', '${item.location}', '${rowId}')">💾</button>
+        <button id="syncBtn_${idx}" class="row-save-btn" onclick="syncInlineRowModification(${idx})">💾</button>
       </td>
       <td class="col-sub" style="text-align:center;">
         <span class="location-badge fittings-badge">${item.location}</span>
@@ -898,299 +920,440 @@ function renderConsolidationRows() {
   conTableBody.innerHTML = html;
 }
 
-function calculateInlineTotal(rowId) {
-  let p = parseInt(document.getElementById(`${rowId}_pack`).value, 10) || 0;
-  let b = parseInt(document.getElementById(`${rowId}_boxes`).value, 10) || 0;
-  document.getElementById(`${rowId}_total`).innerText = p * b;
+function recalcInlineTotal(idx) {
+  let p = parseInt(document.getElementById(`inlinePack_${idx}`).value, 10) || 0;
+  let b = parseInt(document.getElementById(`inlineBoxes_${idx}`).value, 10) || 0;
+  document.getElementById(`inlineTotalSpan_${idx}`).textContent = p * b;
 }
 
-// DISPATCH AND SYNC LIVE ONLINE CELL EDITS TO SPREADSHEET (MODULE A)
-function syncInlineModification(partNumber, location, rowId) {
-  let packSize = parseInt(document.getElementById(`${rowId}_pack`).value, 10) || 0;
-  let boxes = parseInt(document.getElementById(`${rowId}_boxes`).value, 10) || 0;
-  let totalQty = packSize * boxes;
+// REMOTE SYNC EXECUTION FOR SHEET ENTRIES (MODULE A)
+async function syncInlineRowModification(index) {
+  let syncBtn = document.getElementById(`syncBtn_${index}`);
+  if (!syncBtn || syncBtn.disabled) return;
 
-  metaDisplay.textContent = "Updating entry...";
-  
-  let targetUrl = `${GOOGLE_SHEETS_API_URL}?action=updateRow&partNumber=${encodeURIComponent(partNumber)}&location=${encodeURIComponent(location)}&packSize=${packSize}&boxes=${boxes}&totalQty=${totalQty}`;
+  let originalText = syncBtn.textContent;
+  syncBtn.disabled = true;
+  syncBtn.style.background = "#f0b429"; // Pending indicator color
+  syncBtn.textContent = "⏳";
 
-  fetch(targetUrl)
-    .then(res => res.json())
-    .then(data => {
-      if (data.result === 'success') {
-        alert(`Successfully synchronized changes for ${partNumber}`);
-        fetchInventoryDatabases(); // Automatically pulls the newest data instantly
-      } else {
-        alert("Server failed to log update: " + data.message);
-      }
-    })
-    .catch(() => alert("Network exception occurred during synchronization layout processing."));
+  let item = fittingsRegistry[index];
+  let updatedPack = document.getElementById(`inlinePack_${index}`).value;
+  let updatedBoxes = document.getElementById(`inlineBoxes_${index}`).value;
+  let computedTotal = document.getElementById(`inlineTotalSpan_${index}`).textContent;
+
+  let formData = new URLSearchParams();
+  formData.append('action', 'updateRow');
+  formData.append('partNumber', item.part);
+  formData.append('palletNo', item.location);
+  formData.append('packSize', updatedPack);
+  formData.append('noOfBox', updatedBoxes);
+  formData.append('total', computedTotal);
+
+  try {
+    let res = await fetch(GOOGLE_SHEETS_API_URL, {
+      method: 'POST',
+      body: formData,
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' }
+    });
+    let status = await res.json();
+
+    if (status.result === "success") {
+      syncBtn.style.background = "var(--accent-green)";
+      syncBtn.textContent = "✅";
+      
+      // Keep local runtime arrays uniform
+      fittingsRegistry[index].packSize = updatedPack;
+      fittingsRegistry[index].boxes = updatedBoxes;
+      fittingsRegistry[index].totalQty = computedTotal;
+      localStorage.setItem('cached_fittings_json', JSON.stringify([["PART NUMBER","PALLET NO.","PACK SIZE","NO. OF BOX","TOTAL"], ...fittingsRegistry.map(f => [f.part, f.location, f.packSize, f.boxes, f.totalQty])]));
+      
+      fireStockUpdateNotification();
+      setTimeout(() => {
+        syncBtn.disabled = false;
+        syncBtn.style.background = "var(--accent-green)";
+        syncBtn.textContent = "💾";
+      }, 1500);
+    } else {
+      throw new Error("API rejection");
+    }
+  } catch (err) {
+    alert("Network sync timed out. Data was not written safely to Google Sheets.");
+    syncBtn.disabled = false;
+    syncBtn.style.background = "var(--danger-red)";
+    syncBtn.textContent = "❌";
+  }
 }
 
-// SAVE DYNAMIC NEW ENTRY FROM INPUT LOGIC VALUES (MODULE B)
-function submitNewPalletEntry() {
-  var partNumber = document.getElementById('newPartNo').value.trim();
-  var location = document.getElementById('newPalletNo').value.trim();
-  var packSize = parseInt(document.getElementById('newPackSize').value, 10) || 0;
-  var boxes = parseInt(document.getElementById('newBoxes').value, 10) || 0;
-  var totalQty = packSize * boxes;
+// NEW ENTRY SUBMISSION (MODULE B)
+async function submitNewPalletEntry() {
+  let part = document.getElementById('newPartNo').value.trim();
+  let pallet = document.getElementById('newPalletNo').value.trim();
+  let pack = document.getElementById('newPackSize').value.trim();
+  let boxes = document.getElementById('newBoxes').value.trim();
+  let total = document.getElementById('newTotalQty').value;
 
-  if (!partNumber || !location) {
-    alert("Part Number and Pallet No. are strictly required parameters.");
+  if (!part || !pallet || !pack || !boxes) {
+    alert("Please completely fill out all entry fields before sending to master sheets.");
     return;
   }
 
-  metaDisplay.textContent = "Saving new item pallet record...";
+  let formData = new URLSearchParams();
+  formData.append('action', 'addRow');
+  formData.append('partNumber', part);
+  formData.append('palletNo', pallet);
+  formData.append('packSize', pack);
+  formData.append('noOfBox', boxes);
+  formData.append('total', total);
 
-  // CORRECTED ROUTE PARAMETERS TO SEND PACK SIZE DOWNSTREAM TO APPS SCRIPT
-  var targetUrl = `${GOOGLE_SHEETS_API_URL}?action=addStock&partNumber=${encodeURIComponent(partNumber)}&location=${encodeURIComponent(location)}&packSize=${packSize}&boxes=${boxes}&totalQty=${totalQty}`;
+  try {
+    let res = await fetch(GOOGLE_SHEETS_API_URL, {
+      method: 'POST',
+      body: formData,
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' }
+    });
+    let status = await res.json();
 
-  fetch(targetUrl)
-    .then(res => res.json())
-    .then(data => {
-      if (data.result === 'success') {
-        alert("Entry written successfully to master sheet ledger grid data matrix!");
-        
-        // Reset Module B layout parameter inputs
-        document.getElementById('newPartNo').value = '';
-        document.getElementById('newPalletNo').value = '';
-        document.getElementById('newPackSize').value = '';
-        document.getElementById('newBoxes').value = '';
-        document.getElementById('newTotalQty').value = '';
-        
-        fetchInventoryDatabases(); // Re-sync local cache dynamically
-      } else {
-        alert("Transmission logged an error outcome: " + data.message);
-      }
-    })
-    .catch(() => alert("CRITICAL: Server timeout exception. Verify Deployment configuration link properties."));
-}
+    if (status.result === "success") {
+      alert(`Successfully saved item ${part} to Pallet ${pallet}!`);
+      
+      // Inject fresh record inside local running stack array
+      fittingsRegistry.unshift({
+        part: part, itemNo: '', supplierRef: '',
+        packSize: pack, boxes: boxes, totalQty: total,
+        location: pallet, isFitting: true
+      });
 
-// SCANNER UTILITIES
-function startScanner() {
-  if (html5QrcodeScanner) return;
-  isProcessingScan = false;
-  html5QrcodeScanner = new Html5Qrcode("reader");
-  html5QrcodeScanner.start(
-    { facingMode: "environment" },
-    { 
-      fps: 30, 
-      videoConstraints: {
-        width: { ideal: 1920 },
-        height: { ideal: 1080 },
-        aspectRatio: { ideal: 1.7777777778 }
-      },
-      formatsToSupport: [Html5QrcodeSupportedFormats.CODE_128, Html5QrcodeSupportedFormats.CODE_39, Html5QrcodeSupportedFormats.QR_CODE] 
-    },
-    onScanSuccess
-  ).catch(() => { metaDisplay.textContent = "Camera configuration failed."; });
-}
-
-function stopScanner() {
-  if (html5QrcodeScanner) {
-    html5QrcodeScanner.stop().then(() => { html5QrcodeScanner = null; }).catch(()=>{});
+      document.getElementById('newPartNo').value = '';
+      document.getElementById('newPalletNo').value = '';
+      document.getElementById('newPackSize').value = '';
+      document.getElementById('newBoxes').value = '';
+      document.getElementById('newTotalQty').value = '';
+      
+      if (conSearchBox.value) renderConsolidationRows();
+      fireStockUpdateNotification();
+    } else {
+      alert("Cloud database failed to accept data stream layout.");
+    }
+  } catch (err) {
+    alert("Failed to submit entry. Check terminal network links.");
   }
 }
 
-function startInlineScanner(targetType) {
-  stopScanner(); 
-  stopInlineScanner(); 
-  currentScanTargetField = targetType;
+// SYSTEM APP SCREEN NAVIGATION CONTROL
+function switchMode(targetMode) {
+  document.querySelectorAll('.app-screen').forEach(scr => scr.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+  stopInlineScanner();
+  stopCounterScanner();
+
+  if (targetMode === 'finder') {
+    document.getElementById('finderScreen').classList.add('active');
+    document.getElementById('finderTab').classList.add('active');
+    document.getElementById('countSession').style.display = 'none';
+    document.getElementById('footerBar').style.display = 'none';
+    searchBox.focus();
+  } else if (targetMode === 'counter') {
+    document.getElementById('counterScreen').classList.add('active');
+    document.getElementById('counterTab').classList.add('active');
+    document.getElementById('countSession').style.display = 'inline-block';
+    document.getElementById('footerBar').style.display = 'flex';
+    startCounterScanner();
+  } else if (targetMode === 'consolidation') {
+    document.getElementById('consolidationScreen').classList.add('active');
+    document.getElementById('consolidationTab').classList.add('active');
+    document.getElementById('countSession').style.display = 'none';
+    document.getElementById('footerBar').style.display = 'none';
+    conSearchBox.focus();
+  }
+}
+
+// INLINE FINDER CAMERA SCAN CONTROL HOOKS
+function startInlineScanner(mode) {
+  currentScanTargetField = mode;
   document.getElementById('inlineScannerBox').style.display = 'block';
+  isProcessingScan = false;
+
+  if (inlineFinderScanner) {
+    inlineFinderScanner.clear();
+  }
+
   inlineFinderScanner = new Html5Qrcode("finderReader");
   inlineFinderScanner.start(
     { facingMode: "environment" },
-    { 
-      fps: 25, 
-      videoConstraints: {
-        width: { ideal: 1920 },
-        height: { ideal: 1080 }
-      },
-      formatsToSupport: [Html5QrcodeSupportedFormats.CODE_128, Html5QrcodeSupportedFormats.CODE_39, Html5QrcodeSupportedFormats.QR_CODE] 
-    },
-    onInlineScanSuccess
-  ).catch(() => { alert("Could not access camera for target layout processing."); });
+    { fps: 10, qrbox: { width: 260, height: 150 } },
+    onInlineScanSuccess,
+    onInlineScanError
+  ).catch(err => {
+    alert("Camera initialization error. Please grant permissions.");
+    document.getElementById('inlineScannerBox').style.display = 'none';
+  });
 }
 
 function stopInlineScanner() {
   if (inlineFinderScanner) {
-    inlineFinderScanner.stop().then(() => { inlineFinderScanner = null; }).catch(()=>{});
+    inlineFinderScanner.stop().then(() => {
+      inlineFinderScanner.clear();
+      inlineFinderScanner = null;
+      document.getElementById('inlineScannerBox').style.display = 'none';
+    }).catch(err => {
+      document.getElementById('inlineScannerBox').style.display = 'none';
+    });
+  } else {
+    document.getElementById('inlineScannerBox').style.display = 'none';
   }
-  document.getElementById('inlineScannerBox').style.display = 'none';
 }
 
 function onInlineScanSuccess(decodedText) {
-  let scannedText = decodedText.trim();
-  stopInlineScanner();
+  if (isProcessingScan) return;
+  isProcessingScan = true;
+
+  let cleanCode = String(decodedText || "").trim();
   
   if (currentScanTargetField === 'qr') {
-    searchBox.value = scannedText;
+    searchBox.value = parseQRCodePayload(cleanCode);
   } else {
-    searchBox.value = (scannedText.startsWith('0') && scannedText.length > 1) ? scannedText.replace(/^0+/, '') : scannedText;
+    searchBox.value = cleanCode;
   }
+
   renderResults();
-  setTimeout(() => {
-    document.getElementById('resultsContainerLocationAnchor')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-  }, 100);
+  stopInlineScanner();
+  
+  // Re-enable camera channel updates after slight visual delay
+  setTimeout(() => { isProcessingScan = false; }, 1000);
 }
 
-function onScanSuccess(decodedText) {
-  if (isProcessingScan) return;
-  let term = decodedText.trim().toLowerCase();
-  let matchedItem = stockRegistry.find(i => i.part.toLowerCase() === term || i.itemNo.toLowerCase() === term || i.supplierRef.toLowerCase() === term) ||
-                    fittingsRegistry.find(i => i.part.toLowerCase() === term);
-  if (matchedItem) {
-    isProcessingScan = true;
-    showOverlay(matchedItem);
+function onInlineScanError(err) {
+  // Silent fallback capture to avoid spamming system overlays during sweeps
+}
+
+function parseQRCodePayload(text) {
+  if (text.includes(',')) {
+    let segments = text.split(',');
+    return segments[0].trim();
+  }
+  return text;
+}
+
+// AUDIT COUNTER LAYOUT CAMERA HANDLERS
+function startCounterScanner() {
+  if (html5QrcodeScanner) {
+    html5QrcodeScanner.clear();
+  }
+  html5QrcodeScanner = new Html5Qrcode("reader");
+  html5QrcodeScanner.start(
+    { facingMode: "environment" },
+    { fps: 12, qrbox: { width: 260, height: 160 } },
+    onCounterScanSuccess,
+    onCounterScanError
+  ).catch(err => {
+    console.log("Audit scanner camera startup fault.");
+  });
+}
+
+function stopCounterScanner() {
+  if (html5QrcodeScanner) {
+    html5QrcodeScanner.stop().then(() => {
+      html5QrcodeScanner.clear();
+      html5QrcodeScanner = null;
+    }).catch(e => console.log(e));
   }
 }
 
-// AUDIT MODAL LOGS Persistent Layout Controllers
-function showOverlay(item) {
-  activeScanMatch = item;
-  document.getElementById('targetItemName').innerText = item.part;
-  document.getElementById('targetMappingInfo').innerText = item.isFitting ? 'Google Sheets Database Profile' : `Item No: ${item.itemNo} | Ref: ${item.supplierRef}`;
-  document.getElementById('targetSubLoc').innerText = `Location Row: ${item.location}`;
-  document.getElementById('qtyInputField').value = '';
-  document.getElementById('countOverlay').style.display = 'block';
+function onCounterScanSuccess(decodedText) {
+  if (document.getElementById('countOverlay').style.display === 'block') return;
+
+  let searchStr = parseQRCodePayload(String(decodedText || "").trim()).toLowerCase();
+  let matchedItem = null;
+
+  // Scan Matching Core Array Pass
+  for (let i = 0; i < stockRegistry.length; i++) {
+    let item = stockRegistry[i];
+    if (item.part.toLowerCase() === searchStr || item.itemNo.toLowerCase() === searchStr || item.supplierRef.toLowerCase() === searchStr) {
+      matchedItem = item;
+      break;
+    }
+  }
+
+  if (!matchedItem) {
+    for (let i = 0; i < fittingsRegistry.length; i++) {
+      let item = fittingsRegistry[i];
+      if (item.part.toLowerCase() === searchStr) {
+        matchedItem = item;
+        break;
+      }
+    }
+  }
+
+  if (matchedItem) {
+    activeScanMatch = matchedItem;
+    document.getElementById('targetItemName').textContent = matchedItem.part;
+    document.getElementById('targetMappingInfo').textContent = matchedItem.isFitting ? "FITTINGS DATABASE TRACK" : `Item No: ${matchedItem.itemNo || 'N/A'} | Ref: ${matchedItem.supplierRef || 'N/A'}`;
+    document.getElementById('targetSubLoc').className = matchedItem.isFitting ? 'count-sub fittings-badge' : 'count-sub';
+    document.getElementById('targetSubLoc').textContent = `Loc: ${matchedItem.location}`;
+    document.getElementById('qtyInputField').value = '';
+    document.getElementById('countOverlay').style.display = 'block';
+  } else {
+    // Dynamic unregistered item fallback mapping injection
+    activeScanMatch = { part: decodedText.toUpperCase(), itemNo: '', supplierRef: '', packSize: 'N/A', boxes: '0', totalQty: '0', location: 'UNMAPPED', isFitting: false };
+    document.getElementById('targetItemName').textContent = decodedText.toUpperCase();
+    document.getElementById('targetMappingInfo').textContent = "⚠️ Unregistered barcode pattern detected.";
+    document.getElementById('targetSubLoc').className = 'count-sub';
+    document.getElementById('targetSubLoc').textContent = "Loc: Unknown";
+    document.getElementById('qtyInputField').value = '';
+    document.getElementById('countOverlay').style.display = 'block';
+  }
 }
+
+function onCounterScanError(err) {}
 
 function adjustQty(amount) {
-  var f = document.getElementById('qtyInputField');
-  var current = parseInt(f.value, 10) || 0;
-  var next = current + amount;
-  f.value = next < 0 ? 0 : next;
+  let f = document.getElementById('qtyInputField');
+  let currentVal = parseInt(f.value, 10) || 0;
+  let computed = currentVal + amount;
+  f.value = computed < 0 ? 0 : computed;
 }
 
 function dismissOverlay() {
   document.getElementById('countOverlay').style.display = 'none';
   activeScanMatch = null;
-  setTimeout(() => { isProcessingScan = false; }, 1000);
 }
 
 function commitCount() {
-  var countVal = parseInt(document.getElementById('qtyInputField').value, 10);
-  if (isNaN(countVal) || countVal < 0) { alert("Provide a valid matching count metric index baseline."); return; }
-  
-  countLogSession.unshift({
+  let enteredQty = parseInt(document.getElementById('qtyInputField').value, 10);
+  if (isNaN(enteredQty) || enteredQty < 0) {
+    alert("Please enter a valid count quantity layout.");
+    return;
+  }
+
+  let timestamp = new Date().toLocaleString();
+  countLogSession.push({
     part: activeScanMatch.part,
     location: activeScanMatch.location,
-    qty: countVal,
-    time: new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})
+    qty: enteredQty,
+    time: timestamp
   });
 
-  localStorage.setItem('ms_saved_logs', JSON.stringify(countLogSession));
-  localStorage.setItem('ms_saved_date', new Date().toDateString());
-  
-  renderLogRegistryDisplay();
-  fireStockUpdateNotification();
+  localStorage.setItem('local_count_logs', JSON.stringify(countLogSession));
+  updateCountSessionLabelCounter();
+  renderLogRegistryUI();
   dismissOverlay();
 }
 
-function renderLogRegistryDisplay() {
-  var list = document.getElementById('logRegistryList');
-  document.getElementById('countSession').innerText = `Counts logged: ${countLogSession.length}`;
-  if (countLogSession.length === 0) { list.innerHTML = ''; return; }
-  
-  list.innerHTML = countLogSession.map(log => `
-    <div class="log-item">
+function updateCountSessionLabelCounter() {
+  let label = document.getElementById('countSession');
+  label.textContent = `Counts logged: ${countLogSession.length}`;
+}
+
+function renderLogRegistryUI() {
+  let logBox = document.getElementById('logRegistryList');
+  if (countLogSession.length === 0) {
+    logBox.innerHTML = '<div style="text-align:center; padding:20px; font-size:12px; opacity:0.5; font-weight:bold;">No logs recorded in this session pass yet.</div>';
+    return;
+  }
+
+  let html = '';
+  // Render array upside down to show newest audit counts right at the top
+  for (let i = countLogSession.length - 1; i >= 0; i--) {
+    let entry = countLogSession[i];
+    html += `<div class="log-item">
       <div>
-        <div style="font-weight:bold; font-family:monospace; font-size:15px;">${log.part}</div>
-        <div style="font-size:11px; color:var(--muted); margin-top:2px;">Scanned at ${log.time} in Loc: ${log.location}</div>
+        <div style="font-weight:800; font-family:monospace; font-size:14px;">${entry.part}</div>
+        <div style="font-size:10px; color:var(--muted); margin-top:2px;">Loc: ${entry.location} | Logged: ${entry.time}</div>
       </div>
-      <div style="font-size:18px; font-weight:800; color:var(--accent-green); font-family:monospace;">${log.qty} pcs</div>
-    </div>
-  `).join('');
-}
-
-function checkUnexportedSessionLogs() {
-  var savedDate = localStorage.getItem('ms_saved_date');
-  var savedLogs = localStorage.getItem('ms_saved_logs');
-  if (savedLogs && JSON.parse(savedLogs).length > 0) {
-    if (savedDate !== new Date().toDateString()) {
-      document.getElementById('interceptMessage').innerText = `Found unexported count data from terminal session date: ${savedDate || 'Unknown'}.`;
-      document.getElementById('startupInterceptModal').style.display = 'flex';
-    } else {
-      countLogSession = JSON.parse(savedLogs);
-      renderLogRegistryDisplay();
-    }
+      <div style="font-size:18px; font-weight:900; color:var(--accent-green); font-family:monospace;">${entry.qty} pcs</div>
+    </div>`;
   }
-}
-
-function resolveIntercept(strategy) {
-  if (strategy === 'purge') {
-    clearCounts();
-  } else {
-    countLogSession = JSON.parse(localStorage.getItem('ms_saved_logs') || '[]');
-    renderLogRegistryDisplay();
-  }
-  document.getElementById('startupInterceptModal').style.display = 'none';
+  logBox.innerHTML = html;
 }
 
 function clearCounts() {
-  if (confirm("Permanently wipe active terminal operational log cache? Data cannot be recovered.")) {
+  if (confirm("Are you sure you want to delete your running local terminal logs layout?")) {
     countLogSession = [];
-    localStorage.removeItem('ms_saved_logs');
-    localStorage.removeItem('ms_saved_date');
-    renderLogRegistryDisplay();
+    localStorage.removeItem('local_count_logs');
+    updateCountSessionLabelCounter();
+    renderLogRegistryUI();
   }
 }
 
 function triggerNewSessionManually() {
-  if (confirm("End current workflow session parameters? Make sure you downloaded your spreadsheet compilation reports beforehand.")) {
+  if (confirm("This will clear out the current dashboard log rows layout. Ensure you have exported your spreadsheets! Continue?")) {
     countLogSession = [];
-    localStorage.removeItem('ms_saved_logs');
-    localStorage.removeItem('ms_saved_date');
-    renderLogRegistryDisplay();
+    localStorage.removeItem('local_count_logs');
+    localStorage.removeItem('session_lock_date');
+    updateCountSessionLabelCounter();
+    renderLogRegistryUI();
   }
 }
 
+// LOG STORAGE PERSISTENCE INTERCEPT ENGINE
+function checkUnexportedSessionLogs() {
+  let storedLogs = localStorage.getItem('local_count_logs');
+  let currentTerminalDate = new Date().toDateString();
+  let sessionLockDate = localStorage.getItem('session_lock_date');
+
+  if (storedLogs) {
+    let parsed = JSON.parse(storedLogs);
+    if (parsed.length > 0) {
+      countLogSession = parsed;
+      updateCountSessionLabelCounter();
+      renderLogRegistryUI();
+
+      if (sessionLockDate && sessionLockDate !== currentTerminalDate) {
+        document.getElementById('interceptMessage').textContent = `You have ${parsed.length} unexported log rows recorded from an earlier date (${sessionLockDate}).`;
+        document.getElementById('startupInterceptModal').style.display = 'flex';
+      }
+    }
+  }
+
+  if (!localStorage.getItem('session_lock_date') && countLogSession.length > 0) {
+    localStorage.setItem('session_lock_date', currentTerminalDate);
+  }
+}
+
+function resolveIntercept(decision) {
+  if (decision === 'purge') {
+    countLogSession = [];
+    localStorage.removeItem('local_count_logs');
+    localStorage.removeItem('session_lock_date');
+    updateCountSessionLabelCounter();
+    renderLogRegistryUI();
+  } else {
+    localStorage.setItem('session_lock_date', new Date().toDateString());
+  }
+  document.getElementById('startupInterceptModal').style.display = 'none';
+}
+
+// DATA CONVERSION TO LOCAL PLATFORM SPREADSHEETS (.CSV)
 function exportCountsToCSV() {
-  if (countLogSession.length === 0) { alert("Nothing found to generate reports from."); return; }
-  let header = "PART NUMBER,LOCATION,COUNT QTY,TIMESTAMP\n";
-  let content = countLogSession.map(l => `"${l.part}","${l.location}",${l.qty},"${l.time}"`).join("\n");
-  let blob = new Blob([header + content], { type: 'text/csv;charset=utf-8;' });
+  if (countLogSession.length === 0) {
+    alert("There are no registered log structures to extract.");
+    return;
+  }
+
+  let csvContent = "data:text/csv;charset=utf-8,";
+  csvContent += "Part Number,Location,Logged Quantity,Timestamp\n";
+
+  countLogSession.forEach(r => {
+    csvContent += `"${r.part}","${r.location}","${r.qty}","${r.time}"\n`;
+  });
+
+  let encodedUri = encodeURI(csvContent);
   let link = document.createElement("a");
-  link.href = URL.createObjectURL(blob);
-  link.setAttribute("download", `Physical_Inventory_Audit_Report_${new Date().toISOString().slice(0,10)}.csv`);
+  
+  let formattedTime = new Date().toLocaleDateString().replace(/\//g, '-');
+  link.setAttribute("href", encodedUri);
+  link.setAttribute("download", `AUDIT_COUNTS_${formattedTime}.csv`);
   document.body.appendChild(link);
+
   link.click();
   document.body.removeChild(link);
 }
 
 function clearAppCache() {
-  if (confirm("Force system to invalidate locally preserved manifest records? Run this if items show stale metadata positions.")) {
+  if (confirm("Flush local cache profiles and fetch master catalogs from GitHub?")) {
     localStorage.clear();
-    location.reload();
-  }
-}
-
-function switchMode(mode) {
-  document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
-  document.querySelectorAll('.app-screen').forEach(scr => scr.classList.remove('active'));
-  
-  if (mode === 'finder') {
-    document.getElementById('finderTab').classList.add('active');
-    document.getElementById('finderScreen').classList.add('active');
-    document.getElementById('footerBar').style.display = 'none';
-    document.getElementById('countSession').style.display = 'none';
-    stopScanner();
-    setTimeout(() => { searchBox.focus(); }, 100);
-  } else if (mode === 'counter') {
-    document.getElementById('counterTab').classList.add('active');
-    document.getElementById('counterScreen').classList.add('active');
-    document.getElementById('footerBar').style.display = 'flex';
-    document.getElementById('countSession').style.display = 'inline-block';
-    stopInlineScanner();
-    startScanner();
-  } else if (mode === 'consolidation') {
-    document.getElementById('consolidationTab').classList.add('active');
-    document.getElementById('consolidationScreen').classList.add('active');
-    document.getElementById('footerBar').style.display = 'none';
-    document.getElementById('countSession').style.display = 'none';
-    stopScanner();
-    stopInlineScanner();
-    setTimeout(() => { conSearchBox.focus(); }, 100);
+    alert("Local profiles completely flushed. Reloading storage pipelines.");
+    window.location.reload();
   }
 }
 </script>
