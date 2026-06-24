@@ -58,6 +58,7 @@
     .action-btn:active { opacity: 0.8; }
     .btn-blue { background-color: var(--accent-blue); }
     .btn-green { background-color: var(--accent-green); }
+    .btn-purple { background-color: var(--accent-purple); }
     .btn-muted { background-color: #4a5568; color: white; }
 
     /* Data Display Tables */
@@ -257,29 +258,24 @@
   </footer>
 
   <script>
-    // System Endpoint Config Configurations
     const GOOGLE_SHEETS_API_URL = "https://script.google.com/macros/s/AKfycbzQ_W1D99_8u572x-rA/exec"; 
     const REPO_STOCKS_CSV_URL = "https://wh-sec.github.io/stocks.csv"; 
 
-    // Runtime Storage Registers
     let stockRegistry = [];
     let fittingsRegistry = [];
     let countLogSession = [];
 
-    // Hardware Interface Stream Global State Parameters
     let html5QrcodeScanner = null;
     let inlineFinderScanner = null;
     let currentScanTargetField = null;
     let activeScanMatch = null;
     let isProcessingScan = false;
 
-    // Element Target Anchors
     const searchBox = document.getElementById('searchBox');
     const conSearchBox = document.getElementById('conSearchBox');
     const metaDisplay = document.getElementById('metaDisplay');
     const metaStatusDot = document.getElementById('metaStatusDot');
 
-    // INITIALIZATION RUNNER
     window.addEventListener('DOMContentLoaded', () => {
       loadSystemStatePreference();
       fetchInventoryDatabases();
@@ -297,25 +293,21 @@
       localStorage.setItem('ms_dark_mode', isDark);
     }
 
-    // SANITIZED RAW DATA PARSER MATRIX
     async function fetchInventoryDatabases() {
       metaDisplay.textContent = "Loading database files...";
       metaStatusDot.className = "status-dot";
 
       try {
-        // Step 1: Pull Local Stocks Reference Database Cache
         let localRes = await fetch(REPO_STOCKS_CSV_URL);
         if (!localRes.ok) throw new Error("Stocks repository data stream dropped.");
         let rawCsvText = await localRes.text();
         stockRegistry = parseSanitizedCSV(rawCsvText);
 
-        // Step 2: Pull Dynamic Row Updates from Spreadsheet Ledger Matrix API
         let sheetRes = await fetch(`${GOOGLE_SHEETS_API_URL}?action=readDatabase`);
         if (!sheetRes.ok) throw new Error("Spreadsheet endpoint interface rejected parsing.");
         let sheetData = await sheetRes.json();
         fittingsRegistry = sheetData.records || [];
 
-        // Save state changes internally
         localStorage.setItem('cached_stocks', JSON.stringify(stockRegistry));
         localStorage.setItem('cached_fittings', JSON.stringify(fittingsRegistry));
 
@@ -336,7 +328,6 @@
       }
     }
 
-    // HELPER: Safeguards strings from being warped into scientific notation (1.002E+12)
     function parseSanitizedCSV(text) {
       let lines = text.split(/\r?\n/);
       if (lines.length < 2) return [];
@@ -345,7 +336,6 @@
       for (let i = 1; i < lines.length; i++) {
         if (!lines[i].trim()) continue;
         
-        // Handle standard comma separation with optional escape quotes bounds
         let row = [];
         let insideQuote = false;
         let entry = "";
@@ -383,13 +373,11 @@
       return val.trim().replace(/^"|"$/g, '');
     }
 
-    // SEARCH SEARCH LOGIC AND RENDERERS
     function renderResults() {
       let query = searchBox.value.trim().toLowerCase();
       let area = document.getElementById('searchResultsArea');
       if (!query) { area.innerHTML = ''; return; }
 
-      // Cross-match filtering matrix across datasets
       let resultsA = stockRegistry.filter(i => 
         i.part.toLowerCase().includes(query) || 
         i.itemNo.toLowerCase().includes(query) || 
@@ -447,7 +435,6 @@
       stopInlineScanner();
     }
 
-    // MODULE A CONSOLIDATION MODULE WITH PACK SIZE MATRIX INJECTION
     function renderConsolidationRows() {
       let query = conSearchBox.value.trim().toLowerCase();
       let conTableWrap = document.getElementById('conTableWrap');
@@ -519,7 +506,6 @@
         .catch(() => alert("Network exception occurred during synchronization layout processing."));
     }
 
-    // SAVE DYNAMIC NEW ENTRY FROM INPUT LOGIC VALUES (MODULE B)
     function calculateModuleBTotal() {
       let p = parseInt(document.getElementById('newPackSize').value, 10) || 0;
       let b = parseInt(document.getElementById('newBoxes').value, 10) || 0;
@@ -547,13 +533,11 @@
         .then(data => {
           if (data.result === 'success') {
             alert("Entry written successfully to master sheet ledger!");
-            
             document.getElementById('newPartNo').value = '';
             document.getElementById('newPalletNo').value = '';
             document.getElementById('newPackSize').value = '';
             document.getElementById('newBoxes').value = '';
             document.getElementById('newTotalQty').value = '0';
-            
             fetchInventoryDatabases();
           } else {
             alert("Transmission logged an error outcome: " + data.message);
@@ -562,7 +546,6 @@
         .catch(() => alert("CRITICAL: Server timeout exception. Verify Deployment configuration link properties."));
     }
 
-    // HARDWARE SCANNER CONTROLS CONTROL HOOKS
     function startScanner() {
       if (html5QrcodeScanner) return;
       isProcessingScan = false;
@@ -664,7 +647,6 @@
       }
     }
 
-    // AUDIT OVERLAY LOGIC CONTROLLERS
     function showOverlay(item) {
       activeScanMatch = item;
       document.getElementById('targetItemName').innerText = item.part;
@@ -775,6 +757,7 @@
       document.body.removeChild(link);
     }
 
+    // PURGES SCRIPT EMBED AND LOCALSTORAGE CACHE ENTIRELY
     function clearAppCache() {
       if (confirm("Force system to invalidate locally preserved manifest records? Run this if items show stale metadata positions.")) {
         localStorage.clear();
@@ -782,7 +765,6 @@
       }
     }
 
-    // MODE ROUTER SWITCH CONTROLLERS
     function switchMode(mode) {
       document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
       document.querySelectorAll('.app-screen').forEach(scr => scr.classList.remove('active'));
