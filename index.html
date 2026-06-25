@@ -499,35 +499,40 @@ function evaluateSyncStatus(stocksReady, fittingsReady) {
     }
 
     function renderConsolidationRows() {
-      var query = conSearchBox.value.trim().toLowerCase();
-      var conTableWrap = document.getElementById('conTableWrap');
-      var conTableBody = document.getElementById('conTableBody');
+  var query = conSearchBox.value.trim().toLowerCase();
+  var conTableWrap = document.getElementById('conTableWrap');
+  var conTableBody = document.getElementById('conTableBody');
 
-      if (!query) { conTableWrap.style.display = 'none'; return; }
+  if (!query) { conTableWrap.style.display = 'none'; return; }
 
-      var matches = fittingsRegistry.filter(function(i) {
-        return i.part.toLowerCase().indexOf(query) !== -1;
-      }).slice(0, 10);
+  // Filter against your live Google Sheets registry matrix cache
+  var matches = fittingsRegistry.filter(function(i) {
+    return i.part.toLowerCase().indexOf(query) !== -1;
+  }).slice(0, 10);
 
-      if (matches.length === 0) { conTableWrap.style.display = 'none'; return; }
+  if (matches.length === 0) { conTableWrap.style.display = 'none'; return; }
 
-      conTableWrap.style.display = 'block';
-      var html = '';
+  conTableWrap.style.display = 'block';
+  var html = '';
 
-      for (var i = 0; i < matches.length; i++) {
-        var item = matches[i];
-        var rowId = 'conRow_' + i;
-        html += '<tr>' +
-          '<td style="font-weight:700; font-family:monospace; font-size:13px;">' + item.part + '</td>' +
-          '<td style="text-align:center;"><input type="number" id="' + rowId + '_pack" value="' + (item.packSize || 1) + '" class="inline-edit-input" oninput="calculateInlineTotal(\'' + rowId + '\')"/></td>' +
-          '<td style="text-align:center;"><input type="number" id="' + rowId + '_boxes" value="' + (item.boxes || 0) + '" class="inline-edit-input" oninput="calculateInlineTotal(\'' + rowId + '\')"/></td>' +
-          '<td id="' + rowId + '_total" style="text-align:center; font-weight:bold; font-family:monospace; color:var(--accent-purple);">' + item.totalQty + '</td>' +
-          '<td style="text-align:center;"><button class="row-save-btn" onclick="syncInlineModification(\'' + item.part + '\', \'' + item.location + '\', \'' + rowId + '\')">💾</button></td>' +
-          '<td style="text-align:center;"><span class="location-badge" style="background:var(--accent-purple); font-size:11px; padding:4px 8px;">' + item.location + '</span></td>' +
-        '</tr>';
-      }
-      conTableBody.innerHTML = html;
-    }
+  for (var i = 0; i < matches.length; i++) {
+    var item = matches[i];
+    var rowId = 'conRow_' + i;
+    
+    // Uses your highlightText helper to make the searched part numbers pop visually
+    var highlightedPart = typeof highlightText === 'function' ? highlightText(item.part, query) : item.part;
+
+    html += '<tr>' +
+      '<td style="font-weight:700; font-family:monospace; font-size:13px;">' + highlightedPart + '</td>' +
+      '<td style="text-align:center;"><input type="number" id="' + rowId + '_pack" value="' + (item.packSize || 1) + '" class="inline-edit-input" oninput="calculateInlineTotal(\'' + rowId + '\')"/></td>' +
+      '<td style="text-align:center;"><input type="number" id="' + rowId + '_boxes" value="' + (item.boxes || 0) + '" class="inline-edit-input" oninput="calculateInlineTotal(\'' + rowId + '\')"/></td>' +
+      '<td id="' + rowId + '_total" style="text-align:center; font-weight:bold; font-family:monospace; color:var(--accent-purple);">' + item.totalQty + '</td>' +
+      '<td style="text-align:center;"><button class="row-save-btn" onclick="syncInlineModification(\'' + item.part + '\', \'' + item.location + '\', \'' + rowId + '\')">💾</button></td>' +
+      '<td style="text-align:center;"><span class="location-badge" style="background:var(--accent-purple); font-size:11px; padding:4px 8px;">' + item.location + '</span></td>' +
+    '</tr>';
+  }
+  conTableBody.innerHTML = html;
+}
 
     function calculateInlineTotal(rowId) {
       var p = parseInt(document.getElementById(rowId + '_pack').value, 10) || 0;
