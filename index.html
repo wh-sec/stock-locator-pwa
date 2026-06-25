@@ -328,16 +328,15 @@
       alert("Theme background image reverted back to system styles.");
     }
 
-    function fetchInventoryDatabases() {
+    // 1. Move these flags outside the function so they don't reset!
+var stocksDatabaseLoaded = false;
+var fittingsDatabaseLoaded = false;
+
+function fetchInventoryDatabases() {
   metaDisplay.textContent = "Connecting to storage components...";
   metaStatusDot.className = "status-dot";
 
-  let stocksLoaded = false;
-  let fittingsLoaded = false;
-
-  // 1. INDEPENDENT FETCH: Main Inventory Lookup from GitHub CSV
-  // TIP: If your link looks like https://github.com/user/repo/blob/main/stocks.csv
-  // Change it to: https://raw.githubusercontent.com/user/repo/main/stocks.csv
+  // 2. INDEPENDENT FETCH: Main Inventory Lookup from GitHub CSV
   fetch(REPO_STOCKS_CSV_URL, { method: 'GET', mode: 'cors' })
     .then(function(res) {
       if (!res.ok) throw new Error("GitHub server returned status: " + res.status);
@@ -346,18 +345,17 @@
     .then(function(rawCsvText) {
       stockRegistry = parseSanitizedCSV(rawCsvText);
       localStorage.setItem('cached_stocks', JSON.stringify(stockRegistry));
-      stocksLoaded = true;
-      evaluateSyncStatus(stocksLoaded, fittingsLoaded);
+      stocksDatabaseLoaded = true;
+      evaluateSyncStatus(stocksDatabaseLoaded, fittingsDatabaseLoaded);
     })
     .catch(function(err) {
       console.error("GitHub Fetch Error:", err);
-      // Fallback to cache immediately for stocks if server is blocked
       stockRegistry = JSON.parse(localStorage.getItem('cached_stocks') || "[]");
-      if (stockRegistry.length > 0) stocksLoaded = true;
-      evaluateSyncStatus(stocksLoaded, fittingsLoaded);
+      if (stockRegistry.length > 0) stocksDatabaseLoaded = true;
+      evaluateSyncStatus(stocksDatabaseLoaded, fittingsDatabaseLoaded);
     });
 
-  // 2. INDEPENDENT FETCH: Fittings Layout Workspace from Google Sheets
+  // 3. INDEPENDENT FETCH: Fittings Layout Workspace from Google Sheets
   fetch(GOOGLE_SHEETS_API_URL + "?action=readDatabase")
     .then(function(sheetRes) {
       if (!sheetRes.ok) throw new Error("Google Script returned status: " + sheetRes.status);
@@ -366,18 +364,17 @@
     .then(function(sheetData) {
       fittingsRegistry = sheetData.records || [];
       localStorage.setItem('cached_fittings', JSON.stringify(fittingsRegistry));
-      fittingsLoaded = true;
-      evaluateSyncStatus(stocksLoaded, fittingsLoaded);
+      fittingsDatabaseLoaded = true;
+      evaluateSyncStatus(stocksDatabaseLoaded, fittingsDatabaseLoaded);
     })
     .catch(function(err) {
       console.error("Google Sheets Fetch Error:", err);
-      // Fallback to cache immediately for fittings
       fittingsRegistry = JSON.parse(localStorage.getItem('cached_fittings') || "[]");
-      if (fittingsRegistry.length > 0) fittingsLoaded = true;
-      evaluateSyncStatus(stocksLoaded, fittingsLoaded);
+      if (fittingsRegistry.length > 0) fittingsDatabaseLoaded = true;
+      evaluateSyncStatus(stocksDatabaseLoaded, fittingsDatabaseLoaded);
     });
 }
-
+    
 // Determines final status text based on what successfully loaded
 function evaluateSyncStatus(stocksReady, fittingsReady) {
   if (stocksReady && fittingsReady) {
