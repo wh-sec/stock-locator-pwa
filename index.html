@@ -332,6 +332,10 @@
 var stocksDatabaseLoaded = false;
 var fittingsDatabaseLoaded = false;
 
+// 1. Move these flags outside the function so they don't reset!
+var stocksDatabaseLoaded = false;
+var fittingsDatabaseLoaded = false;
+
 function fetchInventoryDatabases() {
   metaDisplay.textContent = "Connecting to storage components...";
   metaStatusDot.className = "status-dot";
