@@ -162,13 +162,13 @@
       </div>
 
       <div class="table-responsive" id="conTableWrap" style="display:none;">
-        <table style="min-width:400px;">
+        <table style="width:100%;">
           <thead>
             <tr>
-              <th>Fittings Part Reference</th>
+              <th style="text-align:left;">Part Number</th>
               <th style="text-align:center;">Pack Size</th>
               <th style="text-align:center;">Boxes</th>
-              <th style="text-align:center;">Total</th>
+              <th style="text-align:center;">Total Pcs</th>
               <th style="text-align:center;">Save</th>
               <th style="text-align:center;">Loc</th>
             </tr>
@@ -211,7 +211,7 @@
     <div class="modal-content">
       <h2 style="font-size:18px; font-weight:800; margin-bottom:15px; display:flex; align-items:center; gap:8px;">⚙️ Core Preferences Dashboard</h2>
       
-      <div style="display:flex; align-items:center; justify-content:between; margin-bottom:15px; background:var(--bg-primary); padding:14px; border-radius:10px; border:1px solid var(--border-color);">
+      <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:15px; background:var(--bg-primary); padding:14px; border-radius:10px; border:1px solid var(--border-color);">
         <label style="font-size:14px; font-weight:600; display:flex; align-items:center; gap:10px; cursor:pointer; width:100%;">
           <input type="checkbox" id="darkModeToggle" style="transform:scale(1.2);" onchange="toggleSystemThemeMode(this.checked)"> Dark Interface Mode
         </label>
@@ -281,6 +281,10 @@
     var metaDisplay = document.getElementById('metaDisplay');
     var metaStatusDot = document.getElementById('metaStatusDot');
 
+    // Scoped clean global synchronizations
+    var stocksDatabaseLoaded = false;
+    var fittingsDatabaseLoaded = false;
+
     window.addEventListener('DOMContentLoaded', function() {
       loadSystemStatePreference();
       fetchInventoryDatabases();
@@ -328,71 +332,61 @@
       alert("Theme background image reverted back to system styles.");
     }
 
-    // 1. Move these flags outside the function so they don't reset!
-var stocksDatabaseLoaded = false;
-var fittingsDatabaseLoaded = false;
+    function fetchInventoryDatabases() {
+      metaDisplay.textContent = "Connecting to storage components...";
+      metaStatusDot.className = "status-dot";
 
-// 1. Move these flags outside the function so they don't reset!
-var stocksDatabaseLoaded = false;
-var fittingsDatabaseLoaded = false;
+      // Fetch GitHub Stocks Matrix Registry
+      fetch(REPO_STOCKS_CSV_URL, { method: 'GET', mode: 'cors' })
+        .then(function(res) {
+          if (!res.ok) throw new Error("GitHub server returned status: " + res.status);
+          return res.text();
+        })
+        .then(function(rawCsvText) {
+          stockRegistry = parseSanitizedCSV(rawCsvText);
+          localStorage.setItem('cached_stocks', JSON.stringify(stockRegistry));
+          stocksDatabaseLoaded = true;
+          evaluateSyncStatus(stocksDatabaseLoaded, fittingsDatabaseLoaded);
+        })
+        .catch(function(err) {
+          console.error("GitHub Fetch Error:", err);
+          stockRegistry = JSON.parse(localStorage.getItem('cached_stocks') || "[]");
+          if (stockRegistry.length > 0) stocksDatabaseLoaded = true;
+          evaluateSyncStatus(stocksDatabaseLoaded, fittingsDatabaseLoaded);
+        });
 
-function fetchInventoryDatabases() {
-  metaDisplay.textContent = "Connecting to storage components...";
-  metaStatusDot.className = "status-dot";
-
-  // 2. INDEPENDENT FETCH: Main Inventory Lookup from GitHub CSV
-  fetch(REPO_STOCKS_CSV_URL, { method: 'GET', mode: 'cors' })
-    .then(function(res) {
-      if (!res.ok) throw new Error("GitHub server returned status: " + res.status);
-      return res.text();
-    })
-    .then(function(rawCsvText) {
-      stockRegistry = parseSanitizedCSV(rawCsvText);
-      localStorage.setItem('cached_stocks', JSON.stringify(stockRegistry));
-      stocksDatabaseLoaded = true;
-      evaluateSyncStatus(stocksDatabaseLoaded, fittingsDatabaseLoaded);
-    })
-    .catch(function(err) {
-      console.error("GitHub Fetch Error:", err);
-      stockRegistry = JSON.parse(localStorage.getItem('cached_stocks') || "[]");
-      if (stockRegistry.length > 0) stocksDatabaseLoaded = true;
-      evaluateSyncStatus(stocksDatabaseLoaded, fittingsDatabaseLoaded);
-    });
-
-  // 3. INDEPENDENT FETCH: Fittings Layout Workspace from Google Sheets
-  fetch(GOOGLE_SHEETS_API_URL + "?action=readDatabase")
-    .then(function(sheetRes) {
-      if (!sheetRes.ok) throw new Error("Google Script returned status: " + sheetRes.status);
-      return sheetRes.json();
-    })
-    .then(function(sheetData) {
-      fittingsRegistry = sheetData.records || [];
-      localStorage.setItem('cached_fittings', JSON.stringify(fittingsRegistry));
-      fittingsDatabaseLoaded = true;
-      evaluateSyncStatus(stocksDatabaseLoaded, fittingsDatabaseLoaded);
-    })
-    .catch(function(err) {
-      console.error("Google Sheets Fetch Error:", err);
-      fittingsRegistry = JSON.parse(localStorage.getItem('cached_fittings') || "[]");
-      if (fittingsRegistry.length > 0) fittingsDatabaseLoaded = true;
-      evaluateSyncStatus(stocksDatabaseLoaded, fittingsDatabaseLoaded);
-    });
-}
-    
-// Determines final status text based on what successfully loaded
-function evaluateSyncStatus(stocksReady, fittingsReady) {
-  if (stocksReady && fittingsReady) {
-    metaDisplay.textContent = "Database Connected (GitHub + Sheets Live)";
-    metaStatusDot.className = "status-dot ready";
-  } else if (stocksReady || fittingsReady) {
-    metaDisplay.textContent = "Partial Connection: " + 
-      (stocksReady ? "Main Catalog Live" : "Fittings Only Live") + " (Rest Cached)";
-    metaStatusDot.className = "status-dot ready";
-  } else {
-    metaDisplay.textContent = "Offline Mode: Using cached terminal data footprints.";
-    metaStatusDot.className = "status-dot";
-  }
-}
+      // Fetch Google Sheet Active Fittings Workspace
+      fetch(GOOGLE_SHEETS_API_URL + "?action=readDatabase")
+        .then(function(sheetRes) {
+          if (!sheetRes.ok) throw new Error("Google Script returned status: " + sheetRes.status);
+          return sheetRes.json();
+        })
+        .then(function(sheetData) {
+          fittingsRegistry = sheetData.records || [];
+          localStorage.setItem('cached_fittings', JSON.stringify(fittingsRegistry));
+          fittingsDatabaseLoaded = true;
+          evaluateSyncStatus(stocksDatabaseLoaded, fittingsDatabaseLoaded);
+        })
+        .catch(function(err) {
+          console.error("Google Sheets Fetch Error:", err);
+          fittingsRegistry = JSON.parse(localStorage.getItem('cached_fittings') || "[]");
+          if (fittingsRegistry.length > 0) fittingsDatabaseLoaded = true;
+          evaluateSyncStatus(stocksDatabaseLoaded, fittingsDatabaseLoaded);
+        });
+    }
+      
+    function evaluateSyncStatus(stocksReady, fittingsReady) {
+      if (stocksReady && fittingsReady) {
+        metaDisplay.textContent = "Database Connected (GitHub + Sheets Live)";
+        metaStatusDot.className = "status-dot ready";
+      } else if (stocksReady || fittingsReady) {
+        metaDisplay.textContent = "Partial Connection: " + (stocksReady ? "Main Catalog Live" : "Fittings Only Live") + " (Rest Cached)";
+        metaStatusDot.className = "status-dot ready";
+      } else {
+        metaDisplay.textContent = "Offline Mode: Using cached terminal data footprints.";
+        metaStatusDot.className = "status-dot";
+      }
+    }
 
     function parseSanitizedCSV(text) {
       var lines = text.split(/\r?\n/);
@@ -444,14 +438,12 @@ function evaluateSyncStatus(stocksReady, fittingsReady) {
       var area = document.getElementById('searchResultsArea');
       if (!query) { area.innerHTML = ''; return; }
 
-      // Look up main stocks data from stocks.csv
       var resultsA = stockRegistry.filter(function(i) {
         return i.part.toLowerCase().indexOf(query) !== -1 || 
                i.itemNo.toLowerCase().indexOf(query) !== -1 || 
                i.supplierRef.toLowerCase().indexOf(query) !== -1;
       });
 
-      // Cross-reference lookup from Fittings Google Sheets dataset
       var resultsB = fittingsRegistry.filter(function(i) {
         return i.part.toLowerCase().indexOf(query) !== -1 || 
                i.location.toLowerCase().indexOf(query) !== -1;
@@ -500,57 +492,69 @@ function evaluateSyncStatus(stocksReady, fittingsReady) {
     }
 
     function renderConsolidationRows() {
-  var query = conSearchBox.value.trim().toLowerCase();
-  var conTableWrap = document.getElementById('conTableWrap');
-  var conTableBody = document.getElementById('conTableBody');
+      var query = conSearchBox.value.trim().toLowerCase();
+      var conTableWrap = document.getElementById('conTableWrap');
+      var conTableBody = document.getElementById('conTableBody');
 
-  if (!query) { conTableWrap.style.display = 'none'; return; }
+      if (!query) { conTableWrap.style.display = 'none'; return; }
 
-  // Filter against your live Google Sheets registry matrix cache
-  var matches = fittingsRegistry.filter(function(i) {
-    return i.part.toLowerCase().indexOf(query) !== -1;
-  }).slice(0, 10);
+      var matches = fittingsRegistry.filter(function(i) {
+        return i.part.toLowerCase().indexOf(query) !== -1;
+      }).slice(0, 10);
 
-  if (matches.length === 0) { conTableWrap.style.display = 'none'; return; }
+      if (matches.length === 0) { conTableWrap.style.display = 'none'; return; }
 
-  conTableWrap.style.display = 'block';
-  
-  // 1. CRITICAL WRAPPER FIXED: Open clean table grid matrix container strings
-  var html = '<table style="width:100%; border-collapse:collapse; color:#fff;">' +
-             '<thead>' +
-               '<tr style="border-bottom:1px solid #444; font-size:11px; text-transform:uppercase; color:#aaa;">' +
-                 '<th style="text-align:left; padding:8px;">Part Number</th>' +
-                 '<th style="text-align:center; padding:8px;">Pack Matrix</th>' +
-                 '<th style="text-align:center; padding:8px;">Box Count</th>' +
-                 '<th style="text-align:center; padding:8px;">Total Pcs</th>' +
-                 '<th style="text-align:center; padding:8px;">Action</th>' +
-                 '<th style="text-align:center; padding:8px;">Pallet Loc</th>' +
-               '</tr>' +
-             '</thead>' +
-             '<tbody>';
+      conTableWrap.style.display = 'block';
+      
+      var html = '';
+      for (var i = 0; i < matches.length; i++) {
+        var item = matches[i];
+        var rowId = 'conRow_' + i;
+        var highlightedPart = highlightText(item.part, query);
 
-  for (var i = 0; i < matches.length; i++) {
-    var item = matches[i];
-    var rowId = 'conRow_' + i;
-    
-    // Highlights the matching text so it glows purple/yellow just like the main lookup page
-    var highlightedPart = typeof highlightText === 'function' ? highlightText(item.part, query) : item.part;
+        // Standardized inline input theme configuration matching visual preferences
+        html += '<tr style="border-bottom: 1px solid var(--border-color);">' +
+          '<td style="font-weight:700; font-family:monospace; font-size:13px; padding:12px 6px;">' + highlightedPart + '</td>' +
+          '<td style="text-align:center; padding:6px;"><input type="number" id="' + rowId + '_pack" value="' + (item.packSize || 1) + '" class="inline-edit-input" style="width:55px; text-align:center; background:var(--bg-primary); color:var(--text-main); border:1px solid var(--border-color); border-radius:6px; padding:4px;" oninput="calculateInlineTotal(\'' + rowId + '\')"/></td>' +
+          '<td style="text-align:center; padding:6px;"><input type="number" id="' + rowId + '_boxes" value="' + (item.boxes || 0) + '" class="inline-edit-input" style="width:55px; text-align:center; background:var(--bg-primary); color:var(--text-main); border:1px solid var(--border-color); border-radius:6px; padding:4px;" oninput="calculateInlineTotal(\'' + rowId + '\')"/></td>' +
+          '<td id="' + rowId + '_total" style="text-align:center; font-weight:bold; font-family:monospace; color:var(--accent-purple); padding:6px;">' + item.totalQty + '</td>' +
+          '<td style="text-align:center; padding:6px;"><button class="row-save-btn" style="background:var(--accent-green); border:none; padding:6px 10px; border-radius:6px; cursor:pointer; color:white; font-size:12px;" onclick="syncInlineModification(\'' + item.part + '\', \'' + item.location + '\', \'' + rowId + '\')">💾</button></td>' +
+          '<td style="text-align:center; padding:6px;"><span class="location-badge" style="background:var(--accent-purple); font-size:11px; padding:4px 8px; border-radius:4px; font-weight:bold; color:white;">' + item.location + '</span></td>' +
+        '</tr>';
+      }
+      
+      conTableBody.innerHTML = html;
+    }
 
-    html += '<tr style="border-bottom: 1px solid #2a2a2a;">' +
-      '<td style="font-weight:700; font-family:monospace; font-size:13px; padding:10px 8px;">' + highlightedPart + '</td>' +
-      '<td style="text-align:center; padding:10px 8px;"><input type="number" id="' + rowId + '_pack" value="' + (item.packSize || 1) + '" class="inline-edit-input" style="width:55px; text-align:center; background:#1e1e1e; color:#fff; border:1px solid #444; border-radius:4px; padding:4px;" oninput="calculateInlineTotal(\'' + rowId + '\')"/></td>' +
-      '<td style="text-align:center; padding:10px 8px;"><input type="number" id="' + rowId + '_boxes" value="' + (item.boxes || 0) + '" class="inline-edit-input" style="width:55px; text-align:center; background:#1e1e1e; color:#fff; border:1px solid #444; border-radius:4px; padding:4px;" oninput="calculateInlineTotal(\'' + rowId + '\')"/></td>' +
-      '<td id="' + rowId + '_total" style="text-align:center; font-weight:bold; font-family:monospace; color:var(--accent-purple); padding:10px 8px;">' + item.totalQty + '</td>' +
-      '<td style="text-align:center; padding:10px 8px;"><button class="row-save-btn" style="background:#28a745; border:none; padding:5px 8px; border-radius:4px; cursor:pointer;" onclick="syncInlineModification(\'' + item.part + '\', \'' + item.location + '\', \'' + rowId + '\')">💾</button></td>' +
-      '<td style="text-align:center; padding:10px 8px;"><span class="location-badge" style="background:var(--accent-purple); font-size:11px; padding:4px 8px; border-radius:4px; font-weight:bold; color:white;">' + item.location + '</span></td>' +
-    '</tr>';
-  }
-  
-  // Close the tabular DOM tags cleanly 
-  html += '</tbody></table>';
-  
-  conTableBody.innerHTML = html;
-}
+    function calculateInlineTotal(rowId) {
+      var p = parseInt(document.getElementById(rowId + '_pack').value, 10) || 0;
+      var b = parseInt(document.getElementById(rowId + '_boxes').value, 10) || 0;
+      document.getElementById(rowId + '_total').innerText = p * b;
+    }
+
+    function syncInlineModification(partNo, loc, rowId) {
+      var p = parseInt(document.getElementById(rowId + '_pack').value, 10) || 0;
+      var b = parseInt(document.getElementById(rowId + '_boxes').value, 10) || 0;
+      var t = p * b;
+
+      metaDisplay.textContent = "Updating ledger entry coordinates...";
+      var targetUrl = GOOGLE_SHEETS_API_URL + "?action=updateRow&partNumber=" + encodeURIComponent(partNo) + "&location=" + encodeURIComponent(loc) + "&packSize=" + p + "&boxes=" + b + "&totalQty=" + t;
+
+      fetch(targetUrl)
+        .then(function(res) { return res.json(); })
+        .then(function(data) {
+          if (data.result === 'success') {
+            alert("Record updated successfully!");
+            fetchInventoryDatabases();
+          } else {
+            alert("Error updating record: " + data.message);
+          }
+        })
+        .catch(function(err) {
+          alert("Network sync timed out.");
+          console.error(err);
+        });
+    }
 
     function calculateModuleBTotal() {
       var p = parseInt(document.getElementById('newPackSize').value, 10) || 0;
@@ -589,7 +593,6 @@ function evaluateSyncStatus(stocksReady, fittingsReady) {
         .catch(function() { alert("Server timeout configuration link exception."); });
     }
 
-    /* ENFORCED REAR LENS HARDWARE INITS */
     function startScanner() {
       if (html5QrcodeScanner) return;
       isProcessingScan = false;
