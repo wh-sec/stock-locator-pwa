@@ -329,45 +329,69 @@
     }
 
     function fetchInventoryDatabases() {
-      metaDisplay.textContent = "Loading warehouse indexes...";
-      metaStatusDot.className = "status-dot";
+  metaDisplay.textContent = "Connecting to storage components...";
+  metaStatusDot.className = "status-dot";
 
-      // Pull primary Excel lookup file from GitHub
-      fetch(REPO_STOCKS_CSV_URL)
-        .then(function(res) {
-          if (!res.ok) throw new Error("Stocks repository dropped.");
-          return res.text();
-        })
-        .then(function(rawCsvText) {
-          stockRegistry = parseSanitizedCSV(rawCsvText);
-          // Pull Fittings layout workspace from Google Sheets
-          return fetch(GOOGLE_SHEETS_API_URL + "?action=readDatabase");
-        })
-        .then(function(sheetRes) {
-          if (!sheetRes.ok) throw new Error("Sheets connection dropped.");
-          return sheetRes.json();
-        })
-        .then(function(sheetData) {
-          fittingsRegistry = sheetData.records || [];
-          localStorage.setItem('cached_stocks', JSON.stringify(stockRegistry));
-          localStorage.setItem('cached_fittings', JSON.stringify(fittingsRegistry));
-          metaDisplay.textContent = "Local Matrix Operational";
-          metaStatusDot.className = "status-dot ready";
-        })
-        .catch(function(err) {
-          console.warn("Offline environment detected. Invoking cache arrays...", err);
-          stockRegistry = JSON.parse(localStorage.getItem('cached_stocks') || "[]");
-          fittingsRegistry = JSON.parse(localStorage.getItem('cached_fittings') || "[]");
-          
-          if (stockRegistry.length > 0) {
-            metaDisplay.textContent = "Offline Mode Active (Cached)";
-            metaStatusDot.className = "status-dot ready";
-          } else {
-            metaDisplay.textContent = "Storage empty. Run connection scan on network.";
-            metaStatusDot.className = "status-dot";
-          }
-        });
-    }
+  let stocksLoaded = false;
+  let fittingsLoaded = false;
+
+  // 1. INDEPENDENT FETCH: Main Inventory Lookup from GitHub CSV
+  // TIP: If your link looks like https://github.com/user/repo/blob/main/stocks.csv
+  // Change it to: https://raw.githubusercontent.com/user/repo/main/stocks.csv
+  fetch(REPO_STOCKS_CSV_URL, { method: 'GET', mode: 'cors' })
+    .then(function(res) {
+      if (!res.ok) throw new Error("GitHub server returned status: " + res.status);
+      return res.text();
+    })
+    .then(function(rawCsvText) {
+      stockRegistry = parseSanitizedCSV(rawCsvText);
+      localStorage.setItem('cached_stocks', JSON.stringify(stockRegistry));
+      stocksLoaded = true;
+      evaluateSyncStatus(stocksLoaded, fittingsLoaded);
+    })
+    .catch(function(err) {
+      console.error("GitHub Fetch Error:", err);
+      // Fallback to cache immediately for stocks if server is blocked
+      stockRegistry = JSON.parse(localStorage.getItem('cached_stocks') || "[]");
+      if (stockRegistry.length > 0) stocksLoaded = true;
+      evaluateSyncStatus(stocksLoaded, fittingsLoaded);
+    });
+
+  // 2. INDEPENDENT FETCH: Fittings Layout Workspace from Google Sheets
+  fetch(GOOGLE_SHEETS_API_URL + "?action=readDatabase")
+    .then(function(sheetRes) {
+      if (!sheetRes.ok) throw new Error("Google Script returned status: " + sheetRes.status);
+      return sheetRes.json();
+    })
+    .then(function(sheetData) {
+      fittingsRegistry = sheetData.records || [];
+      localStorage.setItem('cached_fittings', JSON.stringify(fittingsRegistry));
+      fittingsLoaded = true;
+      evaluateSyncStatus(stocksLoaded, fittingsLoaded);
+    })
+    .catch(function(err) {
+      console.error("Google Sheets Fetch Error:", err);
+      // Fallback to cache immediately for fittings
+      fittingsRegistry = JSON.parse(localStorage.getItem('cached_fittings') || "[]");
+      if (fittingsRegistry.length > 0) fittingsLoaded = true;
+      evaluateSyncStatus(stocksLoaded, fittingsLoaded);
+    });
+}
+
+// Determines final status text based on what successfully loaded
+function evaluateSyncStatus(stocksReady, fittingsReady) {
+  if (stocksReady && fittingsReady) {
+    metaDisplay.textContent = "Database Connected (GitHub + Sheets Live)";
+    metaStatusDot.className = "status-dot ready";
+  } else if (stocksReady || fittingsReady) {
+    metaDisplay.textContent = "Partial Connection: " + 
+      (stocksReady ? "Main Catalog Live" : "Fittings Only Live") + " (Rest Cached)";
+    metaStatusDot.className = "status-dot ready";
+  } else {
+    metaDisplay.textContent = "Offline Mode: Using cached terminal data footprints.";
+    metaStatusDot.className = "status-dot";
+  }
+}
 
     function parseSanitizedCSV(text) {
       var lines = text.split(/\r?\n/);
