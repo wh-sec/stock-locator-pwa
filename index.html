@@ -34,7 +34,6 @@
     * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
     body { background-color: var(--bg-primary); color: var(--text-main); transition: background 0.3s, color 0.3s; padding: 15px; padding-bottom: 80px; }
     
-    /* APP HEADER WITH GEAR ICON */
     .app-header { position: relative; text-align: center; margin-bottom: 20px; padding: 10px 40px; display: flex; align-items: center; justify-content: center; gap: 10px; }
     .app-header h1 { font-size: 24px; font-weight: 800; letter-spacing: -0.5px; }
     .settings-gear-btn { position: absolute; right: 5px; top: 50%; transform: translateY(-50%); border: none; background: transparent; font-size: 24px; cursor: pointer; padding: 8px; border-radius: 50%; display: flex; align-items: center; justify-content: center; transition: background 0.2s; color: var(--text-main); }
@@ -63,7 +62,6 @@
     .btn-purple { background-color: var(--accent-purple); }
     .btn-muted { background-color: #4a5568; color: white; }
 
-    /* Data Display Tables */
     .table-responsive { width: 100%; overflow-x: auto; margin-top: 15px; border-radius: 8px; }
     table { width: 100%; border-collapse: collapse; text-align: left; font-size: 14px; }
     th { background: var(--badge-bg); padding: 12px; font-weight: 700; font-size: 11px; text-transform: uppercase; color: var(--text-muted); border-bottom: 2px solid var(--border-color); }
@@ -72,11 +70,9 @@
     .location-badge { display: inline-block; padding: 6px 12px; font-weight: 800; font-family: monospace; font-size: 13px; border-radius: 6px; color: white; background: var(--accent-green); }
     mark.match { background: #fef08a; color: #000000; padding: 2px 0; font-weight: bold; border-radius: 2px; }
 
-    /* Camera/Scanner Layouts */
     #reader, #finderReader { width: 100%; background: #000; border-radius: 12px; overflow: hidden; margin-bottom: 15px; }
     #inlineScannerBox { display: none; margin-top: 15px; padding: 10px; background: var(--bg-primary); border-radius: 12px; }
 
-    /* Overlays and Modals */
     .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); backdrop-filter: blur(4px); z-index: 1000; justify-content: center; align-items: center; padding: 20px; }
     .modal-content { background: var(--bg-card); width: 100%; max-width: 450px; border-radius: 20px; padding: 25px; box-shadow: 0 10px 25px rgba(0,0,0,0.2); position: relative; }
     
@@ -86,7 +82,6 @@
 
     .log-item { display: flex; justify-content: space-between; align-items: center; padding: 12px; border-bottom: 1px solid var(--border-color); }
     
-    /* Footer Status Bar */
     .footer-status-bar { position: fixed; bottom: 0; left: 0; width: 100%; background: var(--bg-card); border-top: 1px solid var(--border-color); padding: 12px 20px; display: flex; justify-content: space-between; align-items: center; z-index: 900; }
     .status-indicator { display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 600; }
     .status-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--danger-red); }
@@ -168,6 +163,7 @@
               <th style="text-align:left;">Part Number</th>
               <th style="text-align:center;">Pack Size</th>
               <th style="text-align:center;">Boxes</th>
+              <th style="text-align:center;">Loose Pcs</th>
               <th style="text-align:center;">Total Pcs</th>
               <th style="text-align:center;">Save</th>
               <th style="text-align:center;">Loc</th>
@@ -263,7 +259,7 @@
   </footer>
 
   <script>
-    var GOOGLE_SHEETS_API_URL = "https://script.google.com/macros/s/AKfycbw0PNtceJ4OKADtw3zOC4fuJQ9MOSx6jnQQtpSute8jeOiZp11WaYoA32qjkEQ2Fpzgcw/exec"; 
+    var GOOGLE_SHEETS_API_URL = "https://script.google.com/macros/s/AKfycbwXpvxq_wALLnieYuHlYK9URE-0661mPDfgs9e3xloeCSNl_dp6P_l5Ak0bqwRxAd6Qqw/exec"; 
     var REPO_STOCKS_CSV_URL = "https://raw.githubusercontent.com/wh-sec/stock-locator-pwa/main/stocks.csv"; 
 
     var stockRegistry = [];
@@ -281,7 +277,6 @@
     var metaDisplay = document.getElementById('metaDisplay');
     var metaStatusDot = document.getElementById('metaStatusDot');
 
-    // Scoped clean global synchronizations
     var stocksDatabaseLoaded = false;
     var fittingsDatabaseLoaded = false;
 
@@ -336,7 +331,6 @@
       metaDisplay.textContent = "Connecting to storage components...";
       metaStatusDot.className = "status-dot";
 
-      // Fetch GitHub Stocks Matrix Registry
       fetch(REPO_STOCKS_CSV_URL, { method: 'GET', mode: 'cors' })
         .then(function(res) {
           if (!res.ok) throw new Error("GitHub server returned status: " + res.status);
@@ -355,7 +349,6 @@
           evaluateSyncStatus(stocksDatabaseLoaded, fittingsDatabaseLoaded);
         });
 
-      // Fetch Google Sheet Active Fittings Workspace
       fetch(GOOGLE_SHEETS_API_URL + "?action=readDatabase")
         .then(function(sheetRes) {
           if (!sheetRes.ok) throw new Error("Google Script returned status: " + sheetRes.status);
@@ -512,12 +505,20 @@
         var rowId = 'conRow_' + i;
         var highlightedPart = highlightText(item.part, query);
 
-        // Standardized inline input theme configuration matching visual preferences
+        var packSize = item.packSize || 1;
+        var totalBoxes = item.boxes || 0;
+        
+        // Calculate original loose remaining pieces based on your current Google Sheet total 
+        var currentSheetTotal = item.totalQty || 0;
+        var fullBoxesValue = totalBoxes > 0 ? (totalBoxes - 1) * packSize : 0;
+        var initialLoosePieces = currentSheetTotal > 0 ? (currentSheetTotal - fullBoxesValue) : packSize;
+
         html += '<tr style="border-bottom: 1px solid var(--border-color);">' +
           '<td style="font-weight:700; font-family:monospace; font-size:13px; padding:12px 6px;">' + highlightedPart + '</td>' +
-          '<td style="text-align:center; padding:6px;"><input type="number" id="' + rowId + '_pack" value="' + (item.packSize || 1) + '" class="inline-edit-input" style="width:55px; text-align:center; background:var(--bg-primary); color:var(--text-main); border:1px solid var(--border-color); border-radius:6px; padding:4px;" oninput="calculateInlineTotal(\'' + rowId + '\')"/></td>' +
-          '<td style="text-align:center; padding:6px;"><input type="number" id="' + rowId + '_boxes" value="' + (item.boxes || 0) + '" class="inline-edit-input" style="width:55px; text-align:center; background:var(--bg-primary); color:var(--text-main); border:1px solid var(--border-color); border-radius:6px; padding:4px;" oninput="calculateInlineTotal(\'' + rowId + '\')"/></td>' +
-          '<td id="' + rowId + '_total" style="text-align:center; font-weight:bold; font-family:monospace; color:var(--accent-purple); padding:6px;">' + item.totalQty + '</td>' +
+          '<td style="text-align:center; padding:6px;"><span id="' + rowId + '_pack" style="font-family:monospace; font-weight:bold;">' + packSize + '</span></td>' +
+          '<td style="text-align:center; padding:6px;"><input type="number" id="' + rowId + '_boxes" value="' + totalBoxes + '" class="inline-edit-input" style="width:55px; text-align:center; background:var(--bg-primary); color:var(--text-main); border:1px solid var(--border-color); border-radius:6px; padding:4px;" oninput="calculateInlineTotal(\'' + rowId + '\')"/></td>' +
+          '<td style="text-align:center; padding:6px;"><input type="number" id="' + rowId + '_loose" value="' + initialLoosePieces + '" class="inline-edit-input" style="width:65px; text-align:center; background:var(--bg-primary); color:var(--text-main); border:1px solid var(--border-color); border-radius:6px; padding:4px;" oninput="calculateInlineTotal(\'' + rowId + '\')"/></td>' +
+          '<td id="' + rowId + '_total" style="text-align:center; font-weight:bold; font-family:monospace; color:var(--accent-purple); padding:6px;">' + currentSheetTotal + '</td>' +
           '<td style="text-align:center; padding:6px;"><button class="row-save-btn" style="background:var(--accent-green); border:none; padding:6px 10px; border-radius:6px; cursor:pointer; color:white; font-size:12px;" onclick="syncInlineModification(\'' + item.part + '\', \'' + item.location + '\', \'' + rowId + '\')">💾</button></td>' +
           '<td style="text-align:center; padding:6px;"><span class="location-badge" style="background:var(--accent-purple); font-size:11px; padding:4px 8px; border-radius:4px; font-weight:bold; color:white;">' + item.location + '</span></td>' +
         '</tr>';
@@ -527,15 +528,44 @@
     }
 
     function calculateInlineTotal(rowId) {
-      var p = parseInt(document.getElementById(rowId + '_pack').value, 10) || 0;
-      var b = parseInt(document.getElementById(rowId + '_boxes').value, 10) || 0;
-      document.getElementById(rowId + '_total').innerText = p * b;
+      var packSize = parseInt(document.getElementById(rowId + '_pack').innerText, 10) || 1;
+      var boxesInput = document.getElementById(rowId + '_boxes');
+      var looseInput = document.getElementById(rowId + '_loose');
+
+      var b = parseInt(boxesInput.value, 10) || 0;
+      var loose = parseInt(looseInput.value, 10) || 0;
+
+      // CORE LOGIC CHECK: If loose items hit 0, automatically drop 1 box and reset loose to full pack size
+      if (loose <= 0) {
+        if (b > 1) {
+          b = b - 1;
+          loose = packSize;
+          boxesInput.value = b;
+          looseInput.value = loose;
+          alert("Box completely empty! Deducting 1 full box from pallet and opening next pack.");
+        } else if (b === 1) {
+          b = 0;
+          loose = 0;
+          boxesInput.value = 0;
+          looseInput.value = 0;
+          alert("Final remaining stock cleared to zero.");
+        }
+      }
+
+      // If loose input accidentally exceeds a full box capacity, normalize it
+      if (loose > packSize && b > 0) {
+        loose = packSize;
+        looseInput.value = packSize;
+      }
+
+      var total = b > 0 ? ((b - 1) * packSize) + loose : loose;
+      document.getElementById(rowId + '_total').innerText = total;
     }
 
     function syncInlineModification(partNo, loc, rowId) {
-      var p = parseInt(document.getElementById(rowId + '_pack').value, 10) || 0;
+      var p = parseInt(document.getElementById(rowId + '_pack').innerText, 10) || 1;
       var b = parseInt(document.getElementById(rowId + '_boxes').value, 10) || 0;
-      var t = p * b;
+      var t = parseInt(document.getElementById(rowId + '_total').innerText, 10) || 0;
 
       metaDisplay.textContent = "Updating ledger entry coordinates...";
       var targetUrl = GOOGLE_SHEETS_API_URL + "?action=updateRow&partNumber=" + encodeURIComponent(partNo) + "&location=" + encodeURIComponent(loc) + "&packSize=" + p + "&boxes=" + b + "&totalQty=" + t;
@@ -543,7 +573,7 @@
       fetch(targetUrl)
         .then(function(res) { return res.json(); })
         .then(function(data) {
-          if (data.result === 'success') {
+          if (data.result === 'success' || data.result === 'deleted') {
             alert("Record updated successfully!");
             fetchInventoryDatabases();
           } else {
