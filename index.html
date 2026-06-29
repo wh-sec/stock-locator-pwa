@@ -484,48 +484,53 @@
       stopInlineScanner();
     }
 
-    function renderConsolidationRows() {
-      var query = conSearchBox.value.trim().toLowerCase();
-      var conTableWrap = document.getElementById('conTableWrap');
-      var conTableBody = document.getElementById('conTableBody');
+function renderConsolidationRows() {
+  var query = conSearchBox.value.trim().toLowerCase();
+  var conTableWrap = document.getElementById('conTableWrap');
+  var conTableBody = document.getElementById('conTableBody');
 
-      if (!query) { conTableWrap.style.display = 'none'; return; }
+  if (!query) { conTableWrap.style.display = 'none'; return; }
 
-      var matches = fittingsRegistry.filter(function(i) {
-        return i.part.toLowerCase().indexOf(query) !== -1;
-      }).slice(0, 10);
+  // Filters matching items from your live Google Sheets registry
+  var matches = fittingsRegistry.filter(function(i) {
+    return i.part.toLowerCase().indexOf(query) !== -1;
+  }).slice(0, 10);
 
-      if (matches.length === 0) { conTableWrap.style.display = 'none'; return; }
+  if (matches.length === 0) { 
+    conTableBody.innerHTML = '<tr><td colspan="7" style="text-align:center; color:var(--text-muted); padding:20px;">No matching rows found</td></tr>';
+    conTableWrap.style.display = 'block';
+    return; 
+  }
 
-      conTableWrap.style.display = 'block';
-      
-      var html = '';
-      for (var i = 0; i < matches.length; i++) {
-        var item = matches[i];
-        var rowId = 'conRow_' + i;
-        var highlightedPart = highlightText(item.part, query);
+  conTableWrap.style.display = 'block';
+  
+  var html = '';
+  for (var i = 0; i < matches.length; i++) {
+    var item = matches[i];
+    var rowId = 'conRow_' + i;
+    var highlightedPart = highlightText(item.part, query);
 
-        var packSize = item.packSize || 1;
-        var totalBoxes = item.boxes || 0;
-        
-        // Calculate original loose remaining pieces based on your current Google Sheet total 
-        var currentSheetTotal = item.totalQty || 0;
-        var fullBoxesValue = totalBoxes > 0 ? (totalBoxes - 1) * packSize : 0;
-        var initialLoosePieces = currentSheetTotal > 0 ? (currentSheetTotal - fullBoxesValue) : packSize;
+    var packSize = Number(item.packSize) || 1;
+    var totalBoxes = Number(item.boxes) || 0;
+    var currentSheetTotal = Number(item.totalQty) || 0;
+    
+    // BACKEND MATH REPAIR: Decouples loose tracking safely from strict multiplication loops
+    var fullBoxesValue = totalBoxes > 0 ? (totalBoxes - 1) * packSize : 0;
+    var initialLoosePieces = currentSheetTotal > 0 ? (currentSheetTotal - fullBoxesValue) : packSize;
 
-        html += '<tr style="border-bottom: 1px solid var(--border-color);">' +
-          '<td style="font-weight:700; font-family:monospace; font-size:13px; padding:12px 6px;">' + highlightedPart + '</td>' +
-          '<td style="text-align:center; padding:6px;"><span id="' + rowId + '_pack" style="font-family:monospace; font-weight:bold;">' + packSize + '</span></td>' +
-          '<td style="text-align:center; padding:6px;"><input type="number" id="' + rowId + '_boxes" value="' + totalBoxes + '" class="inline-edit-input" style="width:55px; text-align:center; background:var(--bg-primary); color:var(--text-main); border:1px solid var(--border-color); border-radius:6px; padding:4px;" oninput="calculateInlineTotal(\'' + rowId + '\')"/></td>' +
-          '<td style="text-align:center; padding:6px;"><input type="number" id="' + rowId + '_loose" value="' + initialLoosePieces + '" class="inline-edit-input" style="width:65px; text-align:center; background:var(--bg-primary); color:var(--text-main); border:1px solid var(--border-color); border-radius:6px; padding:4px;" oninput="calculateInlineTotal(\'' + rowId + '\')"/></td>' +
-          '<td id="' + rowId + '_total" style="text-align:center; font-weight:bold; font-family:monospace; color:var(--accent-purple); padding:6px;">' + currentSheetTotal + '</td>' +
-          '<td style="text-align:center; padding:6px;"><button class="row-save-btn" style="background:var(--accent-green); border:none; padding:6px 10px; border-radius:6px; cursor:pointer; color:white; font-size:12px;" onclick="syncInlineModification(\'' + item.part + '\', \'' + item.location + '\', \'' + rowId + '\')">💾</button></td>' +
-          '<td style="text-align:center; padding:6px;"><span class="location-badge" style="background:var(--accent-purple); font-size:11px; padding:4px 8px; border-radius:4px; font-weight:bold; color:white;">' + item.location + '</span></td>' +
-        '</tr>';
-      }
-      
-      conTableBody.innerHTML = html;
-    }
+    html += '<tr style="border-bottom: 1px solid var(--border-color);">' +
+      '<td style="font-weight:700; font-family:monospace; font-size:13px; padding:12px 6px;">' + highlightedPart + '</td>' +
+      '<td style="text-align:center; padding:6px;"><span id="' + rowId + '_pack" style="font-family:monospace; font-weight:bold;">' + packSize + '</span></td>' +
+      '<td style="text-align:center; padding:6px;"><input type="number" id="' + rowId + '_boxes" value="' + totalBoxes + '" class="inline-edit-input" style="width:55px; text-align:center; background:var(--bg-primary); color:var(--text-main); border:1px solid var(--border-color); border-radius:6px; padding:4px;" oninput="calculateInlineTotal(\'' + rowId + '\')"/></td>' +
+      '<td style="text-align:center; padding:6px;"><input type="number" id="' + rowId + '_loose" value="' + initialLoosePieces + '" class="inline-edit-input" style="width:65px; text-align:center; background:var(--bg-primary); color:var(--text-main); border:1px solid var(--border-color); border-radius:6px; padding:4px;" oninput="calculateInlineTotal(\'' + rowId + '\')"/></td>' +
+      '<td id="' + rowId + '_total" style="text-align:center; font-weight:bold; font-family:monospace; color:var(--accent-purple); padding:6px;">' + currentSheetTotal + '</td>' +
+      '<td style="text-align:center; padding:6px;"><button class="row-save-btn" style="background:var(--accent-green); border:none; padding:6px 10px; border-radius:6px; cursor:pointer; color:white; font-size:12px;" onclick="syncInlineModification(\'' + item.part + '\', \'' + item.location + '\', \'' + rowId + '\')">💾</button></td>' +
+      '<td style="text-align:center; padding:6px;"><span class="location-badge" style="background:var(--accent-purple); font-size:11px; padding:4px 8px; border-radius:4px; font-weight:bold; color:white;">' + item.location + '</span></td>' +
+    '</tr>';
+  }
+  
+  conTableBody.innerHTML = html;
+}
 
     function calculateInlineTotal(rowId) {
       var packSize = parseInt(document.getElementById(rowId + '_pack').innerText, 10) || 1;
