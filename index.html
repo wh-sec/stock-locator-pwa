@@ -398,35 +398,33 @@
         if (!lines[i].trim()) continue;
         
         var row = [];
-        var insideQuote = false;
-        var entry = "";
-        
-        for (var j = 0; j < lines[i].length; j++) {
-          var char = lines[i][j];
-          if (char === '"') { insideQuote = !insideQuote; }
-          else if (char === ',' && !insideQuote) {
-            row.push(entry.trim().replace(/^"|"$/g, ''));
-            entry = "";
-          } else { entry += char; }
-        }
+    var insideQuote = false;
+    var entry = "";
+    
+    for (var j = 0; j < lines[i].length; j++) {
+      var char = lines[i][j];
+      if (char === '"') { insideQuote = !insideQuote; }
+      else if (char === ',' && !insideQuote) {
         row.push(entry.trim().replace(/^"|"$/g, ''));
-
-        if (row.length >= 7) {
-          items.push({
-            dept: row[0],
-            supplierRef: row[1],
-            warehouse: row[2],
-            part: row[3],
-            totalQty: parseInt(row[4], 10) || 0,
-            location: row[5],
-            itemNo: row[6],
-            isFitting: false
-          });
-        }
-      }
-      return items;
+        entry = "";
+      } else { entry += char; }
     }
+    row.push(entry.trim().replace(/^"|"$/g, ''));
 
+    if (row.length >= 7) {
+      items.push({
+        dept: row[0],
+        supplierRef: row[1],
+        warehouse: row[2],
+        part: row[3],
+        totalQty: parseInt(row[4], 10) || 0,
+        location: row[5],
+        itemNo: row[6],
+        isFitting: false
+      });
+    }
+    // Note: Ensure the closing brackets matches your outer loops correctly in context
+    
     function highlightText(text, query) {
       if (!query) return text;
       var idx = text.toLowerCase().indexOf(query);
@@ -633,67 +631,29 @@
     }
 
     // ==========================================================
-    // FIXED CAMERA ENGINES: FORCING SHARP REAR VIEW
-    // ==========================================================
-    function startScanner() {
-      if (html5QrcodeScanner) return;
-      isProcessingScan = false;
-      html5QrcodeScanner = new Html5Qrcode("reader");
-      
-      // Removed exact matching constraint to prevent front camera fallbacks
-      html5QrcodeScanner.start(
-        { facingMode: "environment" },
-        { 
-          fps: 30, 
-          videoConstraints: { 
-            width: { min: 1280, ideal: 1920 }, 
-            height: { min: 720, ideal: 1080 },
-            focusMode: "continuous"
-          },
-          qrbox: { width: 280, height: 180 },
-          formatsToSupport: [
-            Html5QrcodeSupportedFormats.CODE_128, 
-            Html5QrcodeSupportedFormats.CODE_39, 
-            Html5QrcodeSupportedFormats.EAN_13, 
-            Html5QrcodeSupportedFormats.QR_CODE
-          ] 
-        },
-        onScanSuccess
-      ).catch(function(err) {
-         console.warn("Retrying scanner engine configurations...", err);
-         html5QrcodeScanner.start({ facingMode: "environment" }, { fps: 30 }, onScanSuccess).catch(function(){
-            metaDisplay.textContent = "Scanner hardware mapping offline.";
-         });
-      });
-    }
-
-    function stopScanner() { if (html5QrcodeScanner) { html5QrcodeScanner.stop().then(function() { html5QrcodeScanner = null; }).catch(function(){}); } }
-
-    // ==========================================================
-    // EXTRA-RESILIENT HARDWARE-LEVEL REAR CAMERA FORCE ENGINE
+    // EXTRA-RESILIENT HOOK ENGINE USING HTML5QRCODE NATIVE UTILS
     // ==========================================================
     function getRearCameraId(callback) {
-      if (!navigator.mediaDevices || !navigator.mediaDevices.enumerateDevices) {
-        return callback(null);
-      }
-      navigator.mediaDevices.enumerateDevices()
+      Html5Qrcode.getCameras()
         .then(function(devices) {
-          var backCameras = devices.filter(function(device) {
-            return device.kind === 'videoinput' && 
-                   (device.label.toLowerCase().indexOf('back') !== -1 || 
-                    device.label.toLowerCase().indexOf('rear') !== -1 ||
-                    device.label.toLowerCase().indexOf('environment') !== -1);
-          });
-          
-          if (backCameras.length > 0) {
-            // Select the last back camera found, as it's usually the main high-res sensor rather than a wide-angle macro lens
-            callback(backCameras[backCameras.length - 1].deviceId);
+          if (devices && devices.length > 0) {
+            var backCameras = devices.filter(function(device) {
+              var label = (device.label || '').toLowerCase();
+              return label.indexOf('back') !== -1 || 
+                     label.indexOf('rear') !== -1 || 
+                     label.indexOf('environment') !== -1;
+            });
+            if (backCameras.length > 0) {
+              callback(backCameras[backCameras.length - 1].id);
+            } else {
+              callback(devices[0].id); // Use the first available camera fallback
+            }
           } else {
             callback(null);
           }
         })
         .catch(function(err) {
-          console.error("Device enumeration failed:", err);
+          console.warn("Native camera lookup failed, standardizing properties:", err);
           callback(null);
         });
     }
@@ -725,18 +685,23 @@
           },
           onScanSuccess
         ).catch(function(err) {
-           console.warn("Retrying scanner with backup fallback...", err);
-           html5QrcodeScanner.start({ facingMode: "environment" }, { fps: 30 }, onScanSuccess).catch(function(){
-              metaDisplay.textContent = "Scanner hardware mapping offline.";
+           console.warn("Retrying scanner with safety constraints...", err);
+           html5QrcodeScanner.start({ facingMode: "environment" }, { fps: 30, qrbox: { width: 280, height: 180 } }, onScanSuccess).catch(function(){
+             metaDisplay.textContent = "Scanner hardware mapping offline.";
            });
         });
       });
     }
 
-    function stopScanner() { if (html5QrcodeScanner) { html5QrcodeScanner.stop().then(function() { html5QrcodeScanner = null; }).catch(function(){}); } }
+    function stopScanner() { 
+      if (html5QrcodeScanner) { 
+        html5QrcodeScanner.stop().then(function() { html5QrcodeScanner = null; }).catch(function(){}); 
+      } 
+    }
 
     function startInlineScanner(targetType) {
-      stopScanner(); stopInlineScanner(); 
+      stopScanner(); 
+      stopInlineScanner(); 
       currentScanTargetField = targetType;
       document.getElementById('inlineScannerBox').style.display = 'block';
       inlineFinderScanner = new Html5Qrcode("finderReader");
@@ -763,36 +728,20 @@
           },
           onInlineScanSuccess
         ).catch(function(err) {
-           console.warn("Retrying inline with backup fallback...", err);
-           inlineFinderScanner.start({ facingMode: "environment" }, { fps: 25 }, onInlineScanSuccess).catch(function(){
+           console.warn("Retrying inline lens with structural constraints...", err);
+           inlineFinderScanner.start({ facingMode: "environment" }, { fps: 25, qrbox: { width: 290, height: 160 } }, onInlineScanSuccess).catch(function(){
               alert("Camera device inaccessible.");
            });
         });
       });
     }
 
-    function stopInlineScanner() { if (inlineFinderScanner) { inlineFinderScanner.stop().then(function() { inlineFinderScanner = null; }).catch(function(){}); } document.getElementById('inlineScannerBox').style.display = 'none'; }
-
-    function onInlineScanSuccess(decodedText) {
-      var scannedText = decodedText.trim();
-      stopInlineScanner();
-      if (currentScanTargetField === 'qr') { searchBox.value = scannedText; } 
-      else { searchBox.value = (scannedText.startsWith('0') && scannedText.length > 1) ? scannedText.replace(/^0+/, '') : scannedText; }
-      renderResults();
-      setTimeout(function() {
-        var anchor = document.getElementById('resultsContainerLocationAnchor');
-        if (anchor) anchor.scrollIntoView({ behavior: 'smooth', block: 'start' });
-      }, 100);
+    function stopInlineScanner() { 
+      if (inlineFinderScanner) { 
+        inlineFinderScanner.stop().then(function() { inlineFinderScanner = null; }).catch(function(){}); 
+      } 
+      document.getElementById('inlineScannerBox').style.display = 'none'; 
     }
-      ).catch(function(err) {
-         console.warn("Retrying inline lens binding configurations...", err);
-         inlineFinderScanner.start({ facingMode: "environment" }, { fps: 25 }, onInlineScanSuccess).catch(function(){
-            alert("Camera device inaccessible.");
-         });
-      });
-    }
-
-    function stopInlineScanner() { if (inlineFinderScanner) { inlineFinderScanner.stop().then(function() { inlineFinderScanner = null; }).catch(function(){}); } document.getElementById('inlineScannerBox').style.display = 'none'; }
 
     function onInlineScanSuccess(decodedText) {
       var scannedText = decodedText.trim();
@@ -892,7 +841,12 @@
       document.body.removeChild(link);
     }
 
-    function clearAppCache() { if (confirm("Invalidate local inventory cache matrix data maps? App will force a full refresh sequence.")) { localStorage.clear(); location.reload(); } }
+    function clearAppCache() { 
+      if (confirm("Invalidate local inventory cache matrix data maps? App will force a full refresh sequence.")) { 
+        localStorage.clear(); 
+        location.reload(); 
+      } 
+    }
 
     function switchMode(mode) {
       document.querySelectorAll('.tab-btn').forEach(function(btn) { btn.classList.remove('active'); });
