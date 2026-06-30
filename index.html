@@ -629,31 +629,27 @@
     }
 
     // ==========================================================
-    // EXTRA-RESILIENT HOOK ENGINE USING HTML5QRCODE NATIVE UTILS
+    // EXTRA-RESILIENT ENVIRONMENT CAM FORCING ENGINE
     // ==========================================================
-    function getRearCameraId(callback) {
-      Html5Qrcode.getCameras()
-        .then(function(devices) {
-          if (devices && devices.length > 0) {
-            var backCameras = devices.filter(function(device) {
-              var label = (device.label || '').toLowerCase();
-              return label.indexOf('back') !== -1 || 
-                     label.indexOf('rear') !== -1 || 
-                     label.indexOf('environment') !== -1;
-            });
-            if (backCameras.length > 0) {
-              callback(backCameras[backCameras.length - 1].id);
-            } else {
-              callback(devices[0].id);
-            }
-          } else {
-            callback(null);
-          }
-        })
-        .catch(function(err) {
-          console.warn("Native camera lookup failed, standardizing properties:", err);
-          callback(null);
-        });
+    function getScannerConfig() {
+      // Direct hardlined forcing constraint strategy
+      return {
+        fps: 30,
+        qrbox: function(width, height) {
+          return { width: Math.min(width, 290), height: Math.min(height, 180) };
+        },
+        videoConstraints: {
+          facingMode: { exact: "environment" },
+          width: { ideal: 1920 },
+          height: { ideal: 1080 }
+        },
+        formatsToSupport: [
+          Html5QrcodeSupportedFormats.CODE_128,
+          Html5QrcodeSupportedFormats.CODE_39,
+          Html5QrcodeSupportedFormats.EAN_13,
+          Html5QrcodeSupportedFormats.QR_CODE
+        ]
+      };
     }
 
     function startScanner() {
@@ -661,34 +657,17 @@
       isProcessingScan = false;
       html5QrcodeScanner = new Html5Qrcode("reader");
       
-      getRearCameraId(function(explicitDeviceId) {
-        var configTarget = explicitDeviceId ? { deviceId: { exact: explicitDeviceId } } : { facingMode: "environment" };
-        
-        html5QrcodeScanner.start(
-          configTarget,
-          { 
-            fps: 30, 
-            videoConstraints: explicitDeviceId ? {
-              width: { min: 1280, ideal: 1920 }, 
-              height: { min: 720, ideal: 1080 },
-              focusMode: "continuous"
-            } : { facingMode: "environment" },
-            qrbox: { width: 280, height: 180 },
-            formatsToSupport: [
-              Html5QrcodeSupportedFormats.CODE_128, 
-              Html5QrcodeSupportedFormats.CODE_39, 
-              Html5QrcodeSupportedFormats.EAN_13, 
-              Html5QrcodeSupportedFormats.QR_CODE
-            ] 
-          },
-          onScanSuccess
-        ).catch(function(err) {
-           console.warn("Retrying scanner with safety constraints...", err);
-           html5QrcodeScanner.start({ facingMode: "environment" }, { fps: 30, qrbox: { width: 280, height: 180 } }, onScanSuccess).catch(function(){
-             metaDisplay.textContent = "Scanner hardware mapping offline.";
-           });
+      // Attempt 1: Force exact environment back camera rules
+      html5QrcodeScanner.start({ facingMode: { exact: "environment" } }, getScannerConfig(), onScanSuccess)
+        .catch(function(err) {
+          console.warn("Exact environment rule blocked, dropping down to soft string configuration match:", err);
+          
+          // Attempt 2: Soft fall-back if exact constraints fail
+          html5QrcodeScanner.start({ facingMode: "environment" }, { fps: 30, qrbox: { width: 280, height: 180 } }, onScanSuccess)
+            .catch(function() {
+              metaDisplay.textContent = "Scanner hardware mapping offline.";
+            });
         });
-      });
     }
 
     function stopScanner() { 
@@ -704,34 +683,20 @@
       document.getElementById('inlineScannerBox').style.display = 'block';
       inlineFinderScanner = new Html5Qrcode("finderReader");
       
-      getRearCameraId(function(explicitDeviceId) {
-        var configTarget = explicitDeviceId ? { deviceId: { exact: explicitDeviceId } } : { facingMode: "environment" };
-        
-        inlineFinderScanner.start(
-          configTarget,
-          { 
-            fps: 30, 
-            videoConstraints: explicitDeviceId ? {
-              width: { min: 1280, ideal: 1920 }, 
-              height: { min: 720, ideal: 1080 },
-              focusMode: "continuous"
-            } : { facingMode: "environment" },
-            qrbox: { width: 290, height: 160 },
-            formatsToSupport: [
-              Html5QrcodeSupportedFormats.CODE_128, 
-              Html5QrcodeSupportedFormats.CODE_39, 
-              Html5QrcodeSupportedFormats.EAN_13, 
-              Html5QrcodeSupportedFormats.QR_CODE
-            ] 
-          },
-          onInlineScanSuccess
-        ).catch(function(err) {
-           console.warn("Retrying inline lens with structural constraints...", err);
-           inlineFinderScanner.start({ facingMode: "environment" }, { fps: 25, qrbox: { width: 290, height: 160 } }, onInlineScanSuccess).catch(function(){
+      var inlineConfig = getScannerConfig();
+      inlineConfig.qrbox = { width: 290, height: 160 };
+
+      // Attempt 1: Force exact environment back camera rules
+      inlineFinderScanner.start({ facingMode: { exact: "environment" } }, inlineConfig, onInlineScanSuccess)
+        .catch(function(err) {
+          console.warn("Inline exact restriction failed, sliding over to soft mode constraint:", err);
+          
+          // Attempt 2: Soft fallback
+          inlineFinderScanner.start({ facingMode: "environment" }, { fps: 25, qrbox: { width: 290, height: 160 } }, onInlineScanSuccess)
+            .catch(function() {
               alert("Camera device inaccessible.");
-           });
+            });
         });
-      });
     }
 
     function stopInlineScanner() { 
