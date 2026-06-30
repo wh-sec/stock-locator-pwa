@@ -149,9 +149,8 @@
 
   <main id="consolidationScreen" class="app-screen">
     <div class="card">
-      <!-- Change this heading -->
-<h3 style="font-size:15px; font-weight:800; margin-bottom:4px;">✏️ Update Stocks</h3>
-<p style="font-size:12px; color:var(--text-muted); margin-bottom:15px;">Search and edit current pallet quantities live on Google Sheets.</p>
+      <h3 style="font-size:15px; font-weight:800; margin-bottom:4px;">✏️ Update Stocks</h3>
+      <p style="font-size:12px; color:var(--text-muted); margin-bottom:15px;">Search and edit current pallet quantities live on Google Sheets.</p>
       
       <div class="form-group">
         <input type="text" id="conSearchBox" class="search-input" placeholder="Type fittings part number..." oninput="renderConsolidationRows()">
@@ -176,35 +175,32 @@
     </div>
 
     <div class="card">
-      <!-- Change this heading -->
-<h3 style="font-size:15px; font-weight:800; margin-bottom:15px;">➕ Add New Stock / Relocate</h3>
+      <h3 style="font-size:15px; font-weight:800; margin-bottom:15px;">➕ Add New Stock / Relocate</h3>
 
-<!-- Change the form labels and button text -->
-<div class="form-group">
-  <label>Part Number</label>
-  <input type="text" id="newPartNo" class="search-input" placeholder="e.g. 22611D-06-06N">
-</div>
-<div class="form-group">
-  <label>New Pallet Location</label>
-  <input type="text" id="newPalletNo" class="search-input" placeholder="e.g. 240709-P3">
-</div>
-<div class="grid-form-parameters" style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
-  <div class="form-group">
-    <label>Pack Size</label>
-    <input type="number" id="newPackSize" class="search-input" oninput="calculateModuleBTotal()">
-  </div>
-  <div class="form-group">
-    <label>No. of Boxes</label>
-    <input type="number" id="newBoxes" class="search-input" oninput="calculateModuleBTotal()">
-  </div>
-</div>
-<div class="form-group">
-  <label>Total Pieces</label>
-  <input type="text" id="newTotalQty" class="search-input" style="font-family:monospace; font-weight:bold; background:var(--badge-bg);" readonly value="0">
-</div>
+      <div class="form-group">
+        <label>Part Number</label>
+        <input type="text" id="newPartNo" class="search-input" placeholder="e.g. 22611D-06-06N">
+      </div>
+      <div class="form-group">
+        <label>New Pallet Location</label>
+        <input type="text" id="newPalletNo" class="search-input" placeholder="e.g. 240709-P3">
+      </div>
+      <div class="grid-form-parameters" style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
+        <div class="form-group">
+          <label>Pack Size</label>
+          <input type="number" id="newPackSize" class="search-input" oninput="calculateModuleBTotal()">
+        </div>
+        <div class="form-group">
+          <label>No. of Boxes</label>
+          <input type="number" id="newBoxes" class="search-input" oninput="calculateModuleBTotal()">
+        </div>
+      </div>
+      <div class="form-group">
+        <label>Total Pieces</label>
+        <input type="text" id="newTotalQty" class="search-input" style="font-family:monospace; font-weight:bold; background:var(--badge-bg);" readonly value="0">
+      </div>
 
-<!-- Cleaned up the button text here -->
-<button class="action-btn btn-purple" onclick="submitNewPalletEntry()">📤 Save New Location</button>
+      <button class="action-btn btn-purple" onclick="submitNewPalletEntry()">📤 Save New Location</button>
     </div>
   </main>
 
@@ -326,68 +322,62 @@
     }
 
     function fetchInventoryDatabases() {
-  metaDisplay.textContent = "Connecting to storage components...";
-  metaStatusDot.className = "status-dot";
+      metaDisplay.textContent = "Connecting to storage components...";
+      metaStatusDot.className = "status-dot";
 
-  // Fetches main stock list from GitHub
-  fetch(REPO_STOCKS_CSV_URL, { method: 'GET', mode: 'cors' })
-    .then(function(res) {
-      if (!res.ok) throw new Error("GitHub server returned status: " + res.status);
-      return res.text();
-    })
-    .then(function(rawCsvText) {
-      stockRegistry = parseSanitizedCSV(rawCsvText);
-      localStorage.setItem('cached_stocks', JSON.stringify(stockRegistry));
-      stocksDatabaseLoaded = true;
-      evaluateSyncStatus(stocksDatabaseLoaded, fittingsDatabaseLoaded);
-    })
-    .catch(function(err) {
-      console.error("GitHub Fetch Error:", err);
-      stockRegistry = JSON.parse(localStorage.getItem('cached_stocks') || "[]");
-      if (stockRegistry.length > 0) stocksDatabaseLoaded = true;
-      evaluateSyncStatus(stocksDatabaseLoaded, fittingsDatabaseLoaded);
-    });
+      fetch(REPO_STOCKS_CSV_URL, { method: 'GET', mode: 'cors' })
+        .then(function(res) {
+          if (!res.ok) throw new Error("GitHub server returned status: " + res.status);
+          return res.text();
+        })
+        .then(function(rawCsvText) {
+          stockRegistry = parseSanitizedCSV(rawCsvText);
+          localStorage.setItem('cached_stocks', JSON.stringify(stockRegistry));
+          stocksDatabaseLoaded = true;
+          evaluateSyncStatus(stocksDatabaseLoaded, fittingsDatabaseLoaded);
+        })
+        .catch(function(err) {
+          console.error("GitHub Fetch Error:", err);
+          stockRegistry = JSON.parse(localStorage.getItem('cached_stocks') || "[]");
+          if (stockRegistry.length > 0) stocksDatabaseLoaded = true;
+          evaluateSyncStatus(stocksDatabaseLoaded, fittingsDatabaseLoaded);
+        });
 
-  // Fetches live data from Google Sheets API link
-  fetch(GOOGLE_SHEETS_API_URL + "?action=readDatabase")
-    .then(function(sheetRes) {
-      return sheetRes.json();
-    })
-    .then(function(sheetData) {
-      // Maps data array objects directly to the registry engine
-      fittingsRegistry = sheetData.records || [];
-      localStorage.setItem('cached_fittings', JSON.stringify(fittingsRegistry));
-      fittingsDatabaseLoaded = true;
-      evaluateSyncStatus(stocksDatabaseLoaded, fittingsDatabaseLoaded);
-      
-      // Auto-trigger render if text is already typed in during reload
-      if (conSearchBox.value.trim()) { renderConsolidationRows(); }
-    })
-    .catch(function(err) {
-      console.error("Google Sheets Fetch Error:", err);
-      fittingsRegistry = JSON.parse(localStorage.getItem('cached_fittings') || "[]");
-      if (fittingsRegistry.length > 0) fittingsDatabaseLoaded = true;
-      evaluateSyncStatus(stocksDatabaseLoaded, fittingsDatabaseLoaded);
-    });
-}
-      
+      fetch(GOOGLE_SHEETS_API_URL + "?action=readDatabase")
+        .then(function(sheetRes) {
+          return sheetRes.json();
+        })
+        .then(function(sheetData) {
+          fittingsRegistry = sheetData.records || [];
+          localStorage.setItem('cached_fittings', JSON.stringify(fittingsRegistry));
+          fittingsDatabaseLoaded = true;
+          evaluateSyncStatus(stocksDatabaseLoaded, fittingsDatabaseLoaded);
+          
+          if (conSearchBox.value.trim()) { renderConsolidationRows(); }
+        })
+        .catch(function(err) {
+          console.error("Google Sheets Fetch Error:", err);
+          fittingsRegistry = JSON.parse(localStorage.getItem('cached_fittings') || "[]");
+          if (fittingsRegistry.length > 0) fittingsDatabaseLoaded = true;
+          evaluateSyncStatus(stocksDatabaseLoaded, fittingsDatabaseLoaded);
+        });
+    }
+        
     function evaluateSyncStatus(stocksReady, fittingsReady) {
-  // Gets the current date and time
-  var now = new Date();
-  var timestamp = now.toLocaleDateString() + " " + now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+      var now = new Date();
+      var timestamp = now.toLocaleDateString() + " " + now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 
-  if (stocksReady && fittingsReady) {
-    // Added "Updated: " right before the timestamp
-    metaDisplay.textContent = "Database Online (Updated: " + timestamp + ")";
-    metaStatusDot.className = "status-dot ready";
-  } else if (stocksReady || fittingsReady) {
-    metaDisplay.textContent = "Partial Connection: " + (stocksReady ? "Main Catalog Live" : "Fittings Only Live") + " (Rest Cached)";
-    metaStatusDot.className = "status-dot ready";
-  } else {
-    metaDisplay.textContent = "Offline Mode: Using cached terminal data footprints.";
-    metaStatusDot.className = "status-dot";
-  }
-}
+      if (stocksReady && fittingsReady) {
+        metaDisplay.textContent = "Database Online (Updated: " + timestamp + ")";
+        metaStatusDot.className = "status-dot ready";
+      } else if (stocksReady || fittingsReady) {
+        metaDisplay.textContent = "Partial Connection: " + (stocksReady ? "Main Catalog Live" : "Fittings Only Live") + " (Rest Cached)";
+        metaStatusDot.className = "status-dot ready";
+      } else {
+        metaDisplay.textContent = "Offline Mode: Using cached terminal data footprints.";
+        metaStatusDot.className = "status-dot";
+      }
+    }
 
     function parseSanitizedCSV(text) {
       var lines = text.split(/\r?\n/);
@@ -397,34 +387,39 @@
       for (var i = 1; i < lines.length; i++) {
         if (!lines[i].trim()) continue;
         
-    var row = [];
-    var insideQuote = false;
-    var entry = "";
-    
-    for (var j = 0; j < lines[i].length; j++) {
-      var char = lines[i][j];
-      if (char === '"') { insideQuote = !insideQuote; }
-      else if (char === ',' && !insideQuote) {
+        var row = [];
+        var insideQuote = false;
+        var entry = "";
+        
+        for (var j = 0; j < lines[i].length; j++) {
+          var char = lines[i][j];
+          if (char === '"') { 
+            insideQuote = !insideQuote; 
+          } else if (char === ',' && !insideQuote) {
+            row.push(entry.trim().replace(/^"|"$/g, ''));
+            entry = "";
+          } else { 
+            entry += char; 
+          }
+        }
         row.push(entry.trim().replace(/^"|"$/g, ''));
-        entry = "";
-      } else { entry += char; }
-    }
-    row.push(entry.trim().replace(/^"|"$/g, ''));
 
-    if (row.length >= 7) {
-      items.push({
-        dept: row[0],
-        supplierRef: row[1],
-        warehouse: row[2],
-        part: row[3],
-        totalQty: parseInt(row[4], 10) || 0,
-        location: row[5],
-        itemNo: row[6],
-        isFitting: false
-      });
+        if (row.length >= 7) {
+          items.push({
+            dept: row[0],
+            supplierRef: row[1],
+            warehouse: row[2],
+            part: row[3],
+            totalQty: parseInt(row[4], 10) || 0,
+            location: row[5],
+            itemNo: row[6],
+            isFitting: false
+          });
+        }
+      }
+      return items;
     }
-    // Note: Ensure the closing brackets matches your outer loops correctly in context
-    
+      
     function highlightText(text, query) {
       if (!query) return text;
       var idx = text.toLowerCase().indexOf(query);
@@ -615,7 +610,6 @@
         .then(function(res) { return res.json(); })
         .then(function(data) {
           if (data.result === 'success') {
-            alert("Fittings pallet logged to Google Sheets!");
             fittingsRegistry.unshift({ part: partNumber, location: location, packSize: packSize, boxes: boxes, totalQty: totalQty });
             localStorage.setItem('cached_fittings', JSON.stringify(fittingsRegistry));
 
@@ -625,9 +619,13 @@
             document.getElementById('newBoxes').value = '';
             document.getElementById('newTotalQty').value = '0';
             fetchInventoryDatabases();
-          } else { alert("Error: " + data.message); }
+          } else { 
+            alert("Error: " + data.message); 
+          }
         })
-        .catch(function() { alert("Server timeout configuration link exception."); });
+        .catch(function() { 
+          alert("Server timeout configuration link exception."); 
+        });
     }
 
     // ==========================================================
@@ -646,7 +644,7 @@
             if (backCameras.length > 0) {
               callback(backCameras[backCameras.length - 1].id);
             } else {
-              callback(devices[0].id); // Use the first available camera fallback
+              callback(devices[0].id);
             }
           } else {
             callback(null);
@@ -812,7 +810,7 @@
       for (var i = 0; i < countLogSession.length; i++) {
         var log = countLogSession[i];
         html += '<div class="log-item">' +
-          '<div><strong>' + log.part + '</strong><div style="font-size:11px; color:var(--text-muted);">Loc: ' + log.location + ' @ ' + log.time + '</div></div>' +
+          '<div><strong>' + log.part + '</strong><div style="font-size:11px; color:var(--text-muted); ">Loc: ' + log.location + ' @ ' + log.time + '</div></div>' +
           '<div style="font-size:18px; font-weight:800; color:var(--accent-green);">' + log.qty + ' pcs</div>' +
         '</div>';
       }
