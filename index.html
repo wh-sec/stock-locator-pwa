@@ -669,31 +669,121 @@
 
     function stopScanner() { if (html5QrcodeScanner) { html5QrcodeScanner.stop().then(function() { html5QrcodeScanner = null; }).catch(function(){}); } }
 
+    // ==========================================================
+    // EXTRA-RESILIENT HARDWARE-LEVEL REAR CAMERA FORCE ENGINE
+    // ==========================================================
+    function getRearCameraId(callback) {
+      if (!navigator.mediaDevices || !navigator.mediaDevices.enumerateDevices) {
+        return callback(null);
+      }
+      navigator.mediaDevices.enumerateDevices()
+        .then(function(devices) {
+          var backCameras = devices.filter(function(device) {
+            return device.kind === 'videoinput' && 
+                   (device.label.toLowerCase().indexOf('back') !== -1 || 
+                    device.label.toLowerCase().indexOf('rear') !== -1 ||
+                    device.label.toLowerCase().indexOf('environment') !== -1);
+          });
+          
+          if (backCameras.length > 0) {
+            // Select the last back camera found, as it's usually the main high-res sensor rather than a wide-angle macro lens
+            callback(backCameras[backCameras.length - 1].deviceId);
+          } else {
+            callback(null);
+          }
+        })
+        .catch(function(err) {
+          console.error("Device enumeration failed:", err);
+          callback(null);
+        });
+    }
+
+    function startScanner() {
+      if (html5QrcodeScanner) return;
+      isProcessingScan = false;
+      html5QrcodeScanner = new Html5Qrcode("reader");
+      
+      getRearCameraId(function(explicitDeviceId) {
+        var configTarget = explicitDeviceId ? { deviceId: { exact: explicitDeviceId } } : { facingMode: "environment" };
+        
+        html5QrcodeScanner.start(
+          configTarget,
+          { 
+            fps: 30, 
+            videoConstraints: explicitDeviceId ? {
+              width: { min: 1280, ideal: 1920 }, 
+              height: { min: 720, ideal: 1080 },
+              focusMode: "continuous"
+            } : { facingMode: "environment" },
+            qrbox: { width: 280, height: 180 },
+            formatsToSupport: [
+              Html5QrcodeSupportedFormats.CODE_128, 
+              Html5QrcodeSupportedFormats.CODE_39, 
+              Html5QrcodeSupportedFormats.EAN_13, 
+              Html5QrcodeSupportedFormats.QR_CODE
+            ] 
+          },
+          onScanSuccess
+        ).catch(function(err) {
+           console.warn("Retrying scanner with backup fallback...", err);
+           html5QrcodeScanner.start({ facingMode: "environment" }, { fps: 30 }, onScanSuccess).catch(function(){
+              metaDisplay.textContent = "Scanner hardware mapping offline.";
+           });
+        });
+      });
+    }
+
+    function stopScanner() { if (html5QrcodeScanner) { html5QrcodeScanner.stop().then(function() { html5QrcodeScanner = null; }).catch(function(){}); } }
+
     function startInlineScanner(targetType) {
       stopScanner(); stopInlineScanner(); 
       currentScanTargetField = targetType;
       document.getElementById('inlineScannerBox').style.display = 'block';
       inlineFinderScanner = new Html5Qrcode("finderReader");
       
-      // Upgraded inline framing configurations for rapid bar line decoding
-      inlineFinderScanner.start(
-        { facingMode: "environment" },
-        { 
-          fps: 30, 
-          videoConstraints: { 
-            width: { min: 1280, ideal: 1920 }, 
-            height: { min: 720, ideal: 1080 },
-            focusMode: "continuous"
+      getRearCameraId(function(explicitDeviceId) {
+        var configTarget = explicitDeviceId ? { deviceId: { exact: explicitDeviceId } } : { facingMode: "environment" };
+        
+        inlineFinderScanner.start(
+          configTarget,
+          { 
+            fps: 30, 
+            videoConstraints: explicitDeviceId ? {
+              width: { min: 1280, ideal: 1920 }, 
+              height: { min: 720, ideal: 1080 },
+              focusMode: "continuous"
+            } : { facingMode: "environment" },
+            qrbox: { width: 290, height: 160 },
+            formatsToSupport: [
+              Html5QrcodeSupportedFormats.CODE_128, 
+              Html5QrcodeSupportedFormats.CODE_39, 
+              Html5QrcodeSupportedFormats.EAN_13, 
+              Html5QrcodeSupportedFormats.QR_CODE
+            ] 
           },
-          qrbox: { width: 290, height: 160 }, // Perfect size for long supplier barcodes
-          formatsToSupport: [
-            Html5QrcodeSupportedFormats.CODE_128, 
-            Html5QrcodeSupportedFormats.CODE_39, 
-            Html5QrcodeSupportedFormats.EAN_13, 
-            Html5QrcodeSupportedFormats.QR_CODE
-          ] 
-        },
-        onInlineScanSuccess
+          onInlineScanSuccess
+        ).catch(function(err) {
+           console.warn("Retrying inline with backup fallback...", err);
+           inlineFinderScanner.start({ facingMode: "environment" }, { fps: 25 }, onInlineScanSuccess).catch(function(){
+              alert("Camera device inaccessible.");
+           });
+        });
+      });
+    }
+
+    function stopInlineScanner() { if (inlineFinderScanner) { inlineFinderScanner.stop().then(function() { inlineFinderScanner = null; }).catch(function(){}); } document.getElementById('inlineScannerBox').style.display = 'none'; }
+
+    function onInlineScanSuccess(decodedText) {
+      var scannedText = decodedText.trim();
+      stopInlineScanner();
+      if (currentScanTargetField === 'qr') { searchBox.value = scannedText; } 
+      else { searchBox.value = (scannedText.startsWith('0') && scannedText.length > 1) ? scannedText.replace(/^0+/, '') : scannedText; }
+      renderResults();
+      setTimeout(function() {
+        var anchor = document.getElementById('resultsContainerLocationAnchor');
+        if (anchor) anchor.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }, 100);
+    }
       ).catch(function(err) {
          console.warn("Retrying inline lens binding configurations...", err);
          inlineFinderScanner.start({ facingMode: "environment" }, { fps: 25 }, onInlineScanSuccess).catch(function(){
