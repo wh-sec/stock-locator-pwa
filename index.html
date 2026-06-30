@@ -149,8 +149,9 @@
 
   <main id="consolidationScreen" class="app-screen">
     <div class="card">
-      <h3 style="font-size:15px; font-weight:800; margin-bottom:4px;">Module A: Fittings Ledger Sync</h3>
-      <p style="font-size:12px; color:var(--text-muted); margin-bottom:15px;">Search and modify entries hosted live on your Google Sheets fittings layout matrix.</p>
+      <!-- Change this heading -->
+<h3 style="font-size:15px; font-weight:800; margin-bottom:4px;">✏️ Update Stocks</h3>
+<p style="font-size:12px; color:var(--text-muted); margin-bottom:15px;">Search and edit current pallet quantities live on Google Sheets.</p>
       
       <div class="form-group">
         <input type="text" id="conSearchBox" class="search-input" placeholder="Type fittings part reference..." oninput="renderConsolidationRows()">
@@ -175,31 +176,35 @@
     </div>
 
     <div class="card">
-      <h3 style="font-size:15px; font-weight:800; margin-bottom:15px;">Module B: Add Dynamic Fittings Reference</h3>
-      
-      <div class="form-group">
-        <label>Fittings Part Target</label>
-        <input type="text" id="newPartNo" class="search-input" placeholder="e.g. FITTING-3102C">
-      </div>
-      <div class="form-group">
-        <label>Pallet Location Assigned Row</label>
-        <input type="text" id="newPalletNo" class="search-input" placeholder="e.g. CT-06-A2R029">
-      </div>
-      <div class="grid-form-parameters" style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
-        <div class="form-group">
-          <label>Pack Size Matrix Qty</label>
-          <input type="number" id="newPackSize" class="search-input" oninput="calculateModuleBTotal()">
-        </div>
-        <div class="form-group">
-          <label>Box / Container Units Count</label>
-          <input type="number" id="newBoxes" class="search-input" oninput="calculateModuleBTotal()">
-        </div>
-      </div>
-      <div class="form-group">
-        <label>Calculated Target Total Output</label>
-        <input type="text" id="newTotalQty" class="search-input" style="font-family:monospace; font-weight:bold; background:var(--badge-bg);" readonly value="0">
-      </div>
-      <button class="action-btn btn-purple" onclick="submitNewPalletEntry()">📤 Commit Entry Record Downstream</button>
+      <!-- Change this heading -->
+<h3 style="font-size:15px; font-weight:800; margin-bottom:15px;">➕ Add New Stock / Relocate</h3>
+
+<!-- Change the form labels and button text -->
+<div class="form-group">
+  <label>Part Number</label>
+  <input type="text" id="newPartNo" class="search-input" placeholder="e.g. FITTING-3102C">
+</div>
+<div class="form-group">
+  <label>New Pallet Location</label>
+  <input type="text" id="newPalletNo" class="search-input" placeholder="e.g. CT-06-A2R029">
+</div>
+<div class="grid-form-parameters" style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
+  <div class="form-group">
+    <label>Pack Size</label>
+    <input type="number" id="newPackSize" class="search-input" oninput="calculateModuleBTotal()">
+  </div>
+  <div class="form-group">
+    <label>No. of Boxes</label>
+    <input type="number" id="newBoxes" class="search-input" oninput="calculateModuleBTotal()">
+  </div>
+</div>
+<div class="form-group">
+  <label>Total Pieces</label>
+  <input type="text" id="newTotalQty" class="search-input" style="font-family:monospace; font-weight:bold; background:var(--badge-bg);" readonly value="0">
+</div>
+
+<!-- Cleaned up the button text here -->
+<button class="action-btn btn-purple" onclick="submitNewPalletEntry()">📤 Save New Location</button>
     </div>
   </main>
 
