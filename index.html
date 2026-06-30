@@ -372,12 +372,13 @@
 }
       
     function evaluateSyncStatus(stocksReady, fittingsReady) {
-  // Gets the current date and time (Format: MM/DD/YYYY, HH:MM AM/PM)
+  // Gets the current date and time
   var now = new Date();
   var timestamp = now.toLocaleDateString() + " " + now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 
   if (stocksReady && fittingsReady) {
-    metaDisplay.textContent = "Database Online (" + timestamp + ")";
+    // Added "Updated: " right before the timestamp
+    metaDisplay.textContent = "Database Online (Updated: " + timestamp + ")";
     metaStatusDot.className = "status-dot ready";
   } else if (stocksReady || fittingsReady) {
     metaDisplay.textContent = "Partial Connection: " + (stocksReady ? "Main Catalog Live" : "Fittings Only Live") + " (Rest Cached)";
