@@ -372,17 +372,21 @@
 }
       
     function evaluateSyncStatus(stocksReady, fittingsReady) {
-      if (stocksReady && fittingsReady) {
-        metaDisplay.textContent = "Database Connected (GitHub + Sheets Live)";
-        metaStatusDot.className = "status-dot ready";
-      } else if (stocksReady || fittingsReady) {
-        metaDisplay.textContent = "Partial Connection: " + (stocksReady ? "Main Catalog Live" : "Fittings Only Live") + " (Rest Cached)";
-        metaStatusDot.className = "status-dot ready";
-      } else {
-        metaDisplay.textContent = "Offline Mode: Using cached terminal data footprints.";
-        metaStatusDot.className = "status-dot";
-      }
-    }
+  // Gets the current date and time (Format: MM/DD/YYYY, HH:MM AM/PM)
+  var now = new Date();
+  var timestamp = now.toLocaleDateString() + " " + now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+  if (stocksReady && fittingsReady) {
+    metaDisplay.textContent = "Database Online (" + timestamp + ")";
+    metaStatusDot.className = "status-dot ready";
+  } else if (stocksReady || fittingsReady) {
+    metaDisplay.textContent = "Partial Connection: " + (stocksReady ? "Main Catalog Live" : "Fittings Only Live") + " (Rest Cached)";
+    metaStatusDot.className = "status-dot ready";
+  } else {
+    metaDisplay.textContent = "Offline Mode: Using cached terminal data footprints.";
+    metaStatusDot.className = "status-dot";
+  }
+}
 
     function parseSanitizedCSV(text) {
       var lines = text.split(/\r?\n/);
