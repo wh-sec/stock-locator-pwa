@@ -407,12 +407,17 @@
 
         // Reduced safety constraint bounds from 7 to 4 to accept missing/blank trailing arrays safely
         if (row.length >= 4) {
+          // FIX: Safely extract and clean the quantity column if it exists
+          var rawQty = row[4] ? String(row[4]) : "0";
+          var cleanQty = rawQty.replace(/["\s,]/g, '');
+          var parsedQty = Math.floor(parseFloat(cleanQty)) || 0;
+
           items.push({
             dept: row[0] || "N/A",
             supplierRef: row[1] || "",
             warehouse: row[2] || "N/A",
             part: row[3] || "UNKNOWN",
-            totalQty: parseInt(row[4], 10) || 0,
+            totalQty: parsedQty, // Now correctly parsed without getting blocked by quotes or commas!
             location: row[5] || "", // This safely grabs empty strings instead of discarding row
             itemNo: row[6] || "N/A",
             isFitting: false
