@@ -405,15 +405,16 @@
         }
         row.push(entry.trim().replace(/^"|"$/g, ''));
 
-        if (row.length >= 7) {
+        // Reduced safety constraint bounds from 7 to 4 to accept missing/blank trailing arrays safely
+        if (row.length >= 4) {
           items.push({
-            dept: row[0],
-            supplierRef: row[1],
-            warehouse: row[2],
-            part: row[3],
+            dept: row[0] || "N/A",
+            supplierRef: row[1] || "",
+            warehouse: row[2] || "N/A",
+            part: row[3] || "UNKNOWN",
             totalQty: parseInt(row[4], 10) || 0,
-            location: row[5],
-            itemNo: row[6],
+            location: row[5] || "", // This safely grabs empty strings instead of discarding row
+            itemNo: row[6] || "N/A",
             isFitting: false
           });
         }
@@ -433,7 +434,7 @@
       var area = document.getElementById('searchResultsArea');
       if (!query) { area.innerHTML = ''; return; }
 
-      var resultsA = stockRegistry.filter(function(i) {
+    var resultsA = stockRegistry.filter(function(i) {
         return i.part.toLowerCase().indexOf(query) !== -1 || 
                i.itemNo.toLowerCase().indexOf(query) !== -1 || 
                i.supplierRef.toLowerCase().indexOf(query) !== -1;
