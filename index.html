@@ -3,591 +3,411 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Inventory Audit Dashboard</title>
-  <!-- HTML5 QR Code Scanner Library -->
+  <title>Stock Locator+</title>
   <script src="https://unpkg.com/html5-qrcode"></script>
   <style>
     :root {
-      --bg-primary: #121214;
-      --bg-secondary: #1a1a1e;
-      --card-bg: #222227;
-      --text-main: #ffffff;
-      --text-muted: #a0a0ab;
-      --border-color: #2f2f37;
-      --accent-blue: #3b82f6;
-      --accent-green: #10b981;
-      --accent-purple: #8b5cf6;
-      --accent-danger: #ef4444;
+      --bg-primary: #f4f6f9;
+      --bg-card: #ffffff;
+      --text-main: #333333;
+      --text-muted: #666666;
+      --border-color: #dddddd;
+      --accent-blue: #0056b3;
+      --accent-green: #198754;
+      --accent-purple: #6f42c1;
+      --danger-red: #dc3545;
+      --badge-bg: #e9ecef;
     }
 
-    * {
-      box-sizing: border-box;
-      margin: 0;
-      padding: 0;
+    [data-theme="dark"] {
+      --bg-primary: #121212;
+      --bg-card: #1e1e1e;
+      --text-main: #f0f0f0;
+      --text-muted: #aaaaaa;
+      --border-color: #333333;
+      --accent-blue: #0d6efd;
+      --accent-green: #2ecc71;
+      --accent-purple: #a87ffb;
+      --badge-bg: #2d2d2d;
     }
 
-    body {
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-      background-color: var(--bg-primary);
-      color: var(--text-main);
-      padding-bottom: 70px;
-    }
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+    body { background-color: var(--bg-primary); color: var(--text-main); transition: background 0.3s, color 0.3s; padding: 15px; padding-bottom: 80px; }
+    
+    .app-header { position: relative; text-align: center; margin-bottom: 20px; padding: 10px 40px; display: flex; align-items: center; justify-content: center; gap: 10px; }
+    .app-header h1 { font-size: 24px; font-weight: 800; letter-spacing: -0.5px; }
+    .settings-gear-btn { position: absolute; right: 5px; top: 50%; transform: translateY(-50%); border: none; background: transparent; font-size: 24px; cursor: pointer; padding: 8px; border-radius: 50%; display: flex; align-items: center; justify-content: center; transition: background 0.2s; color: var(--text-main); }
 
-    header {
-      background-color: var(--bg-secondary);
-      padding: 15px;
-      border-bottom: 1px solid var(--border-color);
-      position: sticky;
-      top: 0;
-      z-index: 100;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-    }
+    .nav-tabs { display: flex; background: var(--bg-card); border-radius: 12px; padding: 6px; margin-bottom: 20px; border: 1px solid var(--border-color); }
+    .tab-btn { flex: 1; border: none; background: transparent; color: var(--text-muted); padding: 12px; font-size: 14px; font-weight: 600; cursor: pointer; border-radius: 8px; transition: all 0.2s; display: flex; align-items: center; justify-content: center; gap: 8px; }
+    .tab-btn.active { background: var(--accent-blue); color: white; }
+    #counterTab.active { background: var(--accent-green); }
+    #consolidationTab.active { background: var(--accent-purple); }
 
-    .meta-status {
-      font-size: 12px;
-      color: var(--accent-green);
-      font-family: monospace;
-    }
+    .app-screen { display: none; }
+    .app-screen.active { display: block; }
 
-    .container {
-      padding: 15px;
-      max-width: 800px;
-      margin: 0 auto;
-    }
+    .card { background: var(--bg-card); border-radius: 16px; border: 1px solid var(--border-color); padding: 20px; margin-bottom: 20px; box-shadow: 0 4px 6px rgba(0,0,0,0.02); }
+    .form-group { margin-bottom: 15px; }
+    .form-group label { display: block; font-size: 11px; font-weight: 700; text-transform: uppercase; margin-bottom: 6px; color: var(--text-muted); letter-spacing: 0.5px; }
+    
+    .search-input, .inline-edit-input { width: 100%; padding: 14px; border-radius: 10px; border: 2px solid var(--border-color); background: var(--bg-primary); color: var(--text-main); font-size: 16px; font-weight: 500; outline: none; transition: border-color 0.2s; }
+    .search-input:focus { border-color: var(--accent-blue); }
+    
+    .btn-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 15px; }
+    .action-btn { width: 100%; border: none; padding: 14px; border-radius: 10px; font-size: 14px; font-weight: 700; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; color: white; transition: opacity 0.2s; }
+    .action-btn:active { opacity: 0.8; }
+    .btn-blue { background-color: var(--accent-blue); }
+    .btn-green { background-color: var(--accent-green); }
+    .btn-purple { background-color: var(--accent-purple); }
+    .btn-muted { background-color: #4a5568; color: white; }
 
-    .app-screen {
-      display: none;
-    }
+    .table-responsive { width: 100%; overflow-x: auto; margin-top: 15px; border-radius: 8px; }
+    table { width: 100%; border-collapse: collapse; text-align: left; font-size: 14px; }
+    th { background: var(--badge-bg); padding: 12px; font-weight: 700; font-size: 11px; text-transform: uppercase; color: var(--text-muted); border-bottom: 2px solid var(--border-color); }
+    td { padding: 14px 12px; border-bottom: 1px solid var(--border-color); vertical-align: middle; }
+    
+    .location-badge { display: inline-block; padding: 6px 12px; font-weight: 800; font-family: monospace; font-size: 13px; border-radius: 6px; color: white; background: var(--accent-green); }
+    mark.match { background: #fef08a; color: #000000; padding: 2px 0; font-weight: bold; border-radius: 2px; }
 
-    .app-screen.active {
-      display: block;
-    }
+    #reader, #finderReader { width: 100%; background: #000; border-radius: 12px; overflow: hidden; margin-bottom: 15px; }
+    #inlineScannerBox { display: none; margin-top: 15px; padding: 10px; background: var(--bg-primary); border-radius: 12px; }
 
-    .card {
-      background-color: var(--card-bg);
-      border: 1px solid var(--border-color);
-      border-radius: 12px;
-      padding: 16px;
-      margin-bottom: 15px;
-    }
+    .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); backdrop-filter: blur(4px); z-index: 1000; justify-content: center; align-items: center; padding: 20px; }
+    .modal-content { background: var(--bg-card); width: 100%; max-width: 450px; border-radius: 20px; padding: 25px; box-shadow: 0 10px 25px rgba(0,0,0,0.2); position: relative; }
+    
+    .qty-control-box { display: flex; align-items: center; justify-content: center; gap: 6px; margin: 20px 0; width: 100%; }
+    .qty-btn { width: 46px; height: 50px; border-radius: 10px; border: none; background: var(--badge-bg); color: var(--text-main); font-size: 15px; font-weight: 700; cursor: pointer; flex-shrink: 0; }
+    .qty-display-input { width: 90px; text-align: center; height: 50px; font-size: 22px; font-weight: 800; font-family: monospace; border: 2px solid var(--border-color); border-radius: 10px; background: var(--bg-primary); color: var(--text-main); min-width: 0; }
 
-    .search-wrapper {
-      position: relative;
-      margin-bottom: 15px;
-      display: flex;
-      gap: 8px;
-    }
+    .log-item { display: flex; justify-content: space-between; align-items: center; padding: 12px; border-bottom: 1px solid var(--border-color); }
+    
+    .footer-status-bar { position: fixed; bottom: 0; left: 0; width: 100%; background: var(--bg-card); border-top: 1px solid var(--border-color); padding: 12px 20px; display: flex; justify-content: space-between; align-items: center; z-index: 900; }
+    .status-indicator { display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 600; }
+    .status-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--danger-red); }
+    .status-dot.ready { background: var(--accent-green); }
 
-    .search-input {
-      flex: 1;
-      background-color: var(--bg-secondary);
-      border: 1px solid var(--border-color);
-      color: var(--text-main);
-      padding: 12px 16px;
-      border-radius: 8px;
-      font-size: 16px;
-      outline: none;
-    }
-
-    .search-input:focus {
-      border-color: var(--accent-blue);
-    }
-
-    .scan-btn {
-      background-color: var(--accent-blue);
-      border: none;
-      color: white;
-      padding: 0 16px;
-      border-radius: 8px;
-      cursor: pointer;
-      font-size: 18px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-    }
-
-    .location-badge {
-      display: inline-block;
-      padding: 4px 10px;
-      border-radius: 6px;
-      font-size: 12px;
-      font-weight: bold;
-      color: #fff;
-    }
-
-    .match {
-      background-color: rgba(234, 179, 8, 0.3);
-      color: #fef08a;
-      padding: 0 2px;
-      border-radius: 2px;
-    }
-
-    /* Scanner Containers */
-    #reader, #finderReader {
-      width: 100%;
-      background: #000;
-      border-radius: 12px;
-      overflow: hidden;
-      margin-bottom: 15px;
-    }
-
-    /* Overlay Styles */
-    .overlay-backdrop {
-      position: fixed;
-      top: 0; left: 0; right: 0; bottom: 0;
-      background: rgba(0,0,0,0.8);
-      display: none;
-      justify-content: center;
-      align-items: center;
-      z-index: 1000;
-      padding: 20px;
-    }
-
-    .overlay-content {
-      background: var(--card-bg);
-      border: 1px solid var(--border-color);
-      padding: 24px;
-      border-radius: 16px;
-      width: 100%;
-      max-width: 400px;
-      text-align: center;
-    }
-
-    .qty-controls {
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      gap: 15px;
-      margin: 20px 0;
-    }
-
-    .qty-btn {
-      background: var(--border-color);
-      color: var(--text-main);
-      border: none;
-      width: 50px;
-      height: 50px;
-      border-radius: 50px;
-      font-size: 20px;
-      font-weight: bold;
-      cursor: pointer;
-    }
-
-    .qty-btn:active {
-      background: var(--accent-blue);
-    }
-
-    .qty-input {
-      width: 80px;
-      text-align: center;
-      font-size: 24px;
-      font-weight: bold;
-      background: var(--bg-secondary);
-      border: 1px solid var(--border-color);
-      color: var(--text-main);
-      padding: 8px;
-      border-radius: 8px;
-    }
-
-    .btn-group {
-      display: flex;
-      gap: 10px;
-      margin-top: 20px;
-    }
-
-    .action-btn {
-      flex: 1;
-      padding: 12px;
-      border-radius: 8px;
-      border: none;
-      font-weight: bold;
-      cursor: pointer;
-      font-size: 14px;
-    }
-
-    .btn-success { background: var(--accent-green); color: white; }
-    .btn-secondary { background: var(--border-color); color: var(--text-main); }
-    .btn-danger { background: var(--accent-danger); color: white; }
-
-    /* Logs view */
-    .log-item {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      padding: 12px;
-      border-bottom: 1px solid var(--border-color);
-    }
-
-    /* Table Styles for Consolidation */
-    .table-container {
-      width: 100%;
-      overflow-x: auto;
-      margin-top: 15px;
-    }
-
-    table {
-      width: 100%;
-      border-collapse: collapse;
-      text-align: left;
-      font-size: 14px;
-    }
-
-    th {
-      background-color: var(--bg-secondary);
-      color: var(--text-muted);
-      padding: 10px;
-      font-weight: 600;
-      border-bottom: 2px solid var(--border-color);
-    }
-
-    /* Bottom Navigation Bar */
-    #footerBar {
-      position: fixed;
-      bottom: 0; left: 0; right: 0;
-      height: 60px;
-      background-color: var(--bg-secondary);
-      border-top: 1px solid var(--border-color);
-      display: flex;
-      justify-content: space-around;
-      align-items: center;
-      z-index: 100;
-    }
-
-    .tab-btn {
-      background: none;
-      border: none;
-      color: var(--text-muted);
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      font-size: 11px;
-      cursor: pointer;
-      gap: 4px;
-    }
-
-    .tab-btn.active {
-      color: var(--accent-blue);
-    }
-
-    .tab-btn span {
-      font-size: 20px;
-    }
-
-    .form-group {
-      margin-bottom: 12px;
-    }
-
-    .form-group label {
-      display: block;
-      font-size: 12px;
-      color: var(--text-muted);
-      margin-bottom: 4px;
-      text-transform: uppercase;
-      font-weight: 700;
-    }
-
-    .form-control {
-      width: 100%;
-      background: var(--bg-secondary);
-      border: 1px solid var(--border-color);
-      color: white;
-      padding: 10px;
-      border-radius: 6px;
-      font-size: 14px;
-    }
+    .inline-edit-input { padding: 6px 8px; text-align: center; font-family: monospace; font-weight: 700; max-width: 75px; }
+    .row-save-btn { border: none; background: none; font-size: 18px; cursor: pointer; padding: 4px; }
+    
+    #themeFileInput { display: none; }
   </style>
 </head>
 <body>
 
-  <header>
-    <div style="display:flex; align-items:center; gap:8px;">
-      <h3 style="font-size:16px; font-weight:800; letter-spacing:-0.5px;">MESCO LOGISTICS</h3>
-      <span id="countSession" style="display:none; background:rgba(16,185,129,0.2); color:var(--accent-green); font-size:11px; padding:2px 6px; border-radius:4px; font-weight:bold;">Counts logged: 0</span>
-    </div>
-    <span id="metaDisplay" class="meta-status">Connecting Data Sync Matrix...</span>
+  <header class="app-header">
+    <span style="font-size:28px;">📦</span>
+    <h1>STOCK LOCATOR+</h1>
+    <button class="settings-gear-btn" onclick="openSettingsModal()" title="Open System Preferences">⚙️</button>
   </header>
 
-  <div class="container">
+  <nav class="nav-tabs">
+    <button class="tab-btn active" id="finderTab" onclick="switchMode('finder')">🔍 Stock Lookup</button>
+    <button class="tab-btn" id="counterTab" onclick="switchMode('counter')">📋 Audit Scanner</button>
+    <button class="tab-btn" id="consolidationTab" onclick="switchMode('consolidation')">📦 Fittings Ledger Updater</button>
+  </nav>
 
-    <!-- ==================== SCREEN 1: FINDER ==================== -->
-    <div id="finderScreen" class="app-screen active">
-      <div class="search-wrapper">
-        <input type="text" id="searchBox" class="search-input" placeholder="Search Part Number, Ref, or Item No..." oninput="renderResults()"/>
-        <button class="scan-btn" onclick="startInlineScanner('barcode')">🔍</button>
-        <button class="scan-btn" style="background:var(--accent-purple);" onclick="startInlineScanner('qr')">📷</button>
+  <main id="finderScreen" class="app-screen active">
+    <div class="card">
+      <div class="form-group">
+        <label for="searchBox">Search Main Inventory (stocks.csv) or Fittings</label>
+        <input type="text" id="searchBox" class="search-input" placeholder="Type part or click scan inputs below..." oninput="renderResults()">
       </div>
+      <div class="btn-grid">
+        <button class="action-btn btn-green" onclick="startInlineScanner('qr')">Scan QR Code</button>
+        <button class="action-btn btn-green" onclick="startInlineScanner('bar')">Scan Supplier Ref</button>
+      </div>
+      <button class="action-btn btn-muted" style="margin-top:10px;" onclick="resetSearchLayout()">Reset Search Fields</button>
 
-      <!-- Inline Camera Scan Area -->
-      <div id="inlineScannerBox" style="display:none; margin-bottom:15px; position:relative;">
+      <div id="inlineScannerBox">
+        <div style="display:flex; justify-content:space-between; margin-bottom:8px; align-items:center;">
+          <span style="font-size:12px; font-weight:bold; color:var(--text-muted)">Active Document Target Camera</span>
+          <button style="border:none; padding:4px 8px; border-radius:4px; background:var(--danger-red); color:white; font-size:11px; font-weight:bold;" onclick="stopInlineScanner()">Close Camera</button>
+        </div>
         <div id="finderReader"></div>
-        <button class="action-btn btn-secondary" style="width:100%;" onclick="stopInlineScanner()">Close Scanner Viewport</button>
       </div>
-
-      <div id="resultsContainerLocationAnchor"></div>
-      <div id="searchResultsArea"></div>
     </div>
 
-    <!-- ==================== SCREEN 2: COUNTER ==================== -->
-    <div id="counterScreen" class="app-screen">
+    <div id="resultsContainerLocationAnchor"></div>
+    <div id="searchResultsArea"></div>
+  </main>
+
+  <main id="counterScreen" class="app-screen">
+    <div class="card">
       <div id="reader"></div>
-      
-      <div class="card" style="display:flex; justify-content:space-between; align-items:center; background:linear-gradient(to right, rgba(59,130,246,0.1), transparent); border-left:4px solid var(--accent-blue);">
-        <div>
-          <h5 style="font-size:14px; margin-bottom:2px;">Scan Engine Active</h5>
-          <p style="font-size:12px; color:var(--text-muted);">Position item barcode or QR token within framing box boundaries</p>
-        </div>
-        <button class="action-btn btn-secondary" style="flex:none; width:auto; padding:8px 12px;" onclick="exportCountsToCSV()">Export CSV</button>
-      </div>
-
-      <div class="card">
-        <div style="display:flex; justify-content:between; align-items:center; margin-bottom:12px;">
-          <h4 style="font-size:14px; font-weight:700; text-transform:uppercase; color:var(--text-muted); flex:1;">Running Session Ledger</h4>
-          <button style="background:none; border:none; color:var(--accent-danger); font-size:12px; cursor:pointer;" onclick="triggerNewSessionManually()">Reset Ledger</button>
-        </div>
-        <div id="logRegistryList" style="max-height:200px; overflow-y:auto;"></div>
+      <div style="display:flex; gap:10px;">
+        <button class="action-btn btn-blue" onclick="exportCountsToCSV()">💾 Export Terminal Sessions (.CSV)</button>
+        <button class="action-btn btn-muted" onclick="triggerNewSessionManually()">🔄 Clear Run</button>
       </div>
     </div>
 
-    <!-- ==================== SCREEN 3: CONSOLIDATION ==================== -->
-    <div id="consolidationScreen" class="app-screen">
-      <div class="card" style="background:linear-gradient(to right, rgba(139,92,246,0.1), transparent); border-left:4px solid var(--accent-purple); margin-bottom:15px;">
-        <h4 style="font-size:15px; margin-bottom:2px;">Fittings Consolidation Engine</h4>
-        <p style="font-size:12px; color:var(--text-muted);">Sync, load, and edit Google Sheets fitting quantities in real-time.</p>
+    <div class="card">
+      <h3 style="font-size:14px; font-weight:800; border-bottom:1px solid var(--border-color); padding-bottom:8px; margin-bottom:12px;">Active Running Counter Audit Manifest</h3>
+      <div id="logRegistryList"></div>
+    </div>
+  </main>
+
+  <main id="consolidationScreen" class="app-screen">
+    <div class="card">
+      <h3 style="font-size:15px; font-weight:800; margin-bottom:4px;">✏️ Update Stocks</h3>
+      <p style="font-size:12px; color:var(--text-muted); margin-bottom:15px;">Search and edit current pallet quantities live on Google Sheets.</p>
+      
+      <div class="form-group">
+        <input type="text" id="conSearchBox" class="search-input" placeholder="Type fittings part number..." oninput="renderConsolidationRows()">
       </div>
 
-      <div class="search-wrapper">
-        <input type="text" id="conSearchBox" class="search-input" placeholder="Enter target Part Number..." oninput="renderConsolidationRows()"/>
-      </div>
-
-      <div id="conTableWrap" class="card table-container" style="display:none; padding:8px;">
-        <table>
+      <div class="table-responsive" id="conTableWrap" style="display:none;">
+        <table style="width:100%;">
           <thead>
             <tr>
-              <th>Part Profile</th>
-              <th style="text-align:center;">Pack</th>
+              <th style="text-align:left;">Part Number</th>
+              <th style="text-align:center;">Pack Size</th>
               <th style="text-align:center;">Boxes</th>
-              <th style="text-align:center;">Loose</th>
-              <th style="text-align:center;">Total</th>
-              <th style="text-align:center;">Sync</th>
+              <th style="text-align:center;">Loose Pcs</th>
+              <th style="text-align:center;">Total Pcs</th>
+              <th style="text-align:center;">Save</th>
               <th style="text-align:center;">Loc</th>
             </tr>
           </thead>
           <tbody id="conTableBody"></tbody>
         </table>
       </div>
-
-      <!-- Module B: Append New Pallet Entry -->
-      <div class="card" style="margin-top:20px;">
-        <h4 style="font-size:14px; font-weight:700; text-transform:uppercase; color:var(--text-muted); margin-bottom:12px;">Append New Storage Coordinate Location</h4>
-        
-        <div class="form-group">
-          <label>Part Identifier Reference</label>
-          <input type="text" id="newPartNo" class="form-control" placeholder="e.g. 1002341-X"/>
-        </div>
-        <div class="form-group">
-          <label>Target Location / Pallet Row Coordinate</label>
-          <input type="text" id="newPalletNo" class="form-control" placeholder="e.g. ROW 14-B"/>
-        </div>
-        
-        <div style="display:flex; gap:10px;">
-          <div class="form-group" style="flex:1;">
-            <label>Pieces Per Box (Pack)</label>
-            <input type="number" id="newPackSize" class="form-control" placeholder="0" oninput="calculateModuleBTotal()"/>
-          </div>
-          <div class="form-group" style="flex:1;">
-            <label>Full Boxes Count</label>
-            <input type="number" id="newBoxes" class="form-control" placeholder="0" oninput="calculateModuleBTotal()"/>
-          </div>
-        </div>
-
-        <div class="form-group">
-          <label>Calculated Dynamic Quantity Output Result</label>
-          <input type="number" id="newTotalQty" class="form-control" style="background:var(--border-color); color:var(--accent-green); font-weight:bold;" value="0" readonly/>
-        </div>
-
-        <button class="action-btn btn-success" style="width:100%; margin-top:5px; padding:14px;" onclick="submitNewPalletEntry()">Commit Entry Matrix Record</button>
-      </div>
-
-      <button class="action-btn btn-secondary" style="width:100%; margin-top:10px; background:none; border:1px solid var(--accent-danger); color:var(--accent-danger);" onclick="clearAppCache()">Force App Data Re-cache</button>
     </div>
 
+    <div class="card">
+      <h3 style="font-size:15px; font-weight:800; margin-bottom:15px;">➕ Add New Stock / Relocate</h3>
+
+      <div class="form-group">
+        <label>Part Number</label>
+        <input type="text" id="newPartNo" class="search-input" placeholder="e.g. 22611D-06-06N">
+      </div>
+      <div class="form-group">
+        <label>New Pallet Location</label>
+        <input type="text" id="newPalletNo" class="search-input" placeholder="e.g. 240709-P3">
+      </div>
+      <div class="grid-form-parameters" style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
+        <div class="form-group">
+          <label>Pack Size</label>
+          <input type="number" id="newPackSize" class="search-input" oninput="calculateModuleBTotal()">
+        </div>
+        <div class="form-group">
+          <label>No. of Boxes</label>
+          <input type="number" id="newBoxes" class="search-input" oninput="calculateModuleBTotal()">
+        </div>
+      </div>
+      <div class="form-group">
+        <label>Total Pieces</label>
+        <input type="text" id="newTotalQty" class="search-input" style="font-family:monospace; font-weight:bold; background:var(--badge-bg);" readonly value="0">
+      </div>
+
+      <button class="action-btn btn-purple" onclick="submitNewPalletEntry()">📤 Save New Location</button>
+    </div>
+  </main>
+
+  <div class="modal-overlay" id="settingsOverlay">
+    <div class="modal-content">
+      <h2 style="font-size:18px; font-weight:800; margin-bottom:15px; display:flex; align-items:center; gap:8px;">⚙️ Core Preferences Dashboard</h2>
+      
+      <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:15px; background:var(--bg-primary); padding:14px; border-radius:10px; border:1px solid var(--border-color);">
+        <label style="font-size:14px; font-weight:600; display:flex; align-items:center; gap:10px; cursor:pointer; width:100%;">
+          <input type="checkbox" id="darkModeToggle" style="transform:scale(1.2);" onchange="toggleSystemThemeMode(this.checked)"> Dark Interface Mode
+        </label>
+      </div>
+
+      <div class="form-group" style="background:var(--bg-primary); padding:14px; border-radius:10px; border:1px solid var(--border-color); margin-bottom:15px;">
+        <label style="margin-bottom:8px;">App Visual Theme Customization</label>
+        <input type="file" id="themeFileInput" accept="image/*" onchange="handleCustomThemeUpload(event)">
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
+          <button class="action-btn btn-blue" style="font-size:12px; padding:10px;" onclick="document.getElementById('themeFileInput').click()">🖼️ Upload UI Theme</button>
+          <button class="action-btn btn-muted" style="font-size:12px; padding:10px; background:#64748b;" onclick="resetCustomThemeWallpaper()">🔄 Reset Default</button>
+        </div>
+      </div>
+
+      <button class="action-btn btn-muted" style="background:#475569; margin-bottom:15px;" onclick="clearAppCache()">♻️ Purge Manifest Cache (Reload Databases)</button>
+      <button class="action-btn btn-muted" style="width:100%;" onclick="closeSettingsModal()">Close Preferences</button>
+    </div>
   </div>
 
-  <!-- ==================== DIALOG COUNTER OVERLAY ==================== -->
-  <div id="countOverlay" class="overlay-backdrop">
-    <div class="overlay-content">
-      <span id="targetMappingInfo" style="font-size:11px; text-transform:uppercase; font-weight:700; color:var(--text-muted);"></span>
-      <h2 id="targetItemName" style="font-size:24px; font-weight:900; font-family:monospace; margin:6px 0;"></h2>
-      <div id="targetSubLoc" class="location-badge" style="background:var(--accent-blue); margin-bottom:10px;"></div>
+  <div class="modal-overlay" id="countOverlay">
+    <div class="modal-content">
+      <h2 id="targetTitleHeader" style="font-size:18px; font-weight:800; margin-bottom:5px;">Matched Database Reference</h2>
+      <div id="targetItemName" style="font-size:22px; font-weight:800; font-family:monospace; margin-bottom:2px; color:var(--accent-blue);">---</div>
+      <div id="targetMappingInfo" style="font-size:12px; color:var(--text-muted); margin-bottom:4px;">---</div>
+      <div id="targetSubLoc" style="font-size:13px; font-weight:bold; margin-bottom:15px;">---</div>
       
-      <p style="font-size:13px; color:var(--text-muted); margin-top:10px;">Input Verified Unit Quantities Present:</p>
+      <label style="font-size:11px; font-weight:700; text-transform:uppercase; color:var(--text-muted);">Adjust Physical Count Audit Value</label>
       
-      <div class="qty-controls">
+      <div class="qty-control-box">
         <button class="qty-btn" onclick="adjustQty(-10)">-10</button>
         <button class="qty-btn" onclick="adjustQty(-1)">-1</button>
-        <input type="number" id="qtyInputField" class="qty-input" placeholder="0"/>
+        <input type="number" id="qtyInputField" class="qty-display-input" placeholder="0">
         <button class="qty-btn" onclick="adjustQty(1)">+1</button>
         <button class="qty-btn" onclick="adjustQty(10)">+10</button>
       </div>
 
-      <div class="btn-group">
-        <button class="action-btn btn-secondary" onclick="dismissOverlay()">Cancel</button>
-        <button class="action-btn btn-success" onclick="commitCount()">Log Count Entry</button>
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-top:20px;">
+        <button class="action-btn btn-green" onclick="commitCount()">💾 Log Entry</button>
+        <button class="action-btn btn-muted" onclick="dismissOverlay()">Cancel</button>
       </div>
     </div>
   </div>
 
-  <!-- Bottom Navigation Tab Bar -->
-  <div id="footerBar">
-    <button id="finderTab" class="tab-btn active" onclick="switchMode('finder')">
-      <span>🔎</span>Part Finder
-    </button>
-    <button id="counterTab" class="tab-btn" onclick="switchMode('counter')">
-      <span>📷</span>Audit Scanner
-    </button>
-    <button id="consolidationTab" class="tab-btn" onclick="switchMode('consolidation')">
-      <span>⚖️</span>Balance Ledger
-    </button>
-  </div>
+  <footer class="footer-status-bar" id="footerBar">
+    <div class="status-indicator">
+      <div id="metaStatusDot" class="status-dot"></div>
+      <span id="metaDisplay" style="font-family:monospace; font-size:12px; font-weight:700;">System Offline</span>
+    </div>
+    <span id="countSession" style="font-size:12px; font-weight:700; background:var(--badge-bg); padding:4px 8px; border-radius:6px; display:none;">Counts logged: 0</span>
+  </footer>
 
-  <!-- ==================== APPLICATION RUNTIME LOGIC ==================== -->
   <script>
-    // Configuration endpoints
-    var GOOGLE_SHEETS_API_URL = "https://script.google.com/macros/s/AKfycbyJj52JcpWz1fOzTh-3QKqtrdSCh0T-oVjsODZW7khf8dCQ0h7BRiITMfEvibcYRFisng/exec";
+    var GOOGLE_SHEETS_API_URL = "https://script.google.com/macros/s/AKfycbyJj52JcpWz1fOzTh-3QKqtrdSCh0T-oVjsODZW7khf8dCQ0h7BRiITMfEvibcYRFisng/exec"; 
+    var REPO_STOCKS_CSV_URL = "https://raw.githubusercontent.com/wh-sec/stock-locator-pwa/main/stocks.csv"; 
 
-    // Application State Engine
-    var stockRegistry = [];        // Derived dynamically via stocks.csv
-    var fittingsRegistry = [];     // Syncs with Google Sheets Web API
+    var stockRegistry = [];
+    var fittingsRegistry = [];
     var countLogSession = [];
-    
-    // Scanner Instances
+
     var html5QrcodeScanner = null;
     var inlineFinderScanner = null;
     var currentScanTargetField = null;
-    var isProcessingScan = false;
     var activeScanMatch = null;
+    var isProcessingScan = false;
 
-    // Element Registry Caches
-    var metaDisplay = document.getElementById('metaDisplay');
     var searchBox = document.getElementById('searchBox');
     var conSearchBox = document.getElementById('conSearchBox');
+    var metaDisplay = document.getElementById('metaDisplay');
+    var metaStatusDot = document.getElementById('metaStatusDot');
 
-    // Self-Executing Lifecycle Hook
-    (function initAppLifecycle() {
-      // Local Storage Log Sessions Tracking Hydration
-      var savedLogs = localStorage.getItem('ms_saved_logs');
-      var savedDate = localStorage.getItem('ms_saved_date');
-      var todayStr = new Date().toDateString();
+    var stocksDatabaseLoaded = false;
+    var fittingsDatabaseLoaded = false;
 
-      if (savedLogs && savedDate === todayStr) {
-        countLogSession = JSON.parse(savedLogs);
-      } else {
-        localStorage.removeItem('ms_saved_logs');
-        localStorage.removeItem('ms_saved_date');
-      }
-      renderLogRegistryDisplay();
-
-      // Hydrate Stock Registry (stocks.csv) Cache Layer
-      var cachedStock = localStorage.getItem('cached_stock');
-      if (cachedStock) {
-        stockRegistry = JSON.parse(cachedStock);
-      }
-
-      // Hydrate Fittings Registry (Google Sheets) Cache Layer
-      var cachedFittings = localStorage.getItem('cached_fittings');
-      if (cachedFittings) {
-        fittingsRegistry = JSON.parse(cachedFittings);
-      }
-
-      if (stockRegistry.length > 0 || fittingsRegistry.length > 0) {
-        metaDisplay.textContent = "Offline Registry Matrix Ready";
-      }
-
-      // Main parallel fetching initialization sequence
+    window.addEventListener('DOMContentLoaded', function() {
+      loadSystemStatePreference();
       fetchInventoryDatabases();
-    })();
+    });
 
-    // 1. DUAL PARALLEL RETRIEVAL ENGINE (Local stocks.csv & live cloud balance ledger)
-    function fetchInventoryDatabases() {
-      metaDisplay.textContent = "Updating stock databases...";
-      metaDisplay.style.color = "var(--accent-blue)";
+    function openSettingsModal() { document.getElementById('settingsOverlay').style.display = 'flex'; }
+    function closeSettingsModal() { document.getElementById('settingsOverlay').style.display = 'none'; }
 
-      // Step A: Request static stocks.csv asset served from your GitHub repository path
-      var fetchA = fetch('stocks.csv')
-        .then(function(res) { return res.text(); })
-        .then(function(csvText) {
-          stockRegistry = parseCsvToObjects(csvText);
-          localStorage.setItem('cached_stock', JSON.stringify(stockRegistry));
-        });
+    function loadSystemStatePreference() {
+      var isDark = localStorage.getItem('ms_dark_mode') === 'true';
+      document.getElementById('darkModeToggle').checked = isDark;
+      toggleSystemThemeMode(isDark);
 
-      // Step B: Query Google Sheets Web App Endpoint
-      var fetchB = fetch(GOOGLE_SHEETS_API_URL + "?action=readAll")
-        .then(function(res) { return res.json(); })
-        .then(function(data) {
-          if (data.fittings && Array.isArray(data.fittings)) {
-            fittingsRegistry = data.fittings;
-            localStorage.setItem('cached_fittings', JSON.stringify(fittingsRegistry));
-          }
-        });
-
-      Promise.all([fetchA, fetchB])
-        .then(function() {
-          metaDisplay.textContent = "Databases Synced Live";
-          metaDisplay.style.color = "var(--accent-green)";
-          if (document.getElementById('finderScreen').classList.contains('active')) renderResults();
-          if (document.getElementById('consolidationScreen').classList.contains('active')) renderConsolidationRows();
-        })
-        .catch(function(err) {
-          console.error("Critical database fetch timeout:", err);
-          metaDisplay.textContent = "Offline Mode. Using cached registry.";
-          metaDisplay.style.color = "var(--accent-danger)";
-        });
+      var savedTheme = localStorage.getItem('ms_theme_wallpaper');
+      if (savedTheme) {
+        document.body.style.backgroundImage = "url(" + savedTheme + ")";
+        document.body.style.backgroundSize = "cover";
+        document.body.style.backgroundAttachment = "fixed";
+      }
     }
 
-    function parseCsvToObjects(csvString) {
-      var lines = [];
-      var entry = "";
-      var insideQuote = false;
+    function toggleSystemThemeMode(isDark) {
+      document.documentElement.setAttribute('data-theme', isDark ? 'dark' : 'light');
+      localStorage.setItem('ms_dark_mode', isDark);
+    }
 
-      csvString = csvString.replace(/\r/g, "");
+    function handleCustomThemeUpload(event) {
+      var file = event.target.files[0];
+      if (!file) return;
+      var reader = new FileReader();
+      reader.onload = function(e) {
+        var base64Img = e.target.result;
+        document.body.style.backgroundImage = "url(" + base64Img + ")";
+        document.body.style.backgroundSize = "cover";
+        document.body.style.backgroundAttachment = "fixed";
+        localStorage.setItem('ms_theme_wallpaper', base64Img);
+      };
+      reader.readAsDataURL(file);
+    }
 
-      for (var i = 0; i < csvString.length; i++) {
-        var c = csvString[i];
-        if (c === '"') {
-          insideQuote = !insideQuote;
-        } else if (c === '\n' && !insideQuote) {
-          lines.push(csvString.substring(i - entry.length, i)); 
-          entry = "";
-        } else {
-          entry += c;
-        }
+    function fetchInventoryDatabases() {
+      metaDisplay.textContent = "Connecting to storage components...";
+      metaStatusDot.className = "status-dot";
+
+      fetch(REPO_STOCKS_CSV_URL, { method: 'GET', mode: 'cors' })
+        .then(function(res) {
+          if (!res.ok) throw new Error("GitHub server returned status: " + res.status);
+          return res.text();
+        })
+        .then(function(rawCsvText) {
+          stockRegistry = parseSanitizedCSV(rawCsvText);
+          localStorage.setItem('cached_stocks', JSON.stringify(stockRegistry));
+          stocksDatabaseLoaded = true;
+          evaluateSyncStatus(stocksDatabaseLoaded, fittingsDatabaseLoaded);
+        })
+        .catch(function(err) {
+          console.error("GitHub Fetch Error:", err);
+          stockRegistry = JSON.parse(localStorage.getItem('cached_stocks') || "[]");
+          if (stockRegistry.length > 0) stocksDatabaseLoaded = true;
+          evaluateSyncStatus(stocksDatabaseLoaded, fittingsDatabaseLoaded);
+        });
+
+      fetch(GOOGLE_SHEETS_API_URL + "?action=readDatabase")
+        .then(function(sheetRes) {
+          return sheetRes.json();
+        })
+        .then(function(sheetData) {
+          fittingsRegistry = sheetData.records || [];
+          localStorage.setItem('cached_fittings', JSON.stringify(fittingsRegistry));
+          fittingsDatabaseLoaded = true;
+          evaluateSyncStatus(stocksDatabaseLoaded, fittingsDatabaseLoaded);
+          
+          if (conSearchBox.value.trim()) { renderConsolidationRows(); }
+        })
+        .catch(function(err) {
+          console.error("Google Sheets Fetch Error:", err);
+          fittingsRegistry = JSON.parse(localStorage.getItem('cached_fittings') || "[]");
+          if (fittingsRegistry.length > 0) fittingsDatabaseLoaded = true;
+          evaluateSyncStatus(stocksDatabaseLoaded, fittingsDatabaseLoaded);
+        });
+    }
+        
+    function evaluateSyncStatus(stocksReady, fittingsReady) {
+      var now = new Date();
+      var timestamp = now.toLocaleDateString() + " " + now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+      if (stocksReady && fittingsReady) {
+        metaDisplay.textContent = "Database Online (Updated: " + timestamp + ")";
+        metaStatusDot.className = "status-dot ready";
+      } else if (stocksReady || fittingsReady) {
+        metaDisplay.textContent = "Partial Connection: " + (stocksReady ? "Main Catalog Live" : "Fittings Only Live") + " (Rest Cached)";
+        metaStatusDot.className = "status-dot ready";
+      } else {
+        metaDisplay.textContent = "Offline Mode: Using cached terminal data footprints.";
+        metaStatusDot.className = "status-dot";
       }
-      if (entry) lines.push(entry);
+    }
 
-      var processedLines = [];
-      for (var i = 0; i < lines.length; i++) {
-        var splitRow = [];
-        var field = "";
-        var inQ = false;
-        for (var j = 0; j < lines[i].length; j++) {
-          var ch = lines[i][j];
-          if (ch === '"') { inQ = !inQ; }
-          else if (ch === ',' && !inQ) { splitRow.push(field); field = ""; }
-          else { field += ch; }
-        }
-        splitRow.push(field);
-        processedLines.push(splitRow);
-      }
-      lines = processedLines;
-
+    function parseSanitizedCSV(text) {
+      var lines = text.split(/\r?\n/);
+      if (lines.length < 2) return [];
       var items = [];
-      for (var i = 1; i < lines.length; i++) {
-        var row = lines[i];
-        if (!row || row.length < 2) continue;
 
+      for (var i = 1; i < lines.length; i++) {
+        if (!lines[i].trim()) continue;
+        
+        var row = [];
+        var insideQuote = false;
+        var entry = "";
+        
+        for (var j = 0; j < lines[i].length; j++) {
+          var char = lines[i][j];
+          if (char === '"') { 
+            insideQuote = !insideQuote; 
+          } else if (char === ',' && !insideQuote) {
+            row.push(entry.trim().replace(/^"|"$/g, ''));
+            entry = "";
+          } else { 
+            entry += char; 
+          }
+        }
+        row.push(entry.trim().replace(/^"|"$/g, ''));
+
+        // Reduced safety constraint bounds from 7 to 4 to accept missing/blank trailing arrays safely
         if (row.length >= 4) {
+          // FIX: Safely extract and clean the quantity column if it exists
           var rawQty = row[4] ? String(row[4]) : "0";
           var cleanQty = rawQty.replace(/["\s,]/g, '');
           var parsedQty = Math.floor(parseFloat(cleanQty)) || 0;
@@ -597,8 +417,8 @@
             supplierRef: row[1] || "",
             warehouse: row[2] || "N/A",
             part: row[3] || "UNKNOWN",
-            totalQty: parsedQty,
-            location: row[5] || "", 
+            totalQty: parsedQty, // Now correctly parsed without getting blocked by quotes or commas!
+            location: row[5] || "", // This safely grabs empty strings instead of discarding row
             itemNo: row[6] || "N/A",
             isFitting: false
           });
@@ -614,13 +434,12 @@
       return text.substring(0, idx) + '<mark class="match">' + text.substring(idx, idx + query.length) + '</mark>' + text.substring(idx + query.length);
     }
 
-    // 2. DYNAMIC SEARCH ENGINE - Automatically queries both local CSV static stock data and sheets
     function renderResults() {
       var query = searchBox.value.trim().toLowerCase();
       var area = document.getElementById('searchResultsArea');
       if (!query) { area.innerHTML = ''; return; }
 
-      var resultsA = stockRegistry.filter(function(i) {
+    var resultsA = stockRegistry.filter(function(i) {
         return i.part.toLowerCase().indexOf(query) !== -1 || 
                i.itemNo.toLowerCase().indexOf(query) !== -1 || 
                i.supplierRef.toLowerCase().indexOf(query) !== -1;
@@ -647,7 +466,7 @@
         var item = compiled[k];
         var borderStyle = item.isFitting ? 'var(--accent-purple)' : 'var(--accent-blue)';
         var badgeBg = item.isFitting ? 'var(--accent-purple)' : 'var(--accent-green)';
-        var subTitle = item.isFitting ? 'Google Sheets Fittings Registry' : ('Local Catalog &bull; Ref: ' + highlightText(item.supplierRef, query));
+        var subTitle = item.isFitting ? 'Google Sheets Fittings Registry' : ('Main Catalog &bull; Ref: ' + highlightText(item.supplierRef, query));
         var itemNumberText = item.isFitting ? 'N/A' : highlightText(item.itemNo, query);
 
         html += '<div class="card" style="border-left: 5px solid ' + borderStyle + ';">' +
@@ -816,6 +635,9 @@
         });
     }
 
+    // ==========================================================
+    // BALANCED SCANNING AREA AND ASPECT RATIO CORRECTION
+    // ==========================================================
     function getScannerConfig() {
       return {
         fps: 25,
@@ -951,7 +773,6 @@
       document.getElementById('countOverlay').style.display = 'flex';
     }
 
-    // Helper functions
     function adjustQty(amount) {
       var f = document.getElementById('qtyInputField');
       var current = parseInt(f.value, 10) || 0;
