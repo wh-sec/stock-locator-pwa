@@ -297,18 +297,6 @@
       border-radius: 6px;
       font-size: 14px;
     }
-
-    /* File Import Specific CSS */
-    .file-upload-wrapper {
-      background: var(--bg-secondary);
-      border: 1px dashed var(--border-color);
-      padding: 10px;
-      border-radius: 8px;
-      margin-bottom: 15px;
-      text-align: center;
-      font-size: 12px;
-      color: var(--text-muted);
-    }
   </style>
 </head>
 <body>
@@ -325,14 +313,6 @@
 
     <!-- ==================== SCREEN 1: FINDER ==================== -->
     <div id="finderScreen" class="app-screen active">
-      
-      <!-- stocks.csv Local Loader File Element -->
-      <div class="file-upload-wrapper">
-        <span id="csvStatusText" style="display:block; margin-bottom: 6px;">No stocks.csv catalog loaded in local memory.</span>
-        <input type="file" id="stocksCsvFile" accept=".csv" style="display:none;" onchange="importLocalStocksCsv(event)" />
-        <button class="action-btn btn-secondary" style="font-size:11px; padding:6px 12px; width:auto;" onclick="document.getElementById('stocksCsvFile').click()">Import stocks.csv</button>
-      </div>
-
       <div class="search-wrapper">
         <input type="text" id="searchBox" class="search-input" placeholder="Search Part Number, Ref, or Item No..." oninput="renderResults()"/>
         <button class="scan-btn" onclick="startInlineScanner('barcode')">🔍</button>
@@ -478,8 +458,8 @@
     var GOOGLE_SHEETS_API_URL = "https://script.google.com/macros/s/AKfycbyJj52JcpWz1fOzTh-3QKqtrdSCh0T-oVjsODZW7khf8dCQ0h7BRiITMfEvibcYRFisng/exec";
 
     // Application State Engine
-    var stockRegistry = [];        // Derived exclusively from stocks.csv (Local Lookup)
-    var fittingsRegistry = [];     // Syncs exclusively with Google Sheets Web API
+    var stockRegistry = [];        // Derived dynamically via stocks.csv
+    var fittingsRegistry = [];     // Syncs with Google Sheets Web API
     var countLogSession = [];
     
     // Scanner Instances
@@ -493,7 +473,6 @@
     var metaDisplay = document.getElementById('metaDisplay');
     var searchBox = document.getElementById('searchBox');
     var conSearchBox = document.getElementById('conSearchBox');
-    var csvStatusText = document.getElementById('csvStatusText');
 
     // Self-Executing Lifecycle Hook
     (function initAppLifecycle() {
@@ -514,8 +493,6 @@
       var cachedStock = localStorage.getItem('cached_stock');
       if (cachedStock) {
         stockRegistry = JSON.parse(cachedStock);
-        csvStatusText.textContent = "Offline Database Loaded: " + stockRegistry.length + " item catalog rows.";
-        csvStatusText.style.color = "var(--accent-green)";
       }
 
       // Hydrate Fittings Registry (Google Sheets) Cache Layer
@@ -528,62 +505,43 @@
         metaDisplay.textContent = "Offline Registry Matrix Ready";
       }
 
-      // Live Fetch exclusively for Google Sheets Fittings database
-      fetchFittingsDatabase();
+      // Main parallel fetching initialization sequence
+      fetchInventoryDatabases();
     })();
 
-    // 1. IMPORT LOCAL stocks.csv FILE
-    function importLocalStocksCsv(event) {
-      var file = event.target.files[0];
-      if (!file) return;
-
-      csvStatusText.textContent = "Processing CSV catalog sequence...";
-      csvStatusText.style.color = "var(--text-muted)";
-
-      var reader = new FileReader();
-      reader.onload = function(e) {
-        try {
-          var csvContent = e.target.result;
-          stockRegistry = parseCsvToObjects(csvContent);
-          
-          localStorage.setItem('cached_stock', JSON.stringify(stockRegistry));
-          
-          csvStatusText.textContent = "Import Success: " + stockRegistry.length + " stock catalog rows cached.";
-          csvStatusText.style.color = "var(--accent-green)";
-          
-          renderResults();
-        } catch(err) {
-          csvStatusText.textContent = "Error parsing CSV file format structure.";
-          csvStatusText.style.color = "var(--accent-danger)";
-          console.error(err);
-        }
-      };
-      reader.readAsText(file);
-    }
-
-    // 2. LIVE FETCH LIVE GOOGLE SHEETS FOR FITTINGS ONLY
-    function fetchFittingsDatabase() {
-      metaDisplay.textContent = "Syncing Fittings Ledger...";
+    // 1. DUAL PARALLEL RETRIEVAL ENGINE (Local stocks.csv & live cloud balance ledger)
+    function fetchInventoryDatabases() {
+      metaDisplay.textContent = "Updating stock databases...";
       metaDisplay.style.color = "var(--accent-blue)";
 
-      fetch(GOOGLE_SHEETS_API_URL + "?action=readAll")
+      // Step A: Request static stocks.csv asset served from your GitHub repository path
+      var fetchA = fetch('stocks.csv')
+        .then(function(res) { return res.text(); })
+        .then(function(csvText) {
+          stockRegistry = parseCsvToObjects(csvText);
+          localStorage.setItem('cached_stock', JSON.stringify(stockRegistry));
+        });
+
+      // Step B: Query Google Sheets Web App Endpoint
+      var fetchB = fetch(GOOGLE_SHEETS_API_URL + "?action=readAll")
         .then(function(res) { return res.json(); })
         .then(function(data) {
-          // Process only the Fittings component of the sheets payload
           if (data.fittings && Array.isArray(data.fittings)) {
             fittingsRegistry = data.fittings;
             localStorage.setItem('cached_fittings', JSON.stringify(fittingsRegistry));
           }
+        });
 
-          metaDisplay.textContent = "Google Sheets Synced Live";
+      Promise.all([fetchA, fetchB])
+        .then(function() {
+          metaDisplay.textContent = "Databases Synced Live";
           metaDisplay.style.color = "var(--accent-green)";
-          
           if (document.getElementById('finderScreen').classList.contains('active')) renderResults();
           if (document.getElementById('consolidationScreen').classList.contains('active')) renderConsolidationRows();
         })
         .catch(function(err) {
-          console.error("Fittings sync connection timeout:", err);
-          metaDisplay.textContent = "Offline Mode. Using cached fittings registry.";
+          console.error("Critical database fetch timeout:", err);
+          metaDisplay.textContent = "Offline Mode. Using cached registry.";
           metaDisplay.style.color = "var(--accent-danger)";
         });
     }
@@ -656,20 +614,18 @@
       return text.substring(0, idx) + '<mark class="match">' + text.substring(idx, idx + query.length) + '</mark>' + text.substring(idx + query.length);
     }
 
-    // 3. SEARCH RESULTS - Queries both local stocks catalog and remote fittings
+    // 2. DYNAMIC SEARCH ENGINE - Automatically queries both local CSV static stock data and sheets
     function renderResults() {
       var query = searchBox.value.trim().toLowerCase();
       var area = document.getElementById('searchResultsArea');
       if (!query) { area.innerHTML = ''; return; }
 
-      // Look up inside local stocks database loaded from stocks.csv
       var resultsA = stockRegistry.filter(function(i) {
         return i.part.toLowerCase().indexOf(query) !== -1 || 
                i.itemNo.toLowerCase().indexOf(query) !== -1 || 
                i.supplierRef.toLowerCase().indexOf(query) !== -1;
       });
 
-      // Look up inside remote fittings database loaded from Google Sheets
       var resultsB = fittingsRegistry.filter(function(i) {
         return i.part.toLowerCase().indexOf(query) !== -1 || 
                i.location.toLowerCase().indexOf(query) !== -1;
@@ -724,7 +680,6 @@
 
       if (!query) { conTableWrap.style.display = 'none'; return; }
 
-      // Exclusively references Google Sheets-synchronized fittings database
       var matches = fittingsRegistry.filter(function(i) {
         return i.part.toLowerCase().indexOf(query) !== -1;
       }).slice(0, 10);
@@ -810,7 +765,7 @@
         .then(function(data) {
           if (data.result === 'success' || data.result === 'deleted') {
             alert("Record updated successfully!");
-            fetchFittingsDatabase();
+            fetchInventoryDatabases();
           } else {
             alert("Error updating record: " + data.message);
           }
@@ -851,7 +806,7 @@
             document.getElementById('newPackSize').value = '';
             document.getElementById('newBoxes').value = '';
             document.getElementById('newTotalQty').value = '0';
-            fetchFittingsDatabase();
+            fetchInventoryDatabases();
           } else { 
             alert("Error: " + data.message); 
           }
@@ -996,6 +951,7 @@
       document.getElementById('countOverlay').style.display = 'flex';
     }
 
+    // Helper functions
     function adjustQty(amount) {
       var f = document.getElementById('qtyInputField');
       var current = parseInt(f.value, 10) || 0;
